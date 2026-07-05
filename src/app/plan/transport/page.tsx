@@ -116,6 +116,61 @@ const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComp
   );
 };
 
+const getAirlineLogo = (providerName: string) => {
+  if (!providerName) return null;
+  const name = providerName.toLowerCase();
+  if (name.includes('indigo')) return '/indigo_logo.png';
+  if (name.includes('express')) return '/AirIndiaExpress_logo.png';
+  if (name.includes('air india')) return '/AirIndia_logo.png';
+  if (name.includes('akasa')) return '/AkasaAir_logo.png';
+  if (name.includes('alliance')) return '/AllianceAirlines_logo.jpg';
+  if (name.includes('spicejet')) return '/SpiceJet_logo.png';
+  return null;
+};
+
+// Edit these values to tweak the width/height (zoom) of each individual logo!
+const getAirlineLogoStyles = (providerName: string) => {
+  if (!providerName) return 'w-[100%] h-[100%] scale-100';
+  const name = providerName.toLowerCase();
+  
+  if (name.includes('indigo')) {
+    // INDIGO: Increase or decrease scale-100 to change size (e.g., scale-90, scale-110)
+    return 'w-[100%] h-[100%] scale-100'; 
+  }
+  if (name.includes('express')) {
+    // AIR INDIA EXPRESS: Very wide logo with lots of white space
+    return 'w-[120%] h-[100%] scale-[1.8]';
+  }
+  if (name.includes('air india')) {
+    // AIR INDIA: Needs significant zoom to cut out the massive white borders
+    return 'w-[47.5%] h-[120%] scale-[2.5]'; 
+  }
+  
+// DEFAULT for everything else (Akasa, Spicejet, etc.)
+  return 'w-[100%] h-[100%] scale-[1.2]'; 
+};
+
+const getCabLogo = (providerName: string) => {
+  if (!providerName) return null;
+  const name = providerName.toLowerCase();
+  if (name.includes('hatchback')) return '/Hatchback_logo.jpg';
+  if (name.includes('suv')) return '/SUV_logo.jpg';
+  if (name.includes('sedan')) return '/sedan_logo.jpg';
+  return null;
+};
+
+// Edit these values to tweak the zoom of cab images
+const getCabLogoStyles = (providerName: string) => {
+  if (!providerName) return 'w-[100%] h-[100%] scale-100';
+  const name = providerName.toLowerCase();
+  
+  if (name.includes('hatchback')) return 'w-[120%] h-[100%] scale-120';
+  if (name.includes('suv')) return 'w-[100%] h-[100%] scale-100';
+  if (name.includes('sedan')) return 'w-[100%] h-[100%] scale-100';
+  
+  return 'w-[100%] h-[100%] scale-100';
+};
+
 export default function TransportPage() {
   const router = useRouter();
   const trip = useTripStore();
@@ -396,9 +451,29 @@ export default function TransportPage() {
                                       <Circle className="text-muted-foreground/50 shrink-0" size={24} />
                                     )}
                                     
-                                    <div className="p-3 bg-background rounded-lg shadow-sm border border-border">
-                                      {getTransportIcon(opt.type)}
-                                    </div>
+                                    {opt.type === 'flight' && getAirlineLogo(opt.provider) ? (
+                                      <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
+                                        <img 
+                                          src={getAirlineLogo(opt.provider)!} 
+                                          alt={opt.provider} 
+                                          className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
+                                          style={{ imageRendering: 'high-quality' }}
+                                        />
+                                      </div>
+                                    ) : (opt.type === 'cab' || opt.type === 'car') && getCabLogo(opt.provider) ? (
+                                      <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
+                                        <img 
+                                          src={getCabLogo(opt.provider)!} 
+                                          alt={opt.provider} 
+                                          className={`object-contain mix-blend-multiply ${getCabLogoStyles(opt.provider)}`}
+                                          style={{ imageRendering: 'high-quality' }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0" style={{ width: '56px', height: '56px' }}>
+                                        {getTransportIcon(opt.type)}
+                                      </div>
+                                    )}
 
                                     <div>
                                       <div className="flex items-center gap-2">
