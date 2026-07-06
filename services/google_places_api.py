@@ -36,7 +36,7 @@ PLACES_API_KEY = os.getenv("NEXT_PUBLIC_GOOGLE_PLACES_KEY")
 
 # ── Cache version ──────────────────────────────────────────────────────────────
 # Bump this when the schema of cached data changes to invalidate all old caches.
-CACHE_VERSION = "v12"
+CACHE_VERSION = "v13"
 
 # TTL constants
 REDIS_TTL_SECONDS = 60 * 60 * 24 * 30   # 30 days

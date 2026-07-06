@@ -141,15 +141,15 @@ from services.live_trains_api import get_train_route, get_live_train_status, get
 
 @app.get("/api/trains/{train_number}/route")
 async def api_get_train_route(train_number: str):
-    return await asyncio.to_thread(get_train_route, train_number)
+    return await get_train_route(train_number)
 
 @app.get("/api/trains/{train_number}/live")
 async def api_get_live_train_status(train_number: str, date: str):
-    return await asyncio.to_thread(get_live_train_status, train_number, date)
+    return await get_live_train_status(train_number, date)
 
 @app.get("/api/stations/{station_code}/board")
 async def api_get_station_board(station_code: str):
-    return await asyncio.to_thread(get_station_board, station_code)
+    return await get_station_board(station_code)
 
 @app.get("/api/places")
 async def get_places(destination: str, check_only: bool = Query(False)):

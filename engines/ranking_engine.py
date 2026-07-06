@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from models.entities import Passenger, TransportOption, Place, Hotel
 from models.enums import TransportType, Weather, CrowdLevel
 from models.state import TripState
-from data.mock_db import MOCK_PLACES_DB, MOCK_HOTEL_DB
+
 from engines.safety_engine import calculate_safety_score
 from services.live_places_api import search_live_places
 from services.live_hotels_api import search_live_hotels
@@ -127,6 +127,14 @@ async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bo
     if raw_places is None:
         return None
 
+    PRICE_LEVEL_MAP = {
+        "PRICE_LEVEL_FREE": 0,
+        "PRICE_LEVEL_INEXPENSIVE": 200,
+        "PRICE_LEVEL_MODERATE": 600,
+        "PRICE_LEVEL_EXPENSIVE": 1200,
+        "PRICE_LEVEL_VERY_EXPENSIVE": 2500,
+    }
+
     places = []
     for i, p in enumerate(raw_places):
         location = p.get("location", {})
@@ -139,6 +147,9 @@ async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bo
         if photos:
             photo_name = photos[0].get("name") or None
             
+        price_level = p.get("priceLevel", "")
+        estimated_cost = PRICE_LEVEL_MAP.get(price_level, 400) # 400 fallback
+            
         places.append(
             Place(
                 id=place_id,
@@ -146,7 +157,7 @@ async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bo
                 name=p.get("displayName", {}).get("text", "Unknown Restaurant"),
                 category=(p.get("primaryType") or "restaurant").replace("_", " ").title(),
                 coordinates=(lat, lng),
-                entry_fee=0,
+                entry_fee=estimated_cost,
                 visit_duration_hours=1.5,
                 safe_hours=(8, 23),
                 crowd_estimate=CrowdLevel.MEDIUM,

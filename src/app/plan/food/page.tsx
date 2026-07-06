@@ -203,8 +203,8 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
                 <div className="flex items-center gap-3 text-zinc-300">
                   <IndianRupee size={17} className="text-green-500 shrink-0" />
                   <span className="text-sm">
-                    Cost: <span className="font-semibold text-white">
-                      {place.entryFee === 0 ? 'Free' : `₹${place.entryFee}`}
+                    Cost (approx): <span className="font-semibold text-white">
+                      {place.entryFee === 0 ? 'Free' : `₹${place.entryFee} - ₹${Math.round(place.entryFee * 1.8)}`}
                     </span>
                   </span>
                 </div>
@@ -467,7 +467,7 @@ export default function FoodPage() {
                         {place.name}
                       </h3>
                       <span className={`text-sm font-bold shrink-0 ${place.entryFee === 0 ? 'text-emerald-400' : 'text-zinc-300'}`}>
-                        {place.entryFee === 0 ? 'Free' : `₹${place.entryFee}`}
+                        {place.entryFee === 0 ? 'Free' : `₹${place.entryFee} - ₹${Math.round(place.entryFee * 1.8)}`}
                       </span>
                     </div>
 
