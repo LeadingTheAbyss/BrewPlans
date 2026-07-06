@@ -5,7 +5,7 @@ import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { TransportOption, Passenger } from '@/types/trip';
 import { api } from '@/lib/api';
-import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, ShieldCheck, Armchair, ChevronDown, ArrowRight, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, ShieldCheck, Armchair, ChevronDown, ArrowRight, CheckCircle2, Circle, AlertCircle, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCacheStore } from '@/store/cacheStore';
@@ -192,6 +192,7 @@ export default function TransportPage() {
   const [activeTabs, setActiveTabs] = useState<Record<string, string>>({});
   
   // Track lazy loading states
+  // Track lazy loading states
   const [fetchedModes, setFetchedModes] = useState<Record<string, boolean>>({});
   const [loadingMode, setLoadingMode] = useState<Record<string, boolean>>({});
 
@@ -234,6 +235,7 @@ export default function TransportPage() {
 
   // Handle transport selection
   const handleSelectTransport = (paxId: string, option: TransportOption) => {
+    const currentPax = trip.passengers.find(p => p.id === paxId);
     const existingSelection = trip.selectedTransports.find(t => t.passengerId === paxId);
     
     // If clicking the currently selected option, deselect it
@@ -250,6 +252,21 @@ export default function TransportPage() {
     }
     trip.selectTransport(paxId, option);
     budget.addExpense('transport', option.price);
+    
+    // Automatically apply this choice to other passengers from the SAME origin who have NOT selected any transport yet
+    if (currentPax && currentPax.city) {
+      const othersWithNoSelection = trip.passengers.filter(p => 
+        p.id !== paxId && 
+        p.city === currentPax.city && 
+        !trip.selectedTransports.find(t => t.passengerId === p.id)
+      );
+
+      othersWithNoSelection.forEach(p => {
+        trip.selectTransport(p.id, option);
+        budget.addExpense('transport', option.price);
+      });
+    }
+
     budget.recalcBudget();
   };
 
@@ -522,6 +539,11 @@ export default function TransportPage() {
 
                                   <div className="text-right">
                                     <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString()}</div>
+                                    {opt.type === 'flight' && (
+                                      <div className="text-[10px] text-muted-foreground mt-1 text-right">
+                                        * These prices are tentative.
+                                      </div>
+                                    )}
                                   </div>
                                             </motion.div>
                                           );
@@ -566,6 +588,8 @@ export default function TransportPage() {
           </motion.button>
         </motion.div>
       </div>
+
+      {/* Prompt removed as requested */}
 
       <TrainRouteModal 
         isOpen={routeModalOpen} 
