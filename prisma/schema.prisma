@@ -141,3 +141,14 @@ model SavedPassenger {
   
   @@unique([userId, name])
 }
+
+// Persistent cache for Google Places API responses
+// Stores raw JSON from searchText so we never need to re-fetch unless TTL expires
+model PlaceCache {
+  id         String   @id @default(cuid())
+  cacheKey   String   @unique  // e.g. "places_v5_lucknow_tourist_30"
+  data       Json
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

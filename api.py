@@ -19,9 +19,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/pincode/{pincode}")
-async def get_pincode(pincode: str):
-    return await asyncio.to_thread(geo_lookup, pincode)
+@app.get("/api/debug-db-cache")
+async def debug_db_cache():
+    try:
+        from services.db import get_db_connection
+        conn = await get_db_connection()
+        try:
+            rows = await conn.fetch('SELECT "cacheKey", "expiresAt", "createdAt" FROM "PlaceCache" ORDER BY "createdAt" DESC LIMIT 5')
+            return [{"cacheKey": r["cacheKey"], "expiresAt": str(r["expiresAt"]), "createdAt": str(r["createdAt"])} for r in rows]
+        finally:
+            await conn.close()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/debug-key")
+async def debug_key():
+    from services.google_places_api import PLACES_API_KEY
+    import os
+    return {
+        "PLACES_API_KEY_IMPORTED": PLACES_API_KEY, 
+        "OS_GETENV": os.getenv("NEXT_PUBLIC_GOOGLE_PLACES_KEY")
+    }
+
+@app.get("/api/debug-places")
+async def debug_places():
+    from services.google_places_api import search_google_places
+    import traceback
+    try:
+        res = await search_google_places("Lucknow", max_results=5)
+        return {"success": True, "res": res}
+    except Exception as e:
+        return {"success": False, "error": str(e), "trace": traceback.format_exc()}
 
 @app.get("/api/test-import")
 async def test_import():
@@ -84,23 +112,41 @@ async def get_places(destination: str):
         start_date=datetime.now(), end_date=datetime.now() + timedelta(days=3),
         total_budget=50000
     )
-    places = await asyncio.to_thread(rank_places, destination, trip, Weather.SUNNY)
-    
-    from services.image_service import get_best_place_image
-    # Fetch images concurrently
-    image_tasks = [get_best_place_image(f"{p.name} {destination}") for p in places]
-    place_images = await asyncio.gather(*image_tasks)
+    places = await rank_places(destination, trip, Weather.SUNNY)
     
     result = []
+    from services.google_places_api import get_google_photo_url, fetch_google_place_details_photo, fetch_wikipedia_image, fetch_foursquare_image
+
+    PLACEHOLDER = "/placeholder-place.svg"
+
+    async def _resolve_photo(p):
+        ta_image = await fetch_foursquare_image(p.name, p.coordinates[0], p.coordinates[1])
+        if ta_image:
+            return ta_image
+        wiki = await fetch_wikipedia_image(p.name + " " + destination)
+        if wiki:
+            return wiki
+        return PLACEHOLDER
+
+    try:
+        photo_urls = await asyncio.gather(*[_resolve_photo(p) for p in places])
+    except Exception as e:
+        print(f"[PlacePhoto] resolution failed: {type(e).__name__}: {e}")
+        photo_urls = [PLACEHOLDER] * len(places)
+
     for i, p in enumerate(places):
         result.append({
             "id": p.id,
             "name": p.name,
-            "category": p.category.lower() if isinstance(p.category, str) else str(p.category),
+            "category": p.category.title() if isinstance(p.category, str) else str(p.category),
             "visitDurationHours": p.visit_duration_hours,
+            "entryFee": p.entry_fee,
+            "safetyScore": p.safety_score_base,
             "crowdScore": p.crowd_estimate.value,
             "recommendationScore": 90 - i,
-            "imageUrl": place_images[i].image_url if place_images[i] else None
+            "imageUrl": photo_urls[i],
+            "lat": p.coordinates[0],
+            "lng": p.coordinates[1]
         })
     return result
 
@@ -114,22 +160,41 @@ async def get_food(destination: str):
         start_date=datetime.now(), end_date=datetime.now() + timedelta(days=3),
         total_budget=50000
     )
-    places = await asyncio.to_thread(rank_food, destination, trip, Weather.SUNNY)
-    
-    from services.image_service import get_best_place_image
-    image_tasks = [get_best_place_image(f"{p.name} {destination} food") for p in places]
-    place_images = await asyncio.gather(*image_tasks)
+    places = await rank_food(destination, trip, Weather.SUNNY)
     
     result = []
+    from services.google_places_api import get_google_photo_url, fetch_google_place_details_photo, fetch_wikipedia_image, fetch_foursquare_image
+
+    PLACEHOLDER = "/placeholder-place.svg"
+
+    async def _resolve_photo(p):
+        ta_image = await fetch_foursquare_image(p.name, p.coordinates[0], p.coordinates[1])
+        if ta_image:
+            return ta_image
+        wiki = await fetch_wikipedia_image(p.name + " " + destination)
+        if wiki:
+            return wiki
+        return PLACEHOLDER
+
+    try:
+        photo_urls = await asyncio.gather(*[_resolve_photo(p) for p in places])
+    except Exception as e:
+        print(f"[FoodPhoto] resolution failed: {type(e).__name__}: {e}")
+        photo_urls = [PLACEHOLDER] * len(places)
+
     for i, p in enumerate(places):
         result.append({
             "id": p.id,
             "name": p.name,
-            "category": p.category.lower() if isinstance(p.category, str) else str(p.category),
+            "category": p.category.title() if isinstance(p.category, str) else str(p.category),
             "visitDurationHours": p.visit_duration_hours,
+            "entryFee": p.entry_fee,
+            "safetyScore": p.safety_score_base,
             "crowdScore": p.crowd_estimate.value,
             "recommendationScore": 90 - i,
-            "imageUrl": place_images[i].image_url if place_images[i] else None
+            "imageUrl": photo_urls[i],
+            "lat": p.coordinates[0],
+            "lng": p.coordinates[1]
         })
     return result
 
@@ -138,6 +203,7 @@ from services.live_places_api import fetch_live_reviews
 @app.get("/api/places/reviews")
 async def get_place_reviews(location_id: str):
     return await asyncio.to_thread(fetch_live_reviews, location_id)
+
 
 @app.get("/api/hotels")
 async def get_hotels(destination: str):
@@ -150,16 +216,47 @@ async def get_hotels(destination: str):
     hotels = await rank_hotels(destination, trip)
     
     result = []
+    from services.google_places_api import get_google_photo_url, fetch_google_place_details_photo, fetch_wikipedia_image, fetch_foursquare_image
+
+    # Placeholder served from public/ — no external request
+    PLACEHOLDER = "/placeholder-place.svg"
+
+    async def _resolve_photo(h):
+        ta_image = await fetch_foursquare_image(h.name, h.coordinates[0], h.coordinates[1])
+        if ta_image:
+            return ta_image
+        wiki = await fetch_wikipedia_image(h.name + " " + destination)
+        if wiki:
+            return wiki
+        return PLACEHOLDER
+
+    try:
+        photo_urls = await asyncio.gather(*[_resolve_photo(h) for h in hotels])
+    except Exception as e:
+        print(f"[HotelPhoto] resolution failed: {type(e).__name__}: {e}")
+        photo_urls = [PLACEHOLDER] * len(hotels)
+
     for i, h in enumerate(hotels):
+        maps_url = (
+            f"https://www.google.com/maps/search/?api=1"
+            f"&query={h.coordinates[0]},{h.coordinates[1]}"
+            f"&query_place_id={h.id}"
+        )
         result.append({
             "id": h.id,
             "name": h.name,
+            "address": getattr(h, "address", None),
+            "coordinates": h.coordinates,
             "pricePerNight": h.price_per_night,
             "distanceToCluster": 2.5,
             "safetyScore": h.safety_score,
             "comfortScore": h.comfort_score,
             "recommendationScore": 90 - i,
-            "rating": h.rating
+            "rating": h.rating,
+            "imageUrl": photo_urls[i],
+            "mapsUrl": maps_url,
+            "lat": h.coordinates[0],
+            "lng": h.coordinates[1]
         })
     return result
 
@@ -174,13 +271,6 @@ async def get_recommendations(preferences: dict):
     
     return await asyncio.to_thread(get_ai_recommendations, passengers, total_budget, days, preference)
 
-from fastapi.responses import JSONResponse
-
-@app.get("/api/image")
-async def get_place_image(q: str):
-    from services.image_service import get_best_place_image
-    img = await get_best_place_image(q)
-    return {"url": img.image_url if img else None}
 
 import requests
 from typing import List, Dict, Any

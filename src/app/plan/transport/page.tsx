@@ -287,7 +287,7 @@ export default function TransportPage() {
         >
           <div>
             <h1 className="text-3xl font-bold mb-2">Transport Options</h1>
-            <p className="text-muted-foreground">Select how everyone is getting to <span className="font-semibold text-foreground cursor-pointer hover:text-primary transition-colors" onClick={() => setStationBoardOpen(true)}>{trip.destination || 'the destination'}</span>.</p>
+            <p className="text-muted-foreground">Select how everyone is getting to <span className="font-semibold text-foreground">{trip.destination || 'the destination'}</span>.</p>
           </div>
         </motion.div>
 

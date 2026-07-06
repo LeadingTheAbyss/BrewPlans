@@ -14,7 +14,8 @@ class Passenger(BaseModel):
     mobility_constraints: bool = False
 
 class Place(BaseModel):
-    id: str
+    id: str  # Google Place ID (ChIJ...)
+    photo_name: Optional[str] = None  # Google photo reference (places/.../photos/...)
     name: str
     category: str
     coordinates: Tuple[float, float]
@@ -28,8 +29,10 @@ class Place(BaseModel):
     bad_weather_types: List[Weather] = []
 
 class Hotel(BaseModel):
-    id: str
+    id: str  # Google Place ID (ChIJ...)
+    photo_name: Optional[str] = None  # Google photo reference (places/.../photos/...)
     name: str
+    address: Optional[str] = None  # Google formattedAddress
     coordinates: Tuple[float, float]
     price_per_night: float
     comfort_score: int

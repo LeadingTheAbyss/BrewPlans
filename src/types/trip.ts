@@ -53,17 +53,24 @@ export type Place = {
   weatherScore: number;
   crowdScore: number;
   recommendationScore: number;
+  imageUrl?: string;
+  lat?: number;
+  lng?: number;
 };
 
 export type Hotel = {
   id: string;
   name: string;
+  coordinates: [number, number];
   pricePerNight: number;
   distanceToCluster: number;
   safetyScore: number;
   comfortScore: number;
   recommendationScore: number;
   rating: number;
+  imageUrl?: string;
+  lat?: number;
+  lng?: number;
 };
 
 export type ItineraryDay = {

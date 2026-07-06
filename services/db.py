@@ -14,4 +14,4 @@ async def get_db_connection():
         db_url = db_url.replace("&channel_binding=require", "")
         db_url = db_url.replace("?channel_binding=require", "")
         
-    return await asyncpg.connect(db_url)
+    return await asyncpg.connect(db_url, timeout=5.0)

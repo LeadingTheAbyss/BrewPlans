@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
-import WikiImage from '@/components/WikiImage';
 
 function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected }: {
   place: Place;
@@ -24,6 +23,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
   isSelected: boolean;
 }) {
   const [activeTab, setActiveTab] = useState('Overview');
+  const [viewMode, setViewMode] = useState<'photo' | 'streetview'>('photo');
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
 
@@ -93,12 +93,39 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
 
         {/* Hero Image */}
         <div className="relative h-64 w-full shrink-0 bg-zinc-800">
-          <WikiImage
-            placeName={place.name}
-            destination={destination}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent" />
+          {/* Toggle Button */}
+          {place.lat && place.lng && (
+            <div className="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md rounded-full flex overflow-hidden p-1 border border-white/10">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setViewMode('photo'); }} 
+                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${viewMode === 'photo' ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+              >Photo</button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setViewMode('streetview'); }} 
+                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${viewMode === 'streetview' ? 'bg-emerald-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+              >Street Walk</button>
+            </div>
+          )}
+
+          {viewMode === 'streetview' && place.lat && place.lng ? (
+            <iframe 
+              width="100%" 
+              height="100%" 
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY}&location=${place.lat},${place.lng}&heading=210&pitch=10&fov=35`}
+            ></iframe>
+          ) : place.imageUrl ? (
+            <img src={place.imageUrl} alt={place.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 gap-2">
+              <ImageOff size={32} />
+              <span className="text-sm font-medium">No Image</span>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent pointer-events-none" />
           {/* Category pill overlaid on image */}
           <div className="absolute bottom-4 left-4">
             <span className="bg-blue-600/80 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -401,11 +428,13 @@ export default function PlacesPage() {
                 >
                   {/* Image */}
                   <div className="relative h-48 w-full overflow-hidden shrink-0 bg-zinc-800">
-                    <WikiImage
-                      placeName={place.name}
-                      destination={trip.destination}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    {place.imageUrl ? (
+                      <img src={place.imageUrl} alt={place.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                        <ImageOff size={24} />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
 
                     {/* Category badge */}
@@ -474,10 +503,10 @@ export default function PlacesPage() {
             ← Back to Transport
           </button>
           <button
-            onClick={() => router.push('/plan/hotels')}
+            onClick={() => router.push('/plan/food')}
             className="bg-blue-600 hover:bg-blue-500 text-white px-7 py-3.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-900/20 transition-transform hover:-translate-y-0.5 text-sm"
           >
-            Find Hotels <ArrowRight size={18} />
+            Find Food <ArrowRight size={18} />
           </button>
         </div>
       </div>

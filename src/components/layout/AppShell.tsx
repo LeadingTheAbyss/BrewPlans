@@ -150,7 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* API Limit Warning Notification */}
-        {user && user.apiCalls >= 40 && !isNotificationDismissed && (
+        {user && !user.isAdmin && user.apiCalls >= 40 && !isNotificationDismissed && (
           <div className="absolute bottom-8 left-8 w-72 bg-[#111] border border-red-900/50 rounded-2xl shadow-2xl p-4 z-50">
             <button
               onClick={() => setIsNotificationDismissed(true)}

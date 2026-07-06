@@ -5,17 +5,19 @@ import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { Hotel } from '@/types/trip';
 import { api } from '@/lib/api';
-import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { StreetWalkModal } from '@/components/StreetWalkModal';
 
 export default function HotelsPage() {
   const router = useRouter();
   const trip = useTripStore();
   const budget = useBudgetStore();
-  
+
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'best' | 'closest' | 'budget'>('best');
+  const [activeStreetWalk, setActiveStreetWalk] = useState<Hotel | null>(null);
 
   // Calculate nights
   const calculateNights = () => {
@@ -23,7 +25,7 @@ export default function HotelsPage() {
     const start = new Date(trip.startDate);
     const end = new Date(trip.endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 1;
   };
 
@@ -41,19 +43,27 @@ export default function HotelsPage() {
   }, [trip.destination]);
 
   const handleSelectHotel = (hotel: Hotel) => {
-    // Refund previous hotel if exists
-    if (trip.selectedHotel) {
-      budget.refundExpense('hotel', trip.selectedHotel.pricePerNight * trip.selectedHotel.nights);
+    // Toggle off if already selected
+    if (trip.selectedHotel?.id === hotel.id) {
+      budget.removeExpense('hotel', hotel.pricePerNight * nights);
+      trip.setHotel(null);
+      budget.recalcBudget();
+      return;
     }
 
-    const hotelWithNights = { ...hotel, nights };
+    // Remove old hotel cost if exists
+    if (trip.selectedHotel) {
+      budget.removeExpense('hotel', trip.selectedHotel.pricePerNight * nights);
+    }
+
+    const hotelWithNights = { ...hotel, nights: nights };
 
     // Set new hotel
     trip.setHotel(hotelWithNights);
-    
+
     // Charge new hotel
     budget.addExpense('hotel', hotel.pricePerNight * nights);
-    
+
     budget.recalcBudget();
   };
 
@@ -69,131 +79,159 @@ export default function HotelsPage() {
           </div>
         </div>
 
-      {loading ? (
-        <div className="p-12 text-center text-muted-foreground animate-pulse">
-          Clustering places and finding best hotels...
-        </div>
-      ) : hotels.length === 0 ? (
-        <div className="p-8 border-2 border-dashed border-border rounded-xl text-center text-muted-foreground">
-          No hotels found. Go back to Setup and enter a destination.
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="flex gap-2 text-sm">
-            <button 
-              onClick={() => setSortBy('best')}
-              className={`${sortBy === 'best' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
-            >
-              Best Overall
-            </button>
-            <button 
-              onClick={() => setSortBy('closest')}
-              className={`${sortBy === 'closest' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
-            >
-              Closest to Places
-            </button>
-            <button 
-              onClick={() => setSortBy('budget')}
-              className={`${sortBy === 'budget' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
-            >
-              Budget
-            </button>
+        {loading ? (
+          <div className="p-12 text-center text-muted-foreground animate-pulse">
+            Clustering places and finding best hotels...
           </div>
+        ) : hotels.length === 0 ? (
+          <div className="p-8 border-2 border-dashed border-border rounded-xl text-center text-muted-foreground">
+            No hotels found. Go back to Setup and enter a destination.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex gap-2 text-sm">
+              <button
+                onClick={() => setSortBy('best')}
+                className={`${sortBy === 'best' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
+              >
+                Best Overall
+              </button>
+              <button
+                onClick={() => setSortBy('closest')}
+                className={`${sortBy === 'closest' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
+              >
+                Closest to Places
+              </button>
+              <button
+                onClick={() => setSortBy('budget')}
+                className={`${sortBy === 'budget' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
+              >
+                Budget
+              </button>
+            </div>
 
-          <div className="space-y-4">
-            {(() => {
-              let sortedHotels = [...hotels];
-              if (sortBy === 'closest') {
-                sortedHotels.sort((a, b) => a.distanceToCluster - b.distanceToCluster);
-              } else if (sortBy === 'budget') {
-                sortedHotels.sort((a, b) => a.pricePerNight - b.pricePerNight);
-              } else {
-                sortedHotels.sort((a, b) => b.rating - a.rating);
-              }
+            <div className="space-y-4">
+              {(() => {
+                let sortedHotels = [...hotels];
+                if (sortBy === 'closest') {
+                  sortedHotels.sort((a, b) => a.distanceToCluster - b.distanceToCluster);
+                } else if (sortBy === 'budget') {
+                  sortedHotels.sort((a, b) => a.pricePerNight - b.pricePerNight);
+                } else {
+                  sortedHotels.sort((a, b) => b.rating - a.rating);
+                }
 
-              return sortedHotels.map((hotel) => {
-              const isSelected = trip.selectedHotel?.id === hotel.id;
-              const totalCost = hotel.pricePerNight * nights;
-              const remainingAfter = budget.remaining + (isSelected ? 0 : (trip.selectedHotel ? (trip.selectedHotel.pricePerNight * nights) : 0)) - totalCost;
+                return sortedHotels.map((hotel) => {
+                  const isSelected = trip.selectedHotel?.id === hotel.id;
+                  const totalCost = hotel.pricePerNight * nights;
+                  const remainingAfter = budget.remaining + (isSelected ? 0 : (trip.selectedHotel ? (trip.selectedHotel.pricePerNight * nights) : 0)) - totalCost;
 
-              return (
-                  <div 
-                    key={hotel.id}
-                    onClick={() => handleSelectHotel(hotel)}
-                    className={`
-                      relative flex items-center justify-between p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:-translate-y-1
-                      ${isSelected 
-                        ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20' 
-                        : 'border-border bg-card hover:border-primary/50 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)]'
-                      }
-                    `}
-                  >
-                    <div className="flex items-center gap-6">
-                      {isSelected ? (
-                        <CheckCircle2 className="text-primary w-8 h-8 shrink-0" />
-                      ) : (
-                        <Circle className="text-muted-foreground/40 w-8 h-8 shrink-0" />
+                  return (
+                    <div
+                      key={hotel.id}
+                      onClick={() => handleSelectHotel(hotel)}
+                      className={`
+                        relative flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-300
+                        ${isSelected
+                          ? 'border-primary bg-primary/5 shadow-[0_0_0_1px_currentColor] text-primary'
+                          : 'border-border/60 bg-card hover:border-foreground/20 hover:bg-muted/30'
+                        }
+                      `}
+                    >
+                      {isSelected && (
+                        <div className="absolute -top-2.5 -right-2.5 bg-background rounded-full p-0.5 shadow-sm">
+                          <CheckCircle2 className="text-primary w-6 h-6 fill-background" />
+                        </div>
                       )}
 
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground leading-tight mb-1">
-                          {hotel.name} <span className="text-sm font-bold text-muted-foreground ml-2">★ {hotel.rating}</span>
-                        </h3>
-                        
-                        <div className="flex flex-wrap items-center gap-4 text-sm mt-2">
-                          <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                            <MapPin size={16} className="text-muted-foreground/70" /> 
-                            {hotel.distanceToCluster}km from your places
-                          </span>
-                          <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                            <ShieldCheck size={16} className={hotel.safetyScore >= 8 ? "text-green-500" : "text-yellow-500"} /> 
-                            Safety: {hotel.safetyScore}/10
-                          </span>
+                      <div className="flex items-center gap-5 w-full">
+                        {/* Thumbnail */}
+                        <div className="w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br from-muted to-muted/50 border border-border/50 flex items-center justify-center overflow-hidden">
+                          {hotel.imageUrl ? (
+                            <img src={hotel.imageUrl} alt={hotel.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="text-muted-foreground/30 font-medium text-[10px] uppercase tracking-widest rotate-[-45deg]">Hotel</div>
+                          )}
                         </div>
 
-                        {/* Warnings if budget tight */}
-                        {remainingAfter < 0 && !isSelected && (
-                          <div className="mt-3 text-xs font-semibold text-destructive flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded inline-flex">
-                            <AlertCircle size={14} /> Exceeds remaining budget by ₹{Math.abs(remainingAfter).toLocaleString()}
+                        {/* Middle Info */}
+                        <div className="flex-1">
+                          <h3 className={`text-lg font-semibold leading-tight mb-1.5 flex items-center gap-2 ${isSelected ? 'text-foreground' : 'text-foreground'}`}>
+                            {hotel.name}
+                            <span className="text-sm font-semibold text-foreground inline-flex items-center gap-1">
+                              <Star size={14} className="fill-yellow-500 text-yellow-500" /> {hotel.rating}
+                            </span>
+                          </h3>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
+                              <MapPin size={14} className="text-foreground/50" />
+                              {hotel.distanceToCluster} km to places
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveStreetWalk(hotel);
+                              }}
+                              className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
+                            >
+                              <Eye size={14} /> Use Street Walk
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="text-right shrink-0 ml-4">
-                      <div className="text-muted-foreground text-sm mb-1 font-medium">
-                        ₹{hotel.pricePerNight.toLocaleString()} / night
+                          {/* Warnings if budget tight */}
+                          {remainingAfter < 0 && !isSelected && (
+                            <div className="mt-2 text-xs font-medium text-red-500/90 flex items-center gap-1 bg-red-500/10 px-2 py-1 rounded-md inline-flex w-max">
+                              <AlertCircle size={12} /> Exceeds budget by ₹{Math.abs(remainingAfter).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-2xl font-black text-foreground">
-                        ₹{totalCost.toLocaleString()}
+
+                      {/* Right Side Pricing */}
+                      <div className="text-right shrink-0 ml-4 flex flex-col items-end justify-center">
+                        <div className="text-xl font-semibold text-foreground tracking-tight mb-0.5">
+                          ₹{totalCost.toLocaleString()}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground">
+                          ₹{hotel.pricePerNight.toLocaleString()}/night • {nights} {nights === 1 ? 'night' : 'nights'}
+                        </div>
                       </div>
-                      <div className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-wider">
-                      For {nights} Nights
                     </div>
-                  </div>
-                </div>
-              );
-            })})()}
+                  );
+                })
+              })()}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* CONTINUATION */}
-      <div className="flex justify-between items-center pt-8 border-t border-border">
-        <button 
-          onClick={() => router.push('/plan/places')}
-          className="text-muted-foreground hover:text-foreground font-medium transition-colors"
-        >
-          ← Back to Places
-        </button>
-        <button 
-          onClick={() => router.push('/plan/itinerary')}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1"
-        >
-          Build Itinerary <ArrowRight size={20} />
-        </button>
+        {/* CONTINUATION */}
+        <div className="flex justify-between items-center pt-8 border-t border-border">
+          <button
+            onClick={() => router.push('/plan/places')}
+            className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+          >
+            ← Back to Places
+          </button>
+          <button
+            onClick={() => router.push('/plan/itinerary')}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1"
+          >
+            Build Itinerary <ArrowRight size={20} />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {activeStreetWalk && (
+        <StreetWalkModal
+          isOpen={!!activeStreetWalk}
+          onClose={() => setActiveStreetWalk(null)}
+          lat={activeStreetWalk.coordinates?.[0] ?? 26.8467}
+          lng={activeStreetWalk.coordinates?.[1] ?? 80.9462}
+          mode="dynamic"
+        />
+      )}
     </div>
   );
 }

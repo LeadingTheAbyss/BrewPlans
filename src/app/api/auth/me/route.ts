@@ -20,7 +20,13 @@ export async function GET() {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
-    return NextResponse.json({ user: session.user });
+    const ADMIN_EMAILS = [
+      'kartikeykumarsingh27jun2006@gmail.com',
+      'growwayushh@gmail.com',
+      'aawasthiapoorv@gmail.com'
+    ];
+    const isAdmin = ADMIN_EMAILS.includes(session.user.email);
+    return NextResponse.json({ user: { ...session.user, isAdmin } });
   } catch (error) {
     console.error('Me endpoint error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
