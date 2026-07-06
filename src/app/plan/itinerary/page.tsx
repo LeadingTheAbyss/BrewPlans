@@ -65,7 +65,7 @@ function SortablePlaceCard({ place, isOverlay = false }: { place: Place, isOverl
         <div className="text-[11px] text-muted-foreground font-medium flex items-center gap-2 mt-1.5">
           <span className="text-primary/90 uppercase tracking-wider font-bold">{place.category}</span>
           <span className="w-1 h-1 rounded-full bg-border"></span>
-          <span className="flex items-center gap-1.5"><Clock size={11} className="text-muted-foreground/70"/> {place.visitDurationHours + place.travelTimeHours} hrs total</span>
+          <span className="flex items-center gap-1.5"><Clock size={11} className="text-muted-foreground/70"/> {(place.visitDurationHours || 1) + (place.travelTimeHours || 0)} hrs total</span>
         </div>
       </div>
       {/* Quick Quick action dots could go here, but Dnd-Kit handles the whole item. */}
@@ -86,22 +86,22 @@ export default function ItineraryPage() {
     setIsMounted(true);
   }, []);
 
-  // Initialize days on mount
+  // Initialize days on mount or if dates change
   useEffect(() => {
-    if (itinerary.days.length === 0) {
-      const startDateStr = trip.startDate || new Date().toISOString().split('T')[0];
-      const start = new Date(startDateStr);
-      
-      let nights = 3; // Default 3 days if no end date
-      if (trip.startDate && trip.endDate) {
-        const end = new Date(trip.endDate);
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      }
-      
-      if (nights === 0) nights = 1; // Ensure at least 1 day
+    const startDateStr = trip.startDate || new Date().toISOString().split('T')[0];
+    const start = new Date(startDateStr);
+    
+    let totalDays = 3; // Default 3 days if no end date
+    if (trip.startDate && trip.endDate) {
+      const end = new Date(trip.endDate);
+      const diffTime = end.getTime() - start.getTime();
+      totalDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    }
+    
+    if (isNaN(totalDays)) totalDays = 1;
 
-      itinerary.initializeDays(nights, startDateStr);
+    if (itinerary.days.length === 0 || itinerary.days.length !== totalDays) {
+      itinerary.initializeDays(totalDays, startDateStr);
     }
   }, [trip.startDate, trip.endDate, itinerary.days.length]);
 

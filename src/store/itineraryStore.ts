@@ -114,8 +114,8 @@ export const useItineraryStore = create<ItineraryState>()(
     let totalCost = 0;
     
     placesInDay.forEach(p => {
-      totalTime += (p.visitDurationHours + p.travelTimeHours);
-      totalCost += p.entryFee;
+      totalTime += ((p.visitDurationHours || 1) + (p.travelTimeHours || 0));
+      totalCost += p.entryFee || 0;
     });
 
     const warnings: string[] = [];
@@ -139,7 +139,7 @@ export const useItineraryStore = create<ItineraryState>()(
 
     for (const place of unassignedPlaces) {
       let placed = false;
-      const placeTime = place.visitDurationHours + place.travelTimeHours;
+      const placeTime = (place.visitDurationHours || 1) + (place.travelTimeHours || 0);
       
       for (let i = currentDayIndex; i < newDays.length; i++) {
         const day = newDays[i];

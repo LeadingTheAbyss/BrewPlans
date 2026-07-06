@@ -100,6 +100,12 @@ export function ItineraryMap({ days, places, apiKey }: ItineraryMapProps) {
               strokeColor: color,
               strokeOpacity: 0.8,
               strokeWeight: 4,
+              icons: [{
+                // @ts-ignore
+                icon: { path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: color, fillColor: color, fillOpacity: 1 },
+                offset: '50px',
+                repeat: '100px'
+              }],
               map: mapInstance,
             });
           }
@@ -125,5 +131,26 @@ export function ItineraryMap({ days, places, apiKey }: ItineraryMapProps) {
     return <div className="w-full h-full bg-zinc-100 flex items-center justify-center rounded-2xl text-zinc-500 font-medium border border-zinc-200">Failed to load Map</div>;
   }
 
-  return <div ref={mapRef} className="w-full h-full rounded-2xl shadow-sm overflow-hidden" />;
+  return (
+    <div className="relative w-full h-full rounded-2xl shadow-sm overflow-hidden">
+      <div ref={mapRef} className="absolute inset-0 w-full h-full" />
+      
+      {/* Map Legend */}
+      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-xl border border-zinc-200 shadow-xl z-10 flex flex-col gap-2.5 min-w-[140px] pointer-events-none">
+        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-200 pb-2">Map Legend</h4>
+        <div className="space-y-2">
+          {days.map((day, dayIndex) => {
+            if (day.placeIds.length === 0) return null;
+            const color = DAY_COLORS[dayIndex % DAY_COLORS.length];
+            return (
+              <div key={day.dayNumber} className="flex items-center gap-2.5">
+                <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: color }} />
+                <span className="text-xs font-semibold text-zinc-700">Day {day.dayNumber}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
