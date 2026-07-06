@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -16,8 +14,6 @@
 # next.js
 /.next/
 /out/
-
-# production
 /build
 
 # misc
@@ -30,7 +26,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
@@ -40,56 +36,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Byte-compiled / optimized / DLL files
+# Python / Byte-compiled files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
-build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
+build/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.snyk
-.hypothesis/
-.pytest_cache/
-cover/
 
 # Environments
 .env
@@ -97,26 +55,26 @@ cover/
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# VS Code
+# VS Code & IDEs
 .vscode/
-
-# PyCharm / IntelliJ
 .idea/
 
-# Mac OS
-.DS_Store
+# Agent & AI Folders
+.cursor/
+.gemini/
+.impeccable/
 
-# Custom
-overpass_debug.log
-out.json
+# Custom & Data
+data/
 scratch/
 test_*.py
+overpass_debug.log
+out.json
+*.log
 
 # API Keys and Secrets
 *.key

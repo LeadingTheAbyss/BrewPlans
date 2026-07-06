@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
+import { useCacheStore } from '@/store/cacheStore';
 import { Hotel } from '@/types/trip';
 import { api } from '@/lib/api';
 import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye } from 'lucide-react';
@@ -34,6 +35,13 @@ export default function HotelsPage() {
   useEffect(() => {
     const fetchHotels = async () => {
       setLoading(true);
+      const cached = useCacheStore.getState().getCache('hotels');
+      if (cached) {
+        setHotels(cached);
+        setLoading(false);
+        return;
+      }
+
       const data = await api.getHotels(trip.destination);
       setHotels(data);
       setLoading(false);

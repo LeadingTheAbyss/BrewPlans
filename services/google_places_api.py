@@ -36,7 +36,7 @@ PLACES_API_KEY = os.getenv("NEXT_PUBLIC_GOOGLE_PLACES_KEY")
 
 # ── Cache version ──────────────────────────────────────────────────────────────
 # Bump this when the schema of cached data changes to invalidate all old caches.
-CACHE_VERSION = "v11"
+CACHE_VERSION = "v12"
 
 # TTL constants
 REDIS_TTL_SECONDS = 60 * 60 * 24 * 30   # 30 days
@@ -169,7 +169,14 @@ def _rank(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return sorted(results, key=score, reverse=True)
 
 
-async def search_google_places(query: str, max_results: int = 30) -> List[Dict[str, Any]]:
+# Semaphore to prevent DB/Redis connection exhaustion from bursting
+_SEARCH_SEMAPHORE = asyncio.Semaphore(3)
+
+async def search_google_places(query: str, max_results: int = 30, check_only: bool = False) -> Optional[List[Dict[str, Any]]]:
+    async with _SEARCH_SEMAPHORE:
+        return await _search_google_places_impl(query, max_results, check_only)
+
+async def _search_google_places_impl(query: str, max_results: int = 30, check_only: bool = False) -> Optional[List[Dict[str, Any]]]:
     """
     Return up to `max_results` places for `query`.
 
@@ -214,6 +221,11 @@ async def search_google_places(query: str, max_results: int = 30) -> List[Dict[s
     except Exception as e:
         with open("debug_err.txt", "a") as f:
             f.write(f"[GooglePlaces] DB check exception: {e}\n")
+
+    if check_only:
+        with open("debug_err.txt", "a") as f:
+            f.write(f"[GooglePlaces] check_only=True, aborting API call for {query!r}\n")
+        return None
 
     # ── 3. Google Places API ──────────────────────────────────────────────────
     with open("debug_err.txt", "a") as f:
@@ -299,15 +311,15 @@ async def search_google_places(query: str, max_results: int = 30) -> List[Dict[s
 
 def get_google_photo_url(photo_name: str, max_width: int = 800) -> Optional[str]:
     """
-    Build the media URL for a Google Places photo.
+    Build the local proxy URL for a Google Places photo.
     photo_name looks like: places/PLACE_ID/photos/PHOTO_REFERENCE
     """
-    if not photo_name or not PLACES_API_KEY:
+    if not photo_name:
         return None
-    return (
-        f"https://places.googleapis.com/v1/{photo_name}/media"
-        f"?key={PLACES_API_KEY}&maxWidthPx={max_width}&skipHttpRedirect=false"
-    )
+    
+    # We now proxy the image through the Next.js backend to leverage Global Edge CDN caching.
+    # This ensures $0 cost on repeat visits for the same image and hides the API key.
+    return f"/api/image?name={photo_name}&maxWidth={max_width}"
 
 async def fetch_wikipedia_image(query: str) -> Optional[str]:
     """Fallback to Wikipedia for images if Google fails due to quotas."""

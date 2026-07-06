@@ -2,7 +2,7 @@ import os
 import httpx
 import time
 from collections import deque
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models.entities import TransportOption
@@ -114,7 +114,7 @@ async def get_station_code(city_name: str) -> str:
     return None
 
 
-async def search_live_trains(origin_city: str, dest_city: str, date: str) -> List[TransportOption]:
+async def search_live_trains(origin_city: str, dest_city: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
     print(f"\n[API Call] Fetching live trains (via IRCTC RapidAPI): {origin_city} -> {dest_city} on {date}...")
     
     # Strip any states from formatted names (e.g. "Lucknow, Uttar Pradesh" -> "Lucknow")
@@ -147,6 +147,9 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str) -> Lis
         print(f"[Warning] Train DB cache check failed: {e}")
     # --- End DB Cache Check ---
     
+    if check_only:
+        return None
+        
     origin_code = await get_station_code(clean_origin)
     dest_code = await get_station_code(clean_dest)
     

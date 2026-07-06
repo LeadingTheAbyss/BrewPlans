@@ -1,6 +1,6 @@
 import os
 import httpx
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models.entities import Hotel
@@ -15,7 +15,7 @@ def get_serpapi_key():
         raise ValueError("\n[ERROR] MISSING API KEY: Please put your SERPAPI_HOTELS_KEY in the .env file!")
     return key
 
-async def search_live_hotels(city: str, check_in_date: str = None, check_out_date: str = None) -> List[Hotel]:
+async def search_live_hotels(city: str, check_in_date: str = None, check_out_date: str = None, check_only: bool = False) -> Optional[List[Hotel]]:
     print(f"\n[API Call] Fetching live hotels (via SerpApi) for: {city}...")
     
     try:
@@ -59,6 +59,10 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
             print(f"[Warning] Hotel DB cache check failed: {e}")
         # --- End DB Cache Check ---
         
+        if check_only:
+            print(f"[HotelCache] check_only=True, cache miss for {city}, returning None")
+            return None
+
         params = {
             "engine": "google_hotels",
             "q": city,

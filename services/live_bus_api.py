@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 import random
 import os
@@ -12,7 +12,7 @@ import uuid
 # Configure basic logging for the pipeline  
 logging.basicConfig(level=logging.INFO)
 
-async def fetch_redbus_api(origin: str, destination: str, travel_date: str) -> List[dict]:
+async def fetch_redbus_api(origin: str, destination: str, travel_date: str, check_only: bool = False) -> List[dict]:
     """Strategy 1: Live redBus API via parse.bot"""
     logging.info("Attempting Strategy 1: Live redBus API via parse.bot")
     
@@ -30,6 +30,9 @@ async def fetch_redbus_api(origin: str, destination: str, travel_date: str) -> L
             ]
     except Exception as e:
         logging.warning(f"DB cache check failed: {e}")
+
+    if check_only:
+        return None
 
     api_key = os.environ.get("PARSE_API_KEY")
     if not api_key:
@@ -187,7 +190,7 @@ def validate_payload(data: List[dict]) -> bool:
             return False
     return True
 
-async def get_live_bus_data(origin: str, destination: str, travel_date: str) -> dict:
+async def get_live_bus_data(origin: str, destination: str, travel_date: str, check_only: bool = False) -> dict:
     """The Multi-Source Redundancy Pipeline."""
     scraping_pipeline = [
         fetch_redbus_api,       # Strategy 1 (Live redBus API via parse.bot)
@@ -199,7 +202,15 @@ async def get_live_bus_data(origin: str, destination: str, travel_date: str) -> 
     for scrape_strategy in scraping_pipeline:
         try:
             # Attempt to extract the 4 required fields
-            bus_listings = await scrape_strategy(origin, destination, travel_date)
+            if scrape_strategy.__name__ == 'fetch_redbus_api':
+                bus_listings = await scrape_strategy(origin, destination, travel_date, check_only=check_only)
+            else:
+                if check_only:
+                    continue
+                bus_listings = await scrape_strategy(origin, destination, travel_date)
+            
+            if bus_listings is None and check_only:
+                return {"status": "cache_miss"}
             
             if bus_listings and validate_payload(bus_listings):
                 logging.info(f"Successfully retrieved live data using {scrape_strategy.__name__}")
@@ -217,11 +228,15 @@ async def get_live_bus_data(origin: str, destination: str, travel_date: str) -> 
         "message": "All live scraping targets exhausted or blocked. Please retry."
     }
 
-async def search_live_buses(origin_city: str, dest_city: str, date: str) -> List[TransportOption]:
+async def search_live_buses(origin_city: str, dest_city: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
     """Adapter to convert the pipeline payload into the app's standard TransportOption format."""
     print(f"\n[API Call] Executing Multi-Source Redundancy Pipeline for Buses: {origin_city} -> {dest_city}")
     
-    pipeline_result = await get_live_bus_data(origin_city, dest_city, date)
+    pipeline_result = await get_live_bus_data(origin_city, dest_city, date, check_only=check_only)
+    
+    if pipeline_result.get("status") == "cache_miss":
+        return None
+        
     options = []
     
     if pipeline_result["status"] == "success":

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { useItineraryStore } from '@/store/itineraryStore';
+import { useCacheStore } from '@/store/cacheStore';
 import { Place } from '@/types/trip';
 import { api } from '@/lib/api';
 import {
@@ -313,6 +314,13 @@ export default function FoodPage() {
   useEffect(() => {
     const fetchFood = async () => {
       setLoading(true);
+      const cached = useCacheStore.getState().getCache('food');
+      if (cached) {
+        setPlaces(cached);
+        setLoading(false);
+        return;
+      }
+      
       const data = await api.getFood(trip.destination);
       setPlaces(data);
       setLoading(false);

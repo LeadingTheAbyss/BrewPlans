@@ -8,7 +8,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import ModernDateRangePicker from '@/components/ModernDateRangePicker';
-import { Plane, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, ArrowRight } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useCacheStore } from '@/store/cacheStore';
 import { motion } from 'framer-motion';
 
 const TRIP_STYLES = [
@@ -66,7 +68,6 @@ export default function TripSetupPage() {
       return;
     }
 
-    // Save remembered passengers to DB
     if (user) {
       const passengersToSave = validPassengers.filter(p => p.remember);
       if (passengersToSave.length > 0) {
@@ -79,6 +80,30 @@ export default function TripSetupPage() {
         ));
       }
     }
+
+    // FIRE BACKGROUND CACHE CHECKS
+    const dest = trip.destination;
+    api.getPlaces(dest, true).then((res: any) => {
+      if (res && !res.status) useCacheStore.getState().setCache('places', res);
+    }).catch(console.error);
+
+    api.getFood(dest, true).then((res: any) => {
+      if (res && !res.status) useCacheStore.getState().setCache('food', res);
+    }).catch(console.error);
+
+    api.getHotels(dest, undefined, true).then((res: any) => {
+      if (res && !res.status) useCacheStore.getState().setCache('hotels', res);
+    }).catch(console.error);
+    
+    validPassengers.forEach(pax => {
+      if (!pax.city) return;
+      ['flight', 'train', 'bus', 'cab'].forEach(mode => {
+        const key = `${pax.id}-${mode}`;
+        api.getTransportOptions(pax.city, dest, mode, true).then((res: any) => {
+          if (res && !res.status) useCacheStore.getState().setCache(key, res);
+        }).catch(console.error);
+      });
+    });
 
     router.push('/plan/transport');
   };

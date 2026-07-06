@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 from models.entities import Passenger, TransportOption, Place, Hotel
 from models.enums import TransportType, Weather, CrowdLevel
@@ -11,7 +11,7 @@ from services.live_flights_api import search_live_flights
 from services.live_trains_api import search_live_trains
 from services.osrm_cab_api import search_live_cabs
 
-async def rank_transport(source: str, dest: str, date: datetime, passengers: List[Passenger], mode: str = "all") -> List[TransportOption]:
+async def rank_transport(source: str, dest: str, date: datetime, passengers: List[Passenger], mode: str = "all", check_only: bool = False) -> Optional[List[TransportOption]]:
     import asyncio
     from services.dgca_pdf_parser import CITY_TO_IATA
     origin_iata = CITY_TO_IATA.get(source.upper())
@@ -21,69 +21,47 @@ async def rank_transport(source: str, dest: str, date: datetime, passengers: Lis
 
     async def fetch_flights_safely():
         if origin_iata and dest_iata:
-            return await search_live_flights(origin_iata, dest_iata, date.strftime("%Y-%m-%d"))
-        return []
+            res = await search_live_flights(origin_iata, dest_iata, date.strftime("%Y-%m-%d"), check_only=check_only)
+            return res if res is not None else None
+        return [] if not check_only else None
 
     async def empty_result():
-        return []
+        return [] if not check_only else None
 
     t_flight = fetch_flights_safely() if mode in ["all", "flight"] else empty_result()
-    t_train = search_live_trains(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "train"] else empty_result()
+    t_train = search_live_trains(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "train"] else empty_result()
+    # Cabs are local math, they never check_only the DB because they are instantaneous and free. So they always return results.
     t_cab = search_live_cabs(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "cab"] else empty_result()
-    t_bus = search_live_buses(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "bus"] else empty_result()
+    t_bus = search_live_buses(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "bus"] else empty_result()
 
     results = await asyncio.gather(t_flight, t_train, t_cab, t_bus)
     
-    live_flights, live_trains, live_cabs, live_buses = results
-    transports = live_flights + live_trains + live_cabs + live_buses
-    
-    def transport_score(t: TransportOption):
-        score = 0
-        has_elderly = any(p.age > 60 for p in passengers)
-        if has_elderly and t.type == TransportType.BUS:
-            score -= 20 # Heavily penalize buses for elderly
-        score += (20 - t.duration_hours) * 2
-        score += (10000 - t.price) / 1000
-        score += t.safety_score * 2
-        return score
-from typing import List
-from datetime import datetime, timedelta
-from models.entities import Passenger, TransportOption, Place, Hotel
-from models.enums import TransportType, Weather, CrowdLevel
-from models.state import TripState
-from data.mock_db import MOCK_PLACES_DB, MOCK_HOTEL_DB
-from engines.safety_engine import calculate_safety_score
-from services.live_places_api import search_live_places
-from services.live_hotels_api import search_live_hotels
-from services.live_flights_api import search_live_flights
-from services.live_trains_api import search_live_trains
-from services.osrm_cab_api import search_live_cabs
-
-async def rank_transport(source: str, dest: str, date: datetime, passengers: List[Passenger], mode: str = "all") -> List[TransportOption]:
-    import asyncio
-    from services.dgca_pdf_parser import CITY_TO_IATA
-    origin_iata = CITY_TO_IATA.get(source.upper())
-    dest_iata = CITY_TO_IATA.get(dest.upper())
-    
-    from services.live_bus_api import search_live_buses
-
-    async def fetch_flights_safely():
-        if origin_iata and dest_iata:
-            return await search_live_flights(origin_iata, dest_iata, date.strftime("%Y-%m-%d"))
-        return []
-
-    async def empty_result():
-        return []
-
-    t_flight = fetch_flights_safely() if mode in ["all", "flight"] else empty_result()
-    t_train = search_live_trains(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "train"] else empty_result()
-    t_cab = search_live_cabs(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "cab"] else empty_result()
-    t_bus = search_live_buses(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "bus"] else empty_result()
-
-    results = await asyncio.gather(t_flight, t_train, t_cab, t_bus)
-    
-    live_flights, live_trains, live_cabs, live_buses = results
-    transports = live_flights + live_trains + live_cabs + live_buses
+    if check_only:
+        # If we are checking all modes and ANY of the needed ones missed the cache (returned None), we return None.
+        # Wait, the user clicks individual modes now (`mode="cab"`, `mode="flight"`). 
+        # So we just return the result for that specific mode!
+        # Actually, in check_only mode, if the mode they requested returns None, we return None.
+        valid_results = [r for r in results if r is not None]
+        if not valid_results and mode != "all":
+            # If the mode they requested was cache missed, return None. 
+            # Note: Cabs will always return a list, never None.
+            return None
+            
+        transports = []
+        for r in valid_results:
+            transports.extend(r)
+        
+        # If mode="all" and we missed cache for flight/train/bus, should we return None?
+        # Let's just return what we have in cache if any, or None if completely empty. 
+        # Actually, we don't fetch mode="all" from frontend anymore, we fetch them individually!
+        if mode == "all" and None in [results[0], results[1], results[3]]: # flight, train, bus
+             return None
+             
+        if not transports and mode != "cab":
+            return None
+    else:
+        live_flights, live_trains, live_cabs, live_buses = results
+        transports = (live_flights or []) + (live_trains or []) + (live_cabs or []) + (live_buses or [])
     
     def transport_score(t: TransportOption):
         score = 0
@@ -100,11 +78,14 @@ async def rank_transport(source: str, dest: str, date: datetime, passengers: Lis
 
 from services.google_places_api import search_google_places
 
-async def rank_places(city: str, trip: TripState, weather: Weather) -> List[Place]:
+async def rank_places(city: str, trip: TripState, weather: Weather, check_only: bool = False) -> Optional[List[Place]]:
     query = f"Top tourist attractions in {city}"
     # Fetch exactly 30 places
-    raw_places = await search_google_places(query, max_results=30)
+    raw_places = await search_google_places(query, max_results=30, check_only=check_only)
     
+    if raw_places is None:
+        return None # Cache miss
+
     places = []
     if raw_places:
         print(f"[Debug] First raw place: {raw_places[0]}")
@@ -138,11 +119,14 @@ async def rank_places(city: str, trip: TripState, weather: Weather) -> List[Plac
         )
     return places
 
-async def rank_food(city: str, trip: TripState, weather: Weather) -> List[Place]:
+async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bool = False) -> Optional[List[Place]]:
     query = f"Best popular restaurants in {city}"
     # Fetch exactly 15 restaurants
-    raw_places = await search_google_places(query, max_results=15)
+    raw_places = await search_google_places(query, max_results=15, check_only=check_only)
     
+    if raw_places is None:
+        return None
+
     places = []
     for i, p in enumerate(raw_places):
         location = p.get("location", {})
@@ -174,10 +158,10 @@ async def rank_food(city: str, trip: TripState, weather: Weather) -> List[Place]
         )
     return places
 
-async def rank_hotels(city: str, trip: TripState) -> List[Hotel]:
+async def rank_hotels(city: str, trip: TripState, check_only: bool = False) -> Optional[List[Hotel]]:
     # Use real live hotels api
     check_in = trip.start_date.strftime("%Y-%m-%d") if trip and trip.start_date else None
     check_out = trip.end_date.strftime("%Y-%m-%d") if trip and trip.end_date else None
     
-    hotels = await search_live_hotels(city, check_in_date=check_in, check_out_date=check_out)
+    hotels = await search_live_hotels(city, check_in_date=check_in, check_out_date=check_out, check_only=check_only)
     return hotels

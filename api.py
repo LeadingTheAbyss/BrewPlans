@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 
@@ -41,6 +41,51 @@ async def debug_key():
         "OS_GETENV": os.getenv("NEXT_PUBLIC_GOOGLE_PLACES_KEY")
     }
 
+@app.post("/api/debug-email")
+async def debug_email(req: Request):
+    return {"success": True, "message": "Simulated sending email"}
+
+@app.get("/api/clear-cache")
+async def clear_cache():
+    import os, httpx
+    from services.db import get_db_connection
+    results = []
+    
+    # 1. Clear Redis
+    UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL")
+    UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    f"{UPSTASH_URL}/pipeline",
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                    json=[["FLUSHDB"]]
+                )
+            results.append("Redis FLUSHDB triggered")
+        except Exception as e:
+            results.append(f"Redis error: {e}")
+            
+    # 2. Clear Postgres Tables
+    try:
+        conn = await get_db_connection()
+        try:
+            await conn.execute('TRUNCATE TABLE "PlaceCache"')
+            results.append("Truncated PlaceCache")
+        except Exception as e:
+            results.append(f"PlaceCache Error: {e}")
+            
+        try:
+            await conn.execute('TRUNCATE TABLE "Hotel"')
+            results.append("Truncated Hotel")
+        except Exception as e:
+            results.append(f"Hotel Error: {e}")
+        await conn.close()
+    except Exception as e:
+        results.append(f"DB error: {e}")
+        
+    return {"success": True, "results": results}
+
 @app.get("/api/debug-places")
 async def debug_places():
     from services.google_places_api import search_google_places
@@ -62,13 +107,15 @@ async def test_import():
         return {"error": str(e), "trace": traceback.format_exc()}
 
 @app.get("/api/transport")
-async def get_transport(source: str, destination: str, mode: str = "all"):
+async def get_transport(source: str, destination: str, mode: str = "all", check_only: bool = Query(False)):
     # Dummy passenger to satisfy backend requirements
     p1 = Passenger(id="1", name="Dummy", age=25, gender="M", pincode="110001", city=source)
     date = datetime.now() + timedelta(days=10)
     
-    options = await rank_transport(source, destination, date, [p1], mode=mode)
-    
+    options = await rank_transport(source, destination, date, [p1], mode=mode, check_only=check_only)
+    if options is None:
+        return {"status": "cache_miss"}
+        
     result = []
     for i, o in enumerate(options):
         rec_score = 100 - (i * 5)
@@ -105,14 +152,16 @@ async def api_get_station_board(station_code: str):
     return await asyncio.to_thread(get_station_board, station_code)
 
 @app.get("/api/places")
-async def get_places(destination: str):
+async def get_places(destination: str, check_only: bool = Query(False)):
     trip = TripState(
         trip_id="T1", mode="direct", passengers=[],
         source_city="Delhi", destination_city=destination,
         start_date=datetime.now(), end_date=datetime.now() + timedelta(days=3),
         total_budget=50000
     )
-    places = await rank_places(destination, trip, Weather.SUNNY)
+    places = await rank_places(destination, trip, Weather.SUNNY, check_only=check_only)
+    if places is None:
+        return {"status": "cache_miss"}
     
     result = []
     from services.google_places_api import get_google_photo_url, fetch_google_place_details_photo, fetch_wikipedia_image, fetch_foursquare_image
@@ -120,6 +169,11 @@ async def get_places(destination: str):
     PLACEHOLDER = "/placeholder-place.svg"
 
     async def _resolve_photo(p):
+        if getattr(p, "photo_name", None):
+            google_img = get_google_photo_url(p.photo_name)
+            if google_img:
+                return google_img
+                
         ta_image = await fetch_foursquare_image(p.name, p.coordinates[0], p.coordinates[1])
         if ta_image:
             return ta_image
@@ -153,14 +207,16 @@ async def get_places(destination: str):
 from engines.ranking_engine import rank_food
 
 @app.get("/api/food")
-async def get_food(destination: str):
+async def get_food(destination: str, check_only: bool = Query(False)):
     trip = TripState(
         trip_id="T1", mode="direct", passengers=[],
         source_city="Delhi", destination_city=destination,
         start_date=datetime.now(), end_date=datetime.now() + timedelta(days=3),
         total_budget=50000
     )
-    places = await rank_food(destination, trip, Weather.SUNNY)
+    places = await rank_food(destination, trip, Weather.SUNNY, check_only=check_only)
+    if places is None:
+        return {"status": "cache_miss"}
     
     result = []
     from services.google_places_api import get_google_photo_url, fetch_google_place_details_photo, fetch_wikipedia_image, fetch_foursquare_image
@@ -168,6 +224,11 @@ async def get_food(destination: str):
     PLACEHOLDER = "/placeholder-place.svg"
 
     async def _resolve_photo(p):
+        if getattr(p, "photo_name", None):
+            google_img = get_google_photo_url(p.photo_name)
+            if google_img:
+                return google_img
+
         ta_image = await fetch_foursquare_image(p.name, p.coordinates[0], p.coordinates[1])
         if ta_image:
             return ta_image
@@ -206,14 +267,16 @@ async def get_place_reviews(location_id: str):
 
 
 @app.get("/api/hotels")
-async def get_hotels(destination: str):
+async def get_hotels(destination: str, check_only: bool = Query(False)):
     trip = TripState(
         trip_id="T1", mode="direct", passengers=[],
         source_city="Delhi", destination_city=destination,
         start_date=datetime.now(), end_date=datetime.now() + timedelta(days=3),
         total_budget=50000
     )
-    hotels = await rank_hotels(destination, trip)
+    hotels = await rank_hotels(destination, trip, check_only=check_only)
+    if hotels is None:
+        return {"status": "cache_miss"}
     
     result = []
     from services.google_places_api import get_google_photo_url, fetch_google_place_details_photo, fetch_wikipedia_image, fetch_foursquare_image
@@ -222,12 +285,25 @@ async def get_hotels(destination: str):
     PLACEHOLDER = "/placeholder-place.svg"
 
     async def _resolve_photo(h):
-        ta_image = await fetch_foursquare_image(h.name, h.coordinates[0], h.coordinates[1])
-        if ta_image:
-            return ta_image
-        wiki = await fetch_wikipedia_image(h.name + " " + destination)
-        if wiki:
-            return wiki
+        if getattr(h, "photo_name", None):
+            google_img = get_google_photo_url(h.photo_name)
+            if google_img:
+                return google_img
+
+        from services.google_places_api import search_google_places
+        if check_only:
+            return PLACEHOLDER
+            
+        places_res = await search_google_places(f"{h.name} {destination}", max_results=1)
+        if places_res:
+            photos = places_res[0].get("photos", [])
+            if photos:
+                p_name = photos[0].get("name")
+                if p_name:
+                    google_img = get_google_photo_url(p_name)
+                    if google_img:
+                        return google_img
+
         return PLACEHOLDER
 
     try:

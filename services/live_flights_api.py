@@ -1,7 +1,7 @@
 import os
 import json
 import httpx
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 import random
 from models.entities import TransportOption
@@ -22,7 +22,7 @@ def _parse_days_of_operation(days_str: str) -> List[int]:
             days.append(i - 1)
     return days if days else [0, 1, 2, 3, 4, 5, 6]
 
-async def search_live_flights(origin_iata: str, dest_iata: str, date: str) -> List[TransportOption]:
+async def search_live_flights(origin_iata: str, dest_iata: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
     print(f"\n[API Call] Fetching live flights (DGCA PDF): {origin_iata} -> {dest_iata} on {date}...")
     
     options = []
@@ -92,6 +92,8 @@ async def search_live_flights(origin_iata: str, dest_iata: str, date: str) -> Li
             
     # Fallback to FlightAPI if no flights found
     if not options:
+        if check_only:
+            return None
         print(f"[API Call] Route {origin_iata} -> {dest_iata} not found in DGCA. Falling back to FlightAPI...")
         api_key = os.environ.get("FLIGHTAPI_KEY", "6a40cc228466d4877c15a08c")
         url = f"https://api.flightapi.io/onewaytrip/{api_key}/{origin_iata}/{dest_iata}/{date}/1/0/0/Economy/USD"

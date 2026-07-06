@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, ShieldCheck, Armchair, ChevronDown, ArrowRight, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCacheStore } from '@/store/cacheStore';
 import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/components/ui/TrainModals';
 
 const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComplete: () => void }) => {
@@ -206,6 +207,17 @@ export default function TransportPage() {
     if (!fetchedModes[key] && !loadingMode[key]) {
       setLoadingMode(prev => ({ ...prev, [key]: true }));
       setActiveTabs({ ...activeTabs, [pax.id]: type });
+      
+      const cached = useCacheStore.getState().getCache(key);
+      if (cached) {
+        setTransportMap(prev => {
+          const current = prev[pax.id] || [];
+          return { ...prev, [pax.id]: [...current, ...cached] };
+        });
+        setFetchedModes(prev => ({ ...prev, [key]: true }));
+        setLoadingMode(prev => ({ ...prev, [key]: false }));
+        return;
+      }
       
       const options = await api.getTransportOptions(pax.city, trip.destination, type);
       
