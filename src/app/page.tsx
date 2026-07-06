@@ -653,6 +653,11 @@ export default function LandingPage() {
               </div>
             </div>
 
+            {/* Footer Links */}
+            <div className="mt-16 mb-8 flex gap-8 text-sm text-white/60 font-medium relative z-10">
+              <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+              <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+            </div>
 
           </div>
         </div>

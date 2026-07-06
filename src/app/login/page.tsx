@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plane, ArrowLeft } from 'lucide-react';
 import Script from 'next/script';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -102,7 +103,7 @@ export default function LoginPage() {
         
         <p className="text-center text-slate-400 text-xs leading-relaxed">
           By signing in, you agree to our <br/>
-          <a href="#" className="text-indigo-500 hover:text-indigo-600 font-medium">Terms of Service</a> & <a href="#" className="text-indigo-500 hover:text-indigo-600 font-medium">Privacy Policy</a>
+          <Link href="/terms" className="text-indigo-500 hover:text-indigo-600 font-medium">Terms of Service</Link> & <Link href="/privacy" className="text-indigo-500 hover:text-indigo-600 font-medium">Privacy Policy</Link>
         </p>
       </div>
       
