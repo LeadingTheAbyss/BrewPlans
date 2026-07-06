@@ -10,6 +10,7 @@ import {
   MapPin, IndianRupee, Clock, Users, ArrowRight 
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { ItineraryMap } from '@/components/ItineraryMap';
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -206,7 +207,16 @@ export default function ReviewPage() {
         </section>
       </div>
 
-      {/* FULL ITINERARY */}
+      {/* FULL ITINERARY MAP */}
+      <section className="bg-white p-2 rounded-2xl border border-zinc-200 shadow-sm h-[450px]">
+        <ItineraryMap 
+          days={itinerary.days} 
+          places={itinerary.selectedPlaces} 
+          apiKey={process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY || ''} 
+        />
+      </section>
+
+      {/* FULL ITINERARY TEXT */}
       <section className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-zinc-900">Your Itinerary</h3>
@@ -236,7 +246,7 @@ export default function ReviewPage() {
                           <span className="text-blue-500 font-bold mt-0.5">{idx + 1}.</span> 
                           <div>
                             <span className="font-medium">{p.name}</span>
-                            <div className="text-xs text-zinc-400">{p.visitDurationHours}h • ₹{p.entryFee}</div>
+                            <div className="text-xs text-zinc-400">{p.visitDurationHours || 1}h • ₹{p.entryFee}</div>
                           </div>
                         </li>
                       ))}
