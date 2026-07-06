@@ -12,6 +12,7 @@ import { Plus, Trash2, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useCacheStore } from '@/store/cacheStore';
 import { motion } from 'framer-motion';
+import AnimatedGlobe from '@/components/AnimatedGlobe';
 
 const TRIP_STYLES = [
   { id: 'family', label: 'Family' },
@@ -189,7 +190,7 @@ export default function TripSetupPage() {
                             type="text" placeholder="e.g. John Doe"
                             className="w-full h-11 bg-neutral-50 dark:bg-[#1A1A1A] border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 text-sm text-black dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             value={pax.name} 
-                            onChange={(e) => trip.updatePassenger(pax.id, { name: e.target.value })}
+                            onChange={(e) => trip.updatePassenger(pax.id, { name: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                           />
                           {pax.name && [...savedPassengers, ...trip.passengers.filter(p => p.remember && p.id !== pax.id && p.name)]
                             .filter((sp, index, self) => index === self.findIndex((t) => t.name === sp.name))
@@ -227,7 +228,8 @@ export default function TripSetupPage() {
                             className="w-full h-11 bg-neutral-50 dark:bg-[#1A1A1A] border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 text-sm text-black dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             value={pax.age || ''} 
                             onChange={(e) => {
-                              const val = parseInt(e.target.value);
+                              const cleanStr = e.target.value.replace(/\D/g, '');
+                              const val = parseInt(cleanStr);
                               trip.updatePassenger(pax.id, { age: isNaN(val) ? '' as any : Math.max(1, val) });
                             }}
                           />
@@ -298,7 +300,8 @@ export default function TripSetupPage() {
                     type="number" min="1" placeholder="100000"
                     value={budget.totalBudget || ''}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
+                      const cleanStr = e.target.value.replace(/\D/g, '');
+                      const val = Number(cleanStr);
                       budget.setTotalBudget(isNaN(val) ? 0 : Math.max(1, val));
                     }}
                     className="w-full bg-transparent border-none focus:outline-none text-3xl font-medium text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-700"
@@ -324,20 +327,20 @@ export default function TripSetupPage() {
 
            <div className="mt-12 relative z-10 flex flex-col items-center">
              {error && (
-               <div className="mb-4 text-red-400 text-[11px] font-bold uppercase tracking-widest bg-red-500/10 px-4 py-2 rounded">
+               <div className="mb-4 text-red-400 text-[11px] font-bold uppercase tracking-widest bg-red-500/10 px-4 py-2 rounded shadow-lg backdrop-blur-md">
                  {error}
                </div>
              )}
              <button 
                 onClick={handleContinue}
-                className="w-full py-3.5 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2.5 rounded-lg"
+                className="w-full py-3.5 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2.5 rounded-lg shadow-xl"
               >
                 Continue to Transport <ArrowRight size={14}/>
               </button>
            </div>
            
-           {/* Subtle Background Accent */}
-           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+           {/* Animated 3D Globe Background */}
+           <AnimatedGlobe passengers={trip.passengers} destination={trip.destination} />
         </div>
 
       </motion.div>
