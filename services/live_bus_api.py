@@ -212,7 +212,7 @@ async def get_live_bus_data(origin: str, destination: str, travel_date: str, che
             if bus_listings is None and check_only:
                 return {"status": "cache_miss"}
             
-            if bus_listings and validate_payload(bus_listings):
+            if bus_listings is not None and validate_payload(bus_listings):
                 logging.info(f"Successfully retrieved live data using {scrape_strategy.__name__}")
                 return {
                     "status": "success",

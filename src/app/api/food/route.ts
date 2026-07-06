@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { trackApiCall } from '@/lib/metrics';
 
-const PYTHON_API_URL = 'http://127.0.0.1:8002/api';
+const PYTHON_API_URL = 'http://127.0.0.1:8000/api';
 
 const ADMIN_EMAILS = [
   'kartikeykumarsingh27jun2006@gmail.com',
@@ -57,9 +57,9 @@ export async function GET(req: Request) {
 
     const isAdmin = ADMIN_EMAILS.includes(user.email);
 
-    if (!isAdmin && currentCalls >= 45) {
+    if (!isAdmin && currentCalls >= 999) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded: You have reached your 45 API calls limit for today.' }, 
+        { error: 'Rate limit exceeded: You have reached your 999 API calls limit for today.' }, 
         { status: 429 }
       );
     }
@@ -85,7 +85,9 @@ export async function GET(req: Request) {
     }
 
     // 3. Proxy to Python Backend
-    const response = await fetch(`${PYTHON_API_URL}/food?destination=${encodeURIComponent(destination)}`);
+    const response = await fetch(`${PYTHON_API_URL}/food?destination=${encodeURIComponent(destination)}`, {
+      cache: 'no-store'
+    });
     
     if (!response.ok) {
       throw new Error(`Python API responded with status ${response.status}`);

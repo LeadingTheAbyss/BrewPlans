@@ -20,12 +20,16 @@ export async function GET(request: Request) {
   try {
     const response = await fetch(googleUrl, {
       // Don't use Next.js internal fetch cache; we want to cache at the CDN level
-      cache: 'no-store' 
+      cache: 'no-store',
+      headers: {
+        'Referer': request.headers.get('referer') || 'http://localhost:3000/'
+      }
     });
 
     if (!response.ok) {
-      console.error(`[ImageProxy] Failed to fetch image: ${response.status} ${response.statusText}`);
-      return new NextResponse('Failed to fetch image', { status: response.status });
+      const text = await response.text();
+      console.error(`[ImageProxy] Failed to fetch image: ${response.status} ${response.statusText} - ${text}`);
+      return new NextResponse(`Failed: ${response.status} - ${text} - URL: ${googleUrl}`, { status: response.status });
     }
 
     const buffer = await response.arrayBuffer();
