@@ -322,6 +322,7 @@ export default function FoodPage() {
       }
       
       const data = await api.getFood(trip.destination);
+      useCacheStore.getState().setCache('food', data);
       setPlaces(data);
       setLoading(false);
     };

@@ -130,6 +130,7 @@ export default function RecommendPage() {
     useTripStore.getState().reset();
     useBudgetStore.getState().reset();
     useItineraryStore.getState().reset();
+    useCacheStore.getState().clearCache();
 
     trip.setTripDetails({ 
       mode: 'recommend',

@@ -6,6 +6,7 @@ import { BudgetState } from '../types/budget';
 interface BudgetStoreState extends BudgetState {
   // Actions
   setTotalBudget: (amount: number) => void;
+  setExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;
   addExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;
   refundExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;
   recalcBudget: () => void;
@@ -40,6 +41,24 @@ export const useBudgetStore = create<BudgetStoreState>()(
 
     const newSpent = ((state[key] as number) || 0) + amount;
     const newState = { ...state, [key]: newSpent };
+    
+    const totalSpent = (newState.spentTransport || 0) + (newState.spentPlaces || 0) + (newState.spentHotels || 0) + (newState.spentCommute || 0) + (newState.spentFood || 0);
+    const remaining = (newState.totalBudget || 0) - totalSpent;
+
+    return { ...newState, projectedTotal: totalSpent, remaining };
+  }),
+
+  setExpense: (category, amount) => set((state) => {
+    let key: keyof BudgetState;
+    if (category === 'transport') key = 'spentTransport';
+    else if (category === 'places') key = 'spentPlaces';
+    else if (category === 'hotel') key = 'spentHotels';
+    else if (category === 'food') key = 'spentFood';
+    else key = 'spentCommute';
+
+    if (state[key] === amount) return state; // Prevent infinite loops
+
+    const newState = { ...state, [key]: amount };
     
     const totalSpent = (newState.spentTransport || 0) + (newState.spentPlaces || 0) + (newState.spentHotels || 0) + (newState.spentCommute || 0) + (newState.spentFood || 0);
     const remaining = (newState.totalBudget || 0) - totalSpent;

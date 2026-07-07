@@ -139,6 +139,7 @@ export default function TripSetupPage() {
                       if (val !== trip.destination) {
                         budget.reset();
                         useItineraryStore.getState().reset();
+                        useCacheStore.getState().clearCache();
                         trip.setTripDetails({ destination: val, selectedTransports: [], selectedHotel: null });
                       }
                     }} 

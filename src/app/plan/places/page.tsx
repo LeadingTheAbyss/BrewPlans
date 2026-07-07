@@ -322,6 +322,7 @@ export default function PlacesPage() {
       }
       
       const data = await api.getPlaces(trip.destination);
+      useCacheStore.getState().setCache('places', data);
       setPlaces(data);
       setLoading(false);
     };

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useBudgetStore } from '@/store/budgetStore';
+import { useTripStore } from '@/store/tripStore';
 import { Plane, Building, Landmark, Coffee, User, Menu, ChevronUp, Check, ListFilter, Sun, Moon, X, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -20,6 +21,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
+  // Global Budget Sync to prevent ghost expenses if passengers are deleted
+  const trip = useTripStore();
+  useEffect(() => {
+    const transportTotal = trip.selectedTransports.reduce((acc, t) => acc + t.cost, 0);
+    useBudgetStore.getState().setExpense('transport', transportTotal);
+    
+    // Note: We're omitting places/food auto-sync here because those depend on itineraryStore, 
+    // but tripStore (transports) handles the biggest expenses and passenger deletions.
+  }, [trip.selectedTransports]);
   
   // Theme state
   const [isDark, setIsDark] = useState(true);

@@ -43,6 +43,7 @@ export default function HotelsPage() {
       }
 
       const data = await api.getHotels(trip.destination);
+      useCacheStore.getState().setCache('hotels', data);
       setHotels(data);
       setLoading(false);
     };

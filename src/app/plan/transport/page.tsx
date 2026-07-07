@@ -221,6 +221,7 @@ export default function TransportPage() {
       }
       
       const options = await api.getTransportOptions(pax.city, trip.destination, type);
+      useCacheStore.getState().setCache(key, options);
       
       setTransportMap(prev => {
         const current = prev[pax.id] || [];
@@ -233,6 +234,12 @@ export default function TransportPage() {
     }
   };
 
+  // Reactively sync budget based on actual selections (prevents state desyncs)
+  useEffect(() => {
+    const totalTransportCost = trip.selectedTransports.reduce((acc, t) => acc + t.cost, 0);
+    useBudgetStore.getState().setExpense('transport', totalTransportCost);
+  }, [trip.selectedTransports]);
+
   // Handle transport selection
   const handleSelectTransport = (paxId: string, option: TransportOption) => {
     const currentPax = trip.passengers.find(p => p.id === paxId);
@@ -240,18 +247,12 @@ export default function TransportPage() {
     
     // If clicking the currently selected option, deselect it
     if (existingSelection && existingSelection.transportOptionId === option.id) {
-      budget.refundExpense('transport', existingSelection.cost);
       trip.deselectTransport(paxId);
-      budget.recalcBudget();
       return;
     }
 
-    // Otherwise, select the new one (refunding the old one if it exists)
-    if (existingSelection) {
-      budget.refundExpense('transport', existingSelection.cost);
-    }
+    // Otherwise, select the new one
     trip.selectTransport(paxId, option);
-    budget.addExpense('transport', option.price);
     
     // Automatically apply this choice to other passengers from the SAME origin who have NOT selected any transport yet
     if (currentPax && currentPax.city) {
@@ -263,11 +264,8 @@ export default function TransportPage() {
 
       othersWithNoSelection.forEach(p => {
         trip.selectTransport(p.id, option);
-        budget.addExpense('transport', option.price);
       });
     }
-
-    budget.recalcBudget();
   };
 
   const getTransportIcon = (type: string) => {
