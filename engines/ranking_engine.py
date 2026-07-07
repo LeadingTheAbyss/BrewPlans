@@ -1,3 +1,4 @@
+import math
 from typing import List, Optional
 from datetime import datetime, timedelta
 from models.entities import Passenger, TransportOption, Place, Hotel
@@ -169,10 +170,32 @@ async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bo
         )
     return places
 
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in kilometers
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 async def rank_hotels(city: str, trip: TripState, check_only: bool = False) -> Optional[List[Hotel]]:
     # Use real live hotels api
     check_in = trip.start_date.strftime("%Y-%m-%d") if trip and trip.start_date else None
     check_out = trip.end_date.strftime("%Y-%m-%d") if trip and trip.end_date else None
     
     hotels = await search_live_hotels(city, check_in_date=check_in, check_out_date=check_out, check_only=check_only)
+    
+    if hotels and trip and trip.itinerary:
+        places = []
+        for daily_plan in trip.itinerary:
+            if daily_plan.places:
+                places.extend(daily_plan.places)
+                
+        if places:
+            avg_lat = sum(p.coordinates[0] for p in places) / len(places)
+            avg_lon = sum(p.coordinates[1] for p in places) / len(places)
+            hotels.sort(key=lambda h: haversine(h.coordinates[0], h.coordinates[1], avg_lat, avg_lon))
+            
     return hotels
