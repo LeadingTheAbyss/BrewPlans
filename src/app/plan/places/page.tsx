@@ -5,6 +5,7 @@ import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { useItineraryStore } from '@/store/itineraryStore';
 import { useCacheStore } from '@/store/cacheStore';
+import { useFetchQueue } from '@/store/fetchQueueStore';
 import { Place } from '@/types/trip';
 import { api } from '@/lib/api';
 import {
@@ -145,7 +146,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
                 {[...Array(4)].map((_, i) => <Star key={i} size={13} fill="currentColor" />)}
                 <Star size={13} fill="currentColor" className="opacity-40" />
               </div>
-              <span className="text-zinc-500 text-xs">({reviewCount.toLocaleString()})</span>
+              <span className="text-zinc-500 text-xs">({reviewCount.toLocaleString('en-IN')})</span>
             </div>
             <span className="text-zinc-700">•</span>
             <span className="text-zinc-400 text-sm flex items-center gap-1">
@@ -204,7 +205,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
                   <IndianRupee size={17} className="text-green-500 shrink-0" />
                   <span className="text-sm">
                     Entry: <span className="font-semibold text-white">
-                      {place.entryFee === 0 ? 'Free' : `₹${place.entryFee}`}
+                      {place.entryFee === 0 ? 'Free' : `₹${place.entryFee} - ₹${Math.round(place.entryFee * 1.8)}`}
                     </span>
                   </span>
                 </div>
@@ -223,7 +224,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
           {/* Reviews Tab */}
           {activeTab === 'Reviews' && (
             <div className="text-zinc-300 py-2 animate-in slide-in-from-right-4 duration-300 space-y-3">
-              <p className="text-xs text-zinc-500 mb-3">Showing {reviews.length} of {reviewCount.toLocaleString()} reviews</p>
+              <p className="text-xs text-zinc-500 mb-3">Showing {reviews.length} of {reviewCount.toLocaleString('en-IN')} reviews</p>
               {loadingReviews ? (
                 <div className="text-center py-8 text-zinc-500 animate-pulse text-sm">Fetching reviews...</div>
               ) : reviews.length > 0 ? (
@@ -299,8 +300,12 @@ export default function PlacesPage() {
   const budget = useBudgetStore();
   const itinerary = useItineraryStore();
 
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
+  const fetchQueue = useFetchQueue();
+  const cache = useCacheStore();
+  
+  const places = (cache.cache['places'] || []) as Place[];
+  const task = fetchQueue.tasks.find(t => t.id === 'places-main');
+  const loading = !places.length && task?.status === 'loading';
   const [selectedModalPlace, setSelectedModalPlace] = useState<Place | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'recommended' | 'cheapest' | 'shortest'>('recommended');
@@ -312,23 +317,17 @@ export default function PlacesPage() {
   }, [places]);
 
   useEffect(() => {
-    const fetchPlaces = async () => {
-      setLoading(true);
-      const cached = useCacheStore.getState().getCache('places');
-      if (cached) {
-        setPlaces(cached);
-        setLoading(false);
-        return;
-      }
-      
-      const data = await api.getPlaces(trip.destination);
-      useCacheStore.getState().setCache('places', data);
-      setPlaces(data);
-      setLoading(false);
-    };
-    if (trip.destination) fetchPlaces();
-    else setLoading(false);
-  }, [trip.destination]);
+    if (!trip.destination) return;
+    
+    // If we have no data, and it's not currently loading, we need to trigger a live fetch
+    if (places.length === 0 && (!task || task.status === 'idle' || task.status === 'cache_miss' || task.status === 'error')) {
+      fetchQueue.enqueueTask({ id: 'places-main', category: 'places', priority: 0, isLive: true });
+      fetchQueue.bumpPriority('places-main');
+    } else if (task && task.status === 'loading') {
+      // It's loading in the background, jump it to the top!
+      fetchQueue.bumpPriority('places-main');
+    }
+  }, [trip.destination, places.length, task?.status]);
 
   const handleTogglePlace = (place: Place) => {
     const isSelected = itinerary.selectedPlaces.some(p => p.id === place.id);
@@ -355,7 +354,7 @@ export default function PlacesPage() {
       <div className="max-w-5xl mx-auto space-y-6 pb-24">
 
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-1">Place Discovery</h1>
             <p className="text-zinc-400 text-sm">
@@ -386,19 +385,7 @@ export default function PlacesPage() {
             ))}
           </div>
 
-          {/* Sort selector */}
-          <div className="flex items-center gap-2 shrink-0">
-            <SlidersHorizontal size={15} className="text-zinc-500" />
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as any)}
-              className="bg-zinc-800 text-zinc-300 text-sm border border-zinc-700 rounded-lg px-3 py-1.5 outline-none cursor-pointer"
-            >
-              <option value="recommended">Recommended</option>
-              <option value="cheapest">Cheapest First</option>
-              <option value="shortest">Shortest Visit</option>
-            </select>
-          </div>
+
         </div>
 
         {/* Places Grid */}
@@ -468,21 +455,25 @@ export default function PlacesPage() {
                         {place.name}
                       </h3>
                       <span className={`text-sm font-bold shrink-0 ${place.entryFee === 0 ? 'text-emerald-400' : 'text-zinc-300'}`}>
-                        {place.entryFee === 0 ? 'Free' : `₹${place.entryFee}`}
+                        {place.entryFee === 0 ? 'Free' : `₹${place.entryFee} - ₹${Math.round(place.entryFee * 1.8)}`}
                       </span>
                     </div>
 
                     {/* Rating */}
                     <div className="flex items-center gap-1 mb-3">
                       <Star size={12} className="text-yellow-400" fill="currentColor" />
-                      <span className="text-xs font-semibold text-zinc-300">{place.rating || 4.5}</span>
-                      <span className="text-xs text-zinc-600 ml-1">({((place.id.length * 1234) % 25000).toLocaleString()})</span>
+                      <span className="text-xs font-semibold text-zinc-300">
+                        {place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1)}
+                      </span>
+                      <span className="text-xs text-zinc-600 ml-1">
+                        ({((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850).toLocaleString('en-IN')})
+                      </span>
                     </div>
 
                     {/* Duration */}
                     <div className="flex items-center gap-1.5 text-zinc-500 text-xs mt-auto mb-3">
                       <Clock size={12} />
-                      <span>{place.visitDurationHours} hrs visit</span>
+                      <span>{place.visitDurationHours === 1.5 ? (1 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 4) * 0.5) : place.visitDurationHours} hrs visit</span>
                     </div>
 
                     {/* Add button */}

@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { useCacheStore } from '@/store/cacheStore';
-import { Hotel } from '@/types/trip';
+import { useItineraryStore } from '@/store/itineraryStore';
+import { useFetchQueue } from '@/store/fetchQueueStore';
+import { Hotel, Place } from '@/types/trip';
 import { api } from '@/lib/api';
 import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,11 +16,28 @@ export default function HotelsPage() {
   const router = useRouter();
   const trip = useTripStore();
   const budget = useBudgetStore();
+  const itinerary = useItineraryStore();
 
-  const [hotels, setHotels] = useState<Hotel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const fetchQueue = useFetchQueue();
+  const cache = useCacheStore();
+  
+  const hotels = (cache.cache['hotels'] || []) as Hotel[];
+  const task = fetchQueue.tasks.find(t => t.id === 'hotels-main');
+  const loading = !hotels.length && task?.status === 'loading';
   const [sortBy, setSortBy] = useState<'best' | 'closest' | 'budget'>('best');
   const [activeStreetWalk, setActiveStreetWalk] = useState<Hotel | null>(null);
+
+  // Haversine formula to calculate distance in km
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   // Calculate nights
   const calculateNights = () => {
@@ -33,28 +52,22 @@ export default function HotelsPage() {
   const nights = calculateNights();
 
   useEffect(() => {
-    const fetchHotels = async () => {
-      setLoading(true);
-      const cached = useCacheStore.getState().getCache('hotels');
-      if (cached) {
-        setHotels(cached);
-        setLoading(false);
-        return;
-      }
-
-      const data = await api.getHotels(trip.destination);
-      useCacheStore.getState().setCache('hotels', data);
-      setHotels(data);
-      setLoading(false);
-    };
-    if (trip.destination) fetchHotels();
-    else setLoading(false);
-  }, [trip.destination]);
+    if (!trip.destination) return;
+    
+    if (hotels.length === 0 && (!task || task.status === 'idle' || task.status === 'cache_miss' || task.status === 'error')) {
+      fetchQueue.enqueueTask({ id: 'hotels-main', category: 'hotels', priority: 0, isLive: true });
+      fetchQueue.bumpPriority('hotels-main');
+    } else if (task && task.status === 'loading') {
+      fetchQueue.bumpPriority('hotels-main');
+    }
+  }, [trip.destination, hotels.length, task?.status]);
 
   const handleSelectHotel = (hotel: Hotel) => {
+    const rooms = Math.ceil(trip.passengers.length / 3);
+
     // Toggle off if already selected
     if (trip.selectedHotel?.id === hotel.id) {
-      budget.removeExpense('hotel', hotel.pricePerNight * nights);
+      budget.refundExpense('hotel', hotel.pricePerNight * rooms * nights);
       trip.setHotel(null);
       budget.recalcBudget();
       return;
@@ -62,16 +75,16 @@ export default function HotelsPage() {
 
     // Remove old hotel cost if exists
     if (trip.selectedHotel) {
-      budget.removeExpense('hotel', trip.selectedHotel.pricePerNight * nights);
+      budget.refundExpense('hotel', trip.selectedHotel.pricePerNight * rooms * nights);
     }
 
-    const hotelWithNights = { ...hotel, nights: nights };
+    const hotelWithNights = { ...hotel, nights: nights, rooms: rooms };
 
     // Set new hotel
     trip.setHotel(hotelWithNights);
 
     // Charge new hotel
-    budget.addExpense('hotel', hotel.pricePerNight * nights);
+    budget.addExpense('hotel', hotel.pricePerNight * rooms * nights);
 
     budget.recalcBudget();
   };
@@ -121,19 +134,30 @@ export default function HotelsPage() {
 
             <div className="space-y-4">
               {(() => {
-                let sortedHotels = [...hotels];
+                let processedHotels = [...hotels].map(h => {
+                  if (itinerary.selectedPlaces.length > 0) {
+                    const totalDistance = itinerary.selectedPlaces.reduce((sum, place) => {
+                       return sum + calculateDistance(h.coordinates[0], h.coordinates[1], place.lat || 0, place.lng || 0);
+                    }, 0);
+                    return { ...h, distanceToCluster: Number((totalDistance / itinerary.selectedPlaces.length).toFixed(1)) };
+                  }
+                  return h;
+                });
+
                 if (sortBy === 'closest') {
-                  sortedHotels.sort((a, b) => a.distanceToCluster - b.distanceToCluster);
+                  processedHotels.sort((a, b) => a.distanceToCluster - b.distanceToCluster);
                 } else if (sortBy === 'budget') {
-                  sortedHotels.sort((a, b) => a.pricePerNight - b.pricePerNight);
+                  processedHotels.sort((a, b) => a.pricePerNight - b.pricePerNight);
                 } else {
-                  sortedHotels.sort((a, b) => b.rating - a.rating);
+                  processedHotels.sort((a, b) => b.rating - a.rating);
                 }
 
-                return sortedHotels.map((hotel) => {
+                const rooms = Math.ceil(trip.passengers.length / 3);
+
+                return processedHotels.map((hotel) => {
                   const isSelected = trip.selectedHotel?.id === hotel.id;
-                  const totalCost = hotel.pricePerNight * nights;
-                  const remainingAfter = budget.remaining + (isSelected ? 0 : (trip.selectedHotel ? (trip.selectedHotel.pricePerNight * nights) : 0)) - totalCost;
+                  const totalCost = rooms * hotel.pricePerNight * nights;
+                  const remainingAfter = budget.remaining + (isSelected ? 0 : (trip.selectedHotel ? (trip.selectedHotel.pricePerNight * rooms * nights) : 0)) - totalCost;
 
                   return (
                     <div
@@ -155,12 +179,18 @@ export default function HotelsPage() {
 
                       <div className="flex items-center gap-5 w-full">
                         {/* Thumbnail */}
-                        <div className="w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br from-muted to-muted/50 border border-border/50 flex items-center justify-center overflow-hidden">
-                          {hotel.imageUrl ? (
-                            <img src={hotel.imageUrl} alt={hotel.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="text-muted-foreground/30 font-medium text-[10px] uppercase tracking-widest rotate-[-45deg]">Hotel</div>
+                        <div className="w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br from-muted to-muted/50 border border-border/50 flex items-center justify-center overflow-hidden relative">
+                          {hotel.imageUrl && (
+                            <img 
+                              src={hotel.imageUrl} 
+                              alt={hotel.name} 
+                              className="w-full h-full object-cover absolute inset-0 z-10" 
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
                           )}
+                          <div className="text-muted-foreground/30 font-medium text-[10px] uppercase tracking-widest rotate-[-45deg] absolute z-0">Hotel</div>
                         </div>
 
                         {/* Middle Info */}
@@ -175,7 +205,7 @@ export default function HotelsPage() {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                             <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
                               <MapPin size={14} className="text-foreground/50" />
-                              {hotel.distanceToCluster} km to places
+                              {hotel.distanceToCluster} km from the places you wish to visit
                             </div>
 
                             <button
@@ -192,7 +222,7 @@ export default function HotelsPage() {
                           {/* Warnings if budget tight */}
                           {remainingAfter < 0 && !isSelected && (
                             <div className="mt-2 text-xs font-medium text-red-500/90 flex items-center gap-1 bg-red-500/10 px-2 py-1 rounded-md inline-flex w-max">
-                              <AlertCircle size={12} /> Exceeds budget by ₹{Math.abs(remainingAfter).toLocaleString()}
+                              <AlertCircle size={12} /> Exceeds budget by ₹{Math.abs(remainingAfter).toLocaleString('en-IN')}
                             </div>
                           )}
                         </div>
@@ -201,10 +231,10 @@ export default function HotelsPage() {
                       {/* Right Side Pricing */}
                       <div className="text-right shrink-0 ml-4 flex flex-col items-end justify-center">
                         <div className="text-xl font-semibold text-foreground tracking-tight mb-0.5">
-                          ₹{totalCost.toLocaleString()}
+                          ₹{totalCost.toLocaleString('en-IN')}
                         </div>
                         <div className="text-xs font-medium text-muted-foreground">
-                          ₹{hotel.pricePerNight.toLocaleString()}/night • {nights} {nights === 1 ? 'night' : 'nights'}
+                          ₹{hotel.pricePerNight.toLocaleString('en-IN')}/night • {rooms} {rooms === 1 ? 'room' : 'rooms'} • {nights} {nights === 1 ? 'night' : 'nights'}
                         </div>
                       </div>
                     </div>

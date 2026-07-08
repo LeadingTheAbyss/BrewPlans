@@ -110,7 +110,7 @@ export default function TripSetupPage() {
   };
 
   return (
-    <div className="w-full min-h-full flex items-center justify-center p-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className="w-full min-h-full flex flex-col items-center justify-center p-4 md:p-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -119,7 +119,7 @@ export default function TripSetupPage() {
       >
         
         {/* Main Configuration Body */}
-        <div className="flex-[1.2] bg-white dark:bg-[#111111] text-black dark:text-white p-8 lg:p-12 relative border-r border-neutral-200 dark:border-neutral-900 transition-colors">
+        <div className="flex-[1.2] bg-white dark:bg-[#111111] text-black dark:text-white p-6 lg:p-12 relative border-b md:border-b-0 md:border-r border-neutral-200 dark:border-neutral-900 transition-colors">
           
           <div className="flex justify-between items-center mb-10">
             <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-white">Trip Details</h2>
@@ -139,7 +139,6 @@ export default function TripSetupPage() {
                       if (val !== trip.destination) {
                         budget.reset();
                         useItineraryStore.getState().reset();
-                        useCacheStore.getState().clearCache();
                         trip.setTripDetails({ destination: val, selectedTransports: [], selectedHotel: null });
                       }
                     }} 
@@ -168,12 +167,16 @@ export default function TripSetupPage() {
                 <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-2 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
                   <span className="text-xl font-medium text-neutral-500">₹</span>
                   <input 
-                    type="number" min="1" placeholder="100000"
+                    type="text" placeholder="100000"
                     value={budget.totalBudget || ''}
                     onChange={(e) => {
                       const cleanStr = e.target.value.replace(/\D/g, '');
-                      const val = Number(cleanStr);
-                      budget.setTotalBudget(isNaN(val) ? 0 : Math.max(1, val));
+                      if (!cleanStr) {
+                        budget.setTotalBudget(0);
+                      } else {
+                        const val = parseInt(cleanStr, 10);
+                        budget.setTotalBudget(isNaN(val) ? 0 : val);
+                      }
                     }}
                     className="w-full bg-transparent border-none focus:outline-none text-lg font-medium text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-700"
                   />
