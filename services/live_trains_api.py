@@ -183,32 +183,6 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
     clean_origin = origin_city.split(",")[0].strip()
     clean_dest = dest_city.split(",")[0].strip()
     
-    # --- Check DB Cache ---
-    try:
-        conn = await get_db_connection()
-        rows = await conn.fetch('SELECT train_num, train_name, dep_time, arr_time, duration_hours, price FROM "Train" WHERE origin = $1 AND dest = $2 AND date = $3', clean_origin.upper(), clean_dest.upper(), date)
-        await conn.close()
-        
-        if rows:
-            print("[Cache Hit] Returning trains from NeonDB.")
-            cached_options = []
-            for idx, r in enumerate(rows):
-                cached_options.append(TransportOption(
-                    id=f"tr_{r['train_num']}_{idx}_cached",
-                    type=TransportType.TRAIN,
-                    departure=datetime.fromisoformat(r['dep_time']),
-                    arrival=datetime.fromisoformat(r['arr_time']),
-                    duration_hours=float(r['duration_hours']),
-                    price=float(r['price']),
-                    safety_score=8,
-                    comfort_score=7,
-                    provider=r['train_name']
-                ))
-            return sorted(cached_options, key=lambda x: x.price)
-    except Exception as e:
-        print(f"[Warning] Train DB cache check failed: {e}")
-    # --- End DB Cache Check ---
-    
     if check_only:
         return None
         
@@ -228,6 +202,40 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
     if not dest_code:
         coords = await get_city_coords(clean_dest)
         if coords:
+            nearest_dest = await get_nearest_station(coords["lat"], coords["lng"])
+            if nearest_dest:
+                dest_code = nearest_dest["code"]
+
+    if not origin_code or not dest_code:
+        print(f"[Warning] Could not resolve station codes for {clean_origin} -> {clean_dest}")
+        return []
+        
+    # --- Check DB Cache ---
+    options = []
+    try:
+        conn = await get_db_connection()
+        rows = await conn.fetch('SELECT train_num, train_name, dep_time, arr_time, duration_hours, price FROM "Train" WHERE origin = $1 AND dest = $2 AND date = $3', origin_code, dest_code, date)
+        await conn.close()
+        
+        if rows:
+            print("[Cache Hit] Returning trains from NeonDB.")
+            for idx, r in enumerate(rows):
+                options.append(TransportOption(
+                    id=f"tr_{r['train_num']}_{idx}_cached",
+                    type=TransportType.TRAIN,
+                    departure=datetime.fromisoformat(r['dep_time']),
+                    arrival=datetime.fromisoformat(r['arr_time']),
+                    duration_hours=float(r['duration_hours']),
+                    price=float(r['price']),
+                    safety_score=8,
+                    comfort_score=7,
+                    provider=r['train_name']
+                ))
+    except Exception as e:
+        print(f"[Warning] Train DB cache check failed: {e}")
+    # --- End DB Cache Check ---
+    
+    if not options:
             nearest_dest = await get_nearest_station(coords["lat"], coords["lng"])
             if nearest_dest:
                 dest_code = nearest_dest["code"]
@@ -355,6 +363,22 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
             
     if not options:
         return []
+
+    # --- Save to DB Cache ---
+    try:
+        conn = await get_db_connection()
+        for opt in options:
+            if opt.id.endswith("_cached"): continue
+            train_num = opt.id.split("_")[1] if len(opt.id.split("_")) > 1 else "UNK"
+            train_id = uuid.uuid4().hex
+            await conn.execute('''
+                INSERT INTO "Train" (id, train_num, train_name, origin, dest, date, dep_time, arr_time, duration_hours, price)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                ON CONFLICT (train_num, origin, dest, date) DO NOTHING
+            ''', train_id, train_num, opt.provider, origin_code, dest_code, date, opt.departure.isoformat(), opt.arrival.isoformat(), opt.duration_hours, opt.price)
+        await conn.close()
+    except Exception as e:
+        print(f"[Warning] Failed to cache trains to DB: {e}")
         
     # --- Post-Process Combo Routes ---
     if nearest_origin or nearest_dest:
@@ -381,28 +405,19 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
                 if fare_data["status"] == "success":
                     added_duration += fare_data["duration_hours"]
                     added_price += fare_data["fares"].get("sedan", fare_data["distance_km"] * 15)
-                opt.provider = f"{opt.provider} + Cab to {clean_dest}"
                 
+                train_leg = opt.provider
+                if " + Cab to" in train_leg:
+                    train_leg = train_leg.split(" + ")[0]
+                train_leg += f" to {nearest_dest['name']}"
+                opt.provider = f"{train_leg} + Cab to {clean_dest}"
+                
+            opt.price_breakdown = {"Train": round(opt.price, 2), "Cab": round(added_price, 2)}
             opt.duration_hours = round(opt.duration_hours + added_duration, 1)
             opt.price = round(opt.price + added_price, 2)
             opt.arrival = opt.arrival + timedelta(hours=added_duration)
             if nearest_origin:
                 opt.departure = opt.departure - timedelta(hours=added_duration) # shift departure back for initial cab ride
-        
-    # --- Save to DB Cache ---
-    try:
-        conn = await get_db_connection()
-        for opt in options:
-            train_num = opt.id.split("_")[1] if len(opt.id.split("_")) > 1 else "UNK"
-            train_id = uuid.uuid4().hex
-            await conn.execute('''
-                INSERT INTO "Train" (id, train_num, train_name, origin, dest, date, dep_time, arr_time, duration_hours, price)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                ON CONFLICT (train_num, origin, dest, date) DO NOTHING
-            ''', train_id, train_num, opt.provider, clean_origin.upper(), clean_dest.upper(), date, opt.departure.isoformat(), opt.arrival.isoformat(), opt.duration_hours, opt.price)
-        await conn.close()
-    except Exception as e:
-        print(f"[Warning] Failed to cache trains to DB: {e}")
         
     return sorted(options, key=lambda x: x.price)
 

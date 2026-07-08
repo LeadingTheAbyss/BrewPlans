@@ -49,3 +49,4 @@ class TransportOption(BaseModel):
     safety_score: int
     comfort_score: int
     provider: Optional[str] = None
+    price_breakdown: Optional[dict] = None

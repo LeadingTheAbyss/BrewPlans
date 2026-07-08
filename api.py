@@ -133,7 +133,8 @@ async def get_transport(source: str, destination: str, mode: str = "all", check_
             "comfortScore": o.comfort_score,
             "safetyScore": o.safety_score,
             "recommendationScore": rec_score,
-            "provider": o.provider
+            "provider": o.provider,
+            "priceBreakdown": o.price_breakdown
         })
     return result
 

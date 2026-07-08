@@ -37,6 +37,7 @@ export type TransportOption = {
   comfortScore: number;
   safetyScore: number;
   recommendationScore: number;
+  priceBreakdown?: Record<string, number>;
 };
 
 export type PlaceCategory = 'historical' | 'nature' | 'adventure' | 'religious' | 'food' | 'shopping' | 'nightlife' | 'museum' | 'beach' | 'mountain' | 'wildlife';

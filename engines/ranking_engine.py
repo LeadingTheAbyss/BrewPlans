@@ -14,22 +14,12 @@ from services.osrm_cab_api import search_live_cabs
 
 async def rank_transport(source: str, dest: str, date: datetime, passengers: List[Passenger], mode: str = "all", check_only: bool = False) -> Optional[List[TransportOption]]:
     import asyncio
-    from services.dgca_pdf_parser import CITY_TO_IATA
-    origin_iata = CITY_TO_IATA.get(source.upper())
-    dest_iata = CITY_TO_IATA.get(dest.upper())
-    
     from services.live_bus_api import search_live_buses
-
-    async def fetch_flights_safely():
-        if origin_iata and dest_iata:
-            res = await search_live_flights(origin_iata, dest_iata, date.strftime("%Y-%m-%d"), check_only=check_only)
-            return res if res is not None else None
-        return [] if not check_only else None
 
     async def empty_result():
         return [] if not check_only else None
 
-    t_flight = fetch_flights_safely() if mode in ["all", "flight"] else empty_result()
+    t_flight = search_live_flights(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "flight"] else empty_result()
     t_train = search_live_trains(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "train"] else empty_result()
     # Cabs are local math, they never check_only the DB because they are instantaneous and free. So they always return results.
     t_cab = search_live_cabs(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "cab"] else empty_result()

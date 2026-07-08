@@ -202,7 +202,7 @@ export default function TransportPage() {
       return;
     }
     
-    const key = `${pax.id}-${pax.city}-${trip.destination}-${type}`;
+    const key = `${pax.id}-${pax.city}-${trip.destination}-${type}_v4`;
     const isActive = activeTabs[pax.id] === type;
 
     if (!fetchedModes[key] && !loadingMode[key]) {
@@ -511,13 +511,30 @@ export default function TransportPage() {
                                       )}
 
                                     <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-bold uppercase tracking-wider text-sm">{opt.provider || opt.type}</span>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        {opt.provider && opt.provider.includes(' + Cab to ') ? (
+                                          <>
+                                            <span className="font-bold uppercase tracking-wider text-sm">{opt.provider.split(' + ')[0]}</span>
+                                            <span className="flex items-center gap-1 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                              <Car size={14} className="text-purple-500 shrink-0" />
+                                              {opt.provider.split(' + ')[1]}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span className="font-bold uppercase tracking-wider text-sm">{opt.provider || opt.type}</span>
+                                        )}
                                       </div>
                                       {opt.id.startsWith('tr_combo_') && (
                                         <div className="mt-1">
                                           <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full px-2 py-0.5">
                                             Train + Cab combo
+                                          </span>
+                                        </div>
+                                      )}
+                                      {opt.id.startsWith('fl_combo_') && (
+                                        <div className="mt-1">
+                                          <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full px-2 py-0.5">
+                                            Flight + Cab combo
                                           </span>
                                         </div>
                                       )}
@@ -552,6 +569,11 @@ export default function TransportPage() {
 
                                   <div className="text-right">
                                     <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString()}</div>
+                                    {opt.priceBreakdown && (
+                                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">
+                                        (₹{opt.priceBreakdown.Flight ? opt.priceBreakdown.Flight.toLocaleString() : opt.priceBreakdown.Train ? opt.priceBreakdown.Train.toLocaleString() : 0} {opt.priceBreakdown.Flight ? 'flight' : 'train'} + ₹{opt.priceBreakdown.Cab ? opt.priceBreakdown.Cab.toLocaleString() : 0} cab)
+                                      </div>
+                                    )}
                                     {opt.type === 'flight' && (
                                       <div className="text-[10px] text-muted-foreground mt-1 text-right">
                                         * These prices are tentative.
