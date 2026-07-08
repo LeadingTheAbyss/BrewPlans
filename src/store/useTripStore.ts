@@ -20,6 +20,7 @@ export type TransportOption = {
   departure: string;
   arrival: string;
   availability: string; // e.g., 'Confirmed', 'WL 12'
+  priceBreakdown?: Record<string, number>;
 };
 
 export type SelectedTransport = {
@@ -35,6 +36,10 @@ export type Place = {
   entryFee: number;
   visitDurationHours: number;
   travelTimeHours: number; // estimated time to reach from base/cluster
+  availability: 'Confirmed' | string;
+  comfortScore: number;
+  safetyScore: number;
+  recommendationScore: number;
 };
 
 export type Hotel = {

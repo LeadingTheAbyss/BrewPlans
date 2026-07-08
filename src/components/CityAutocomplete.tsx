@@ -38,7 +38,7 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
-    
+
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     if (val.length >= 2) {
@@ -66,8 +66,8 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
     <div className="space-y-2 relative" ref={wrapperRef}>
       {label && <label className="text-sm font-medium text-muted-foreground">{label}</label>}
       <div className="relative">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder={placeholder}
           className="w-full p-3 bg-background border border-input text-foreground rounded-lg focus:ring-2 focus:ring-primary outline-none placeholder:text-muted-foreground/50 pr-10 transition-colors"
           value={query}
@@ -80,12 +80,12 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
           </div>
         )}
       </div>
-      
+
       {isOpen && results.length > 0 && (
         <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-xl overflow-hidden top-[100%]">
           {results.map((res, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="p-3 hover:bg-muted cursor-pointer flex flex-col border-b last:border-0 border-border transition-colors"
               onClick={() => handleSelect(res.name)}
             >

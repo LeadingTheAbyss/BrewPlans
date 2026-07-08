@@ -479,8 +479,9 @@ async def get_recommendations(preferences: dict):
     total_budget = preferences.get("total_budget", 50000)
     days = preferences.get("days", 3)
     preference = preferences.get("preference", "any")
+    group_size = preferences.get("group_size", len(passengers) or 1)
     
-    return await asyncio.to_thread(get_ai_recommendations, passengers, total_budget, days, preference)
+    return await asyncio.to_thread(get_ai_recommendations, passengers, total_budget, days, preference, group_size)
 
 
 import requests

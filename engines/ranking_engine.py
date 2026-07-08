@@ -1,3 +1,4 @@
+import math
 from typing import List, Optional
 from datetime import datetime, timedelta
 from models.entities import Passenger, TransportOption, Place, Hotel
@@ -13,22 +14,12 @@ from services.osrm_cab_api import search_live_cabs
 
 async def rank_transport(source: str, dest: str, date: datetime, passengers: List[Passenger], mode: str = "all", check_only: bool = False) -> Optional[List[TransportOption]]:
     import asyncio
-    from services.dgca_pdf_parser import CITY_TO_IATA
-    origin_iata = CITY_TO_IATA.get(source.upper())
-    dest_iata = CITY_TO_IATA.get(dest.upper())
-    
     from services.live_bus_api import search_live_buses
-
-    async def fetch_flights_safely():
-        if origin_iata and dest_iata:
-            res = await search_live_flights(origin_iata, dest_iata, date.strftime("%Y-%m-%d"), check_only=check_only)
-            return res if res is not None else None
-        return [] if not check_only else None
 
     async def empty_result():
         return [] if not check_only else None
 
-    t_flight = fetch_flights_safely() if mode in ["all", "flight"] else empty_result()
+    t_flight = search_live_flights(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "flight"] else empty_result()
     t_train = search_live_trains(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "train"] else empty_result()
     # Cabs are local math, they never check_only the DB because they are instantaneous and free. So they always return results.
     t_cab = search_live_cabs(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "cab"] else empty_result()
@@ -177,10 +168,32 @@ async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bo
         )
     return places
 
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in kilometers
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 async def rank_hotels(city: str, trip: TripState, check_only: bool = False) -> Optional[List[Hotel]]:
     # Use real live hotels api
     check_in = trip.start_date.strftime("%Y-%m-%d") if trip and trip.start_date else None
     check_out = trip.end_date.strftime("%Y-%m-%d") if trip and trip.end_date else None
     
     hotels = await search_live_hotels(city, check_in_date=check_in, check_out_date=check_out, check_only=check_only)
+    
+    if hotels and trip and trip.itinerary:
+        places = []
+        for daily_plan in trip.itinerary:
+            if daily_plan.places:
+                places.extend(daily_plan.places)
+                
+        if places:
+            avg_lat = sum(p.coordinates[0] for p in places) / len(places)
+            avg_lon = sum(p.coordinates[1] for p in places) / len(places)
+            hotels.sort(key=lambda h: haversine(h.coordinates[0], h.coordinates[1], avg_lat, avg_lon))
+            
     return hotels
