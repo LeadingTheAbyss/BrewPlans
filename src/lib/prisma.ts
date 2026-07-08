@@ -8,9 +8,6 @@ declare global {
   var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>
 }
 
-// Force clear old cached instance so it loads the new table!
-delete globalThis.prismaGlobal;
-
 export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
 
 export default prisma

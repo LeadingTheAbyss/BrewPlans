@@ -9,6 +9,7 @@ import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, 
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCacheStore } from '@/store/cacheStore';
+import { useFetchQueue } from '@/store/fetchQueueStore';
 import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/components/ui/TrainModals';
 
 const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComplete: () => void }) => {
@@ -177,10 +178,10 @@ export default function TransportPage() {
   const trip = useTripStore();
   const budget = useBudgetStore();
   
-  // Local state to store fetched options per passenger
-  const [transportMap, setTransportMap] = useState<Record<string, TransportOption[]>>({});
-  const [loading, setLoading] = useState(false);
-  const [backendFinished, setBackendFinished] = useState(true);
+  // Global stores for queue and cache
+  const fetchQueue = useFetchQueue();
+  const cache = useCacheStore();
+  const cachedData = cache.cache;
   const [sortBy, setSortBy] = useState<Record<string, 'recommended' | 'cheapest' | 'fastest' | 'earliest'>>({});
 
   const [routeModalOpen, setRouteModalOpen] = useState(false);
@@ -190,13 +191,8 @@ export default function TransportPage() {
   
   // Track active transport tab per passenger
   const [activeTabs, setActiveTabs] = useState<Record<string, string>>({});
-  
-  // Track lazy loading states
-  // Track lazy loading states
-  const [fetchedModes, setFetchedModes] = useState<Record<string, boolean>>({});
-  const [loadingMode, setLoadingMode] = useState<Record<string, boolean>>({});
 
-  const handleAccordionClick = async (pax: Passenger, type: string) => {
+  const handleAccordionClick = (pax: Passenger, type: string) => {
     if (!pax.city) {
       alert(`Please go back to Setup and enter a starting city for ${pax.name || 'this passenger'}`);
       return;
@@ -205,31 +201,21 @@ export default function TransportPage() {
     const key = `${pax.id}-${type}`;
     const isActive = activeTabs[pax.id] === type;
 
-    if (!fetchedModes[key] && !loadingMode[key]) {
-      setLoadingMode(prev => ({ ...prev, [key]: true }));
-      setActiveTabs({ ...activeTabs, [pax.id]: type });
+    // Toggle tab
+    setActiveTabs({ ...activeTabs, [pax.id]: isActive ? '' : type });
+    
+    if (!isActive) {
+      const data = useCacheStore.getState().cache[key];
+      const task = useFetchQueue.getState().tasks.find(t => t.id === key);
       
-      const cached = useCacheStore.getState().getCache(key);
-      if (cached) {
-        setTransportMap(prev => {
-          const current = prev[pax.id] || [];
-          return { ...prev, [pax.id]: [...current, ...cached] };
-        });
-        setFetchedModes(prev => ({ ...prev, [key]: true }));
-        setLoadingMode(prev => ({ ...prev, [key]: false }));
-        return;
+      // If no valid data is cached, and it's not currently loading, trigger a live fetch!
+      if (!data && (!task || task.status === 'idle' || task.status === 'cache_miss' || task.status === 'error')) {
+        useFetchQueue.getState().enqueueTask({ id: key, category: 'transport', subType: type, paxId: pax.id, priority: 0, isLive: true });
+        useFetchQueue.getState().bumpPriority(key);
+      } else if (task && task.status === 'loading') {
+        // If it was already loading in the background, jump it to the top so we don't wait
+        useFetchQueue.getState().bumpPriority(key);
       }
-      
-      const options = await api.getTransportOptions(pax.city, trip.destination, type);
-      
-      setTransportMap(prev => {
-        const current = prev[pax.id] || [];
-        return { ...prev, [pax.id]: [...current, ...options] };
-      });
-      setFetchedModes(prev => ({ ...prev, [key]: true }));
-      setLoadingMode(prev => ({ ...prev, [key]: false }));
-    } else {
-      setActiveTabs({ ...activeTabs, [pax.id]: isActive ? '' : type });
     }
   };
 
@@ -274,6 +260,7 @@ export default function TransportPage() {
     if (type === 'flight') return <Plane className="text-blue-500 shrink-0" size={20} />;
     if (type === 'train') return <Train className="text-orange-500 shrink-0" size={20} />;
     if (type === 'cab' || type === 'car') return <Car className="text-purple-500 shrink-0" size={20} />;
+    if (type === 'cross') return <MapPin className="text-amber-500 shrink-0" size={20} />;
     return <Bus className="text-green-500 shrink-0" size={20} />;
   };
 
@@ -322,14 +309,7 @@ export default function TransportPage() {
 
         {/* Content */}
         <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div 
-              key="loading"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.5 } }}
-            >
-              <LoadingScreen isFinished={backendFinished} onComplete={() => setLoading(false)} />
-            </motion.div>
-          ) : trip.passengers.length === 0 ? (
+          {trip.passengers.length === 0 ? (
             <motion.div 
               key="empty"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -346,8 +326,6 @@ export default function TransportPage() {
               className="space-y-10"
             >
               {trip.passengers.map((pax) => {
-                const rawOptions = transportMap[pax.id] || [];
-
                 const selectedTransportId = trip.selectedTransports.find(t => t.passengerId === pax.id)?.transportOptionId;
 
                 return (
@@ -370,14 +348,18 @@ export default function TransportPage() {
                       )}
                     </div>
 
-                    {/* Accordion Sections for Transport Types */}
+                        {/* Accordion Sections for Transport Types */}
                     <div className="space-y-4">
-                      {['flight', 'train', 'bus', 'cab'].map((type) => {
+                      {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
                         const key = `${pax.id}-${type}`;
-                        const isFetched = fetchedModes[key];
-                        const isLoading = loadingMode[key];
+                        const isFetched = cachedData[key] !== undefined;
+                        const task = fetchQueue.tasks.find(t => t.id === key);
+                        const isLoading = task?.status === 'loading';
 
-                        const typeOptionsRaw = rawOptions.filter(o => o.type === type || (type === 'cab' && o.type === 'car'));
+                        const rawData = cachedData[key] || {};
+                        const rawOptions = rawData.options || (Array.isArray(rawData) ? rawData : []);
+                        const crossRoutes = rawData.cross_routes || [];
+                        const typeOptionsRaw = type === 'cross' ? crossRoutes : rawOptions.filter((o: any) => o.type === type || (type === 'cab' && o.type === 'car'));
                         
                         const currentSort = sortBy[key] || '';
                         let typeOptions = [...typeOptionsRaw];
@@ -406,11 +388,11 @@ export default function TransportPage() {
                             >
                               <div className="flex items-center gap-3">
                                 {getTransportIcon(type)}
-                                <span className="capitalize text-lg">{type === 'bus' ? 'buses' : `${type}s`}</span>
+                                <span className="capitalize text-lg">{type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : `${type}s`}</span>
                               </div>
                               <div className="flex items-center gap-3">
                                 <span className={`text-sm px-3 py-1 rounded-full border ${isFetched && typeOptions.length === 0 ? 'bg-muted/50 border-transparent text-muted-foreground' : 'bg-background border-border'} ${isLoading ? 'animate-pulse text-primary' : ''}`}>
-                                  {isLoading ? 'Searching...' : (!isFetched ? 'Click to search' : (typeOptions.length === 0 ? `No ${type === 'bus' ? 'buses' : type + 's'} available` : `${typeOptions.length} Options`))}
+                                  {isLoading ? 'Searching...' : (!isFetched ? 'Click to search' : (typeOptions.length === 0 ? `No ${type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : type + 's'} available` : `${typeOptions.length} Options`))}
                                 </span>
                                 {(!isFetched || typeOptions.length > 0) && (
                                   <motion.div
@@ -436,7 +418,7 @@ export default function TransportPage() {
                                   <div className="p-4 space-y-3 bg-muted/20 border-t-2 border-border">
                                     {isLoading ? (
                                       <div className="flex items-center justify-center p-8 text-muted-foreground font-medium">
-                                        <Loader2 className="animate-spin mr-3 shrink-0" size={20} /> Searching live {type === 'bus' ? 'buses' : type + 's'}...
+                                        <Loader2 className="animate-spin mr-3 shrink-0" size={20} /> Searching live {type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : type + 's'}...
                                       </div>
                                     ) : (
                                       <>
@@ -534,11 +516,27 @@ export default function TransportPage() {
                                             </button>
                                           </div>
                                         )}
+                                        {opt.type === 'cross' && opt.legs && (
+                                          <div className="mt-3 space-y-2 border-t border-border pt-3 w-full" onClick={(e) => e.stopPropagation()}>
+                                            {opt.legs.map((leg: any, lIdx: number) => (
+                                              <div key={lIdx} className="flex justify-between items-center text-xs bg-background/50 p-2 rounded-lg border border-border">
+                                                <div className="flex items-center gap-2">
+                                                  <div className="scale-75 origin-left">{getTransportIcon(leg.mode)}</div>
+                                                  <span className="font-semibold text-foreground/80">{leg.source} → {leg.destination}</span>
+                                                </div>
+                                                <div className="text-muted-foreground flex gap-3 text-right">
+                                                  <span>{leg.provider}</span>
+                                                  <span className="font-medium">₹{leg.price}</span>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
                                       </div>
                                   </div>
 
                                   <div className="text-right">
-                                    <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString()}</div>
+                                    <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
                                     {opt.type === 'flight' && (
                                       <div className="text-[10px] text-muted-foreground mt-1 text-right">
                                         * These prices are tentative.

@@ -73,7 +73,11 @@ export default function ModernDatePicker({ label, value, onChange, minDate }: Mo
   const daysOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
   // Display value formatting
-  const displayValue = value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select Date';
+  const displayValue = value ? (() => {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+  })() : 'Select Date';
 
   return (
     <div className="space-y-2 relative" ref={wrapperRef}>

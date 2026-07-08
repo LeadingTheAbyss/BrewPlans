@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClientOnly } from "@/components/layout/ClientOnly";
 import { ThemeProvider } from "@/components/theme-provider";
+import { BackgroundFetcher } from "@/components/BackgroundFetcher";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +28,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <ClientOnly>{children}</ClientOnly>
+          <ClientOnly>
+            <BackgroundFetcher />
+            {children}
+          </ClientOnly>
         </ThemeProvider>
       </body>
     </html>

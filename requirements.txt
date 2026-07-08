@@ -5,3 +5,5 @@ asyncpg
 python-dotenv
 requests
 pydantic
+ortools
+scikit-learn

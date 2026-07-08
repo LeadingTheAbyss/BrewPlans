@@ -174,8 +174,7 @@ async def search_live_flights(origin_iata: str, dest_iata: str, date: str, check
                                 ))
                             except Exception as e:
                                 print(f"[Fallback Error] Parsing new flight failed: {e}")
-                                
         except Exception as e:
             print(f"[API Error] FlightAPI fallback failed: {e}")
-
+            
     return sorted(options, key=lambda x: x.price)

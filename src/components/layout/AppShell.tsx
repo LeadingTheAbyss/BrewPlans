@@ -1,5 +1,7 @@
 'use client';
 
+import { createPortal } from 'react-dom';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -14,7 +16,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const budget = useBudgetStore();
   const { user, fetchUser } = useAuthStore();
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
-  const [purseExpanded, setPurseExpanded] = useState(true);
+  const [isBudgetDropdownOpen, setIsBudgetDropdownOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch user on mount if not already fetched
   useEffect(() => {
@@ -47,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       
       {/* Horizontal Progression Track */}
       {pathname !== '/profile' && (
-        <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-40 sticky top-0 transition-colors duration-300">
+        <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-3">
               <img src={smallLogo.src} alt="PlanBro Logo" className="w-10 h-10 object-contain" />
@@ -73,6 +80,61 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
+            
+            {/* Budget Dropdown in Navbar */}
+            {pathname.startsWith('/plan') && (
+              <div className="relative">
+                <button
+                  onClick={() => setIsBudgetDropdownOpen(!isBudgetDropdownOpen)}
+                  className="h-7 px-3 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-800 dark:text-neutral-200 gap-2"
+                >
+                  <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest hidden sm:inline-block">Budget</span>
+                  <span className="text-xs font-bold">₹{budget.totalBudget.toLocaleString('en-IN')}</span>
+                  <ChevronUp size={12} className={`text-neutral-500 transition-transform duration-300 ${isBudgetDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu via Portal */}
+                {mounted && isBudgetDropdownOpen && createPortal(
+                  <>
+                    {/* Backdrop to close when clicking outside */}
+                    <div className="fixed inset-0 z-[999]" onClick={() => setIsBudgetDropdownOpen(false)}></div>
+                    <div className="fixed right-8 top-16 w-72 bg-white dark:bg-[#111111] text-black dark:text-[#EDEDED] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden z-[1000] animate-in fade-in slide-in-from-top-2">
+                      <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#0a0a0a]">
+                        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest">Budget Breakdown</span>
+                      </div>
+                      <div className="p-5">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-neutral-400 font-medium flex items-center gap-2"><Plane size={12} /> Transport</span>
+                            <span className="text-red-400 font-semibold">- ₹{(budget.spentTransport || 0).toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-neutral-400 font-medium flex items-center gap-2"><Landmark size={12} /> Places</span>
+                            <span className="text-red-400 font-semibold">- ₹{(budget.spentPlaces || 0).toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-neutral-400 font-medium flex items-center gap-2"><Coffee size={12} /> Food</span>
+                            <span className="text-red-400 font-semibold">- ₹{(budget.spentFood || 0).toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-neutral-400 font-medium flex items-center gap-2"><Building size={12} /> Hotels</span>
+                            <span className="text-red-400 font-semibold">- ₹{(budget.spentHotels || 0).toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center mt-4">
+                          <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Remaining</span>
+                          <span className={`text-xl font-bold ${budget.remaining < 0 ? 'text-red-500' : 'text-emerald-500 dark:text-emerald-400'}`}>
+                            ₹{(budget.remaining || 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>,
+                  document.body
+                )}
+              </div>
+            )}
             <button 
               onClick={() => setIsDark(!isDark)}
               className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300"
@@ -97,57 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </div>
 
-        {/* Dynamic Purse (Floating Island) */}
-        {pathname.startsWith('/plan') && (
-          <div 
-            className={`absolute bottom-8 right-8 bg-white dark:bg-[#111111] text-black dark:text-[#EDEDED] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-500 z-50 flex flex-col cursor-pointer w-72 ${purseExpanded ? 'h-auto' : 'h-14'}`}
-            onClick={() => !purseExpanded && setPurseExpanded(true)}
-          >
-            {/* Collapsed State / Header */}
-            <div className="h-14 px-5 flex items-center justify-between">
-              <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest">Budget</span>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-black dark:text-white">₹{budget.totalBudget.toLocaleString()}</span>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setPurseExpanded(!purseExpanded); }}
-                  className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-black dark:text-white bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 transition-all ml-2 flex items-center justify-center"
-                  title={purseExpanded ? "Collapse Budget" : "Expand Budget"}
-                >
-                  <ChevronUp size={16} className={`transition-transform duration-300 ${purseExpanded ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-            </div>
 
-            {/* Expanded State Content */}
-            <div className={`px-5 pb-5 transition-all duration-500 delay-100 ${purseExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
-              <div className="space-y-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-medium flex items-center gap-2"><Plane size={12} /> Transport</span>
-                  <span className="text-red-400 font-semibold">- ₹{(budget.spentTransport || 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-medium flex items-center gap-2"><Landmark size={12} /> Places</span>
-                  <span className="text-red-400 font-semibold">- ₹{(budget.spentPlaces || 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-medium flex items-center gap-2"><Coffee size={12} /> Food</span>
-                  <span className="text-red-400 font-semibold">- ₹{(budget.spentFood || 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-medium flex items-center gap-2"><Building size={12} /> Hotels</span>
-                  <span className="text-red-400 font-semibold">- ₹{(budget.spentHotels || 0).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-neutral-800 flex justify-between items-center mt-4">
-                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Remaining</span>
-                <span className={`text-xl font-bold ${budget.remaining < 0 ? 'text-red-500' : 'text-emerald-400'}`}>
-                  ₹{(budget.remaining || 0).toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* API Limit Warning Notification */}
         {user && !user.isAdmin && user.apiCalls >= 40 && !isNotificationDismissed && (

@@ -167,12 +167,16 @@ export default function TripSetupPage() {
                 <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-2 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
                   <span className="text-xl font-medium text-neutral-500">₹</span>
                   <input 
-                    type="number" min="1" placeholder="100000"
+                    type="text" placeholder="100000"
                     value={budget.totalBudget || ''}
                     onChange={(e) => {
                       const cleanStr = e.target.value.replace(/\D/g, '');
-                      const val = Number(cleanStr);
-                      budget.setTotalBudget(isNaN(val) ? 0 : Math.max(1, val));
+                      if (!cleanStr) {
+                        budget.setTotalBudget(0);
+                      } else {
+                        const val = parseInt(cleanStr, 10);
+                        budget.setTotalBudget(isNaN(val) ? 0 : val);
+                      }
                     }}
                     className="w-full bg-transparent border-none focus:outline-none text-lg font-medium text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-700"
                   />

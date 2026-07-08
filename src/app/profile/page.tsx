@@ -152,7 +152,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="hidden sm:block">
                           <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">Budget Expended</p>
-                          <p className="text-lg font-light text-white">₹{snap.budget?.spent?.toLocaleString() || 0}</p>
+                          <p className="text-lg font-light text-white">₹{snap.budget?.spent?.toLocaleString('en-IN') || 0}</p>
                         </div>
                         <ChevronRight size={20} className="text-white/20 group-hover:text-white transition-colors" />
                       </div>

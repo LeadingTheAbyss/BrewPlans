@@ -19,7 +19,7 @@ const PREFERENCES = [
   { id: 'spiritual', label: 'Spiritual' },
   { id: 'adventure', label: 'Adventure' },
   { id: 'romantic', label: 'Romantic' },
-  { id: 'food', label: 'Food & Culinary' },
+  { id: 'food', label: 'Food and Culinary' },
   { id: 'nightlife', label: 'Nightlife' },
 ];
 
@@ -324,11 +324,11 @@ export default function RecommendPage() {
                       <div className="flex gap-16 pt-12 mt-12 border-t border-neutral-900">
                         <div>
                           <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Est. Budget</p>
-                          <p className="text-5xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString()}</p>
+                          <p className="text-5xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString('en-IN')}</p>
                         </div>
                         <div>
                           <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Per Person</p>
-                          <p className="text-3xl font-light text-neutral-500 mt-2">~₹{filteredResults[0].perPersonEstimate?.toLocaleString()}</p>
+                          <p className="text-3xl font-light text-neutral-500 mt-2">~₹{filteredResults[0].perPersonEstimate?.toLocaleString('en-IN')}</p>
                         </div>
                       </div>
 
@@ -377,7 +377,7 @@ export default function RecommendPage() {
                         </div>
                         <div>
                           <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-2">Budget</p>
-                          <p className="text-2xl font-light text-white">₹{dest.budgetEstimate?.toLocaleString()}</p>
+                          <p className="text-2xl font-light text-white">₹{dest.budgetEstimate?.toLocaleString('en-IN')}</p>
                         </div>
                         <div className="w-16 h-16 flex items-center justify-center rounded-full border border-neutral-800 group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-500">
                           <ArrowRight size={24} className="opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500"/>

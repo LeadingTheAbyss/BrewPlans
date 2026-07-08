@@ -34,27 +34,8 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
             await conn.close()
             
             if rows:
-                print("[Cache Hit] Returning hotels from NeonDB.")
-                cached_hotels = []
-                for r in rows:
-                    h_id = r['hotel_id']
-                    name = r['name']
-                    price = r['price']
-                    rating = r['rating']
-                    lat = r['lat']
-                    lon = r['lon']
-                    comfort = min(10, int(rating * 2))
-                    safety = min(10, int(rating * 2) + 1)
-                    cached_hotels.append(Hotel(
-                        id=h_id,
-                        name=name,
-                        coordinates=(lat, lon),
-                        price_per_night=price,
-                        comfort_score=comfort,
-                        safety_score=safety,
-                        rating=rating
-                    ))
-                return sorted(cached_hotels, key=lambda x: x.price_per_night)
+                print("[Cache Hit] Found in NeonDB, but bypassing to fetch fresh images from SerpApi.")
+                # We bypass because Hotel table lacks image_url, preventing photos from showing!
         except Exception as e:
             print(f"[Warning] Hotel DB cache check failed: {e}")
         # --- End DB Cache Check ---
@@ -102,6 +83,10 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
             lat = gps.get("latitude", 0.0)
             lon = gps.get("longitude", 0.0)
             
+            # Safely extract image
+            images = item.get("images", [])
+            photo_url = images[0].get("original_image") if images else None
+            
             # Generate realistic pseudo-scores
             comfort = min(10, int(rating * 2))
             safety = min(10, int(rating * 2) + 1)
@@ -109,6 +94,7 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
             hotels.append(Hotel(
                 id=item.get("property_token", name),
                 name=name,
+                photo_name=photo_url,
                 coordinates=(lat, lon),
                 price_per_night=price,
                 comfort_score=comfort,

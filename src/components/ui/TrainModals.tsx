@@ -15,7 +15,7 @@ export const TrainRouteModal: React.FC<TrainRouteModalProps> = ({ isOpen, onClos
   useEffect(() => {
     if (!isOpen || !trainNumber) return;
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/trains/${trainNumber}/route`)
+    fetch(`http://127.0.0.1:8002/api/trains/${trainNumber}/route`)
       .then(r => r.json())
       .then(d => {
         setData(d.data || d);
@@ -93,7 +93,7 @@ export const LiveStatusModal: React.FC<TrainRouteModalProps> = ({ isOpen, onClos
     if (!isOpen || !trainNumber) return;
     setLoading(true);
     const date = new Date().toISOString().split('T')[0];
-    fetch(`http://127.0.0.1:8000/api/trains/${trainNumber}/live?date=${date}`)
+    fetch(`http://127.0.0.1:8002/api/trains/${trainNumber}/live?date=${date}`)
       .then(r => r.json())
       .then(d => {
         setData(d.data || d);
@@ -174,7 +174,7 @@ export const StationBoardModal: React.FC<{ isOpen: boolean; onClose: () => void;
   useEffect(() => {
     if (!isOpen || !stationCode) return;
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/stations/${stationCode}/board`)
+    fetch(`http://127.0.0.1:8002/api/stations/${stationCode}/board`)
       .then(r => r.json())
       .then(d => {
         setData(d.data?.trains || []);
@@ -200,7 +200,7 @@ export const StationBoardModal: React.FC<{ isOpen: boolean; onClose: () => void;
                 <Clock size={24} />
                 Live Station Board
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">Arrivals & Departures at <span className="font-bold text-foreground">{stationName}</span></p>
+              <p className="text-sm text-muted-foreground mt-1">Arrivals and Departures at <span className="font-bold text-foreground">{stationName}</span></p>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
               <X size={24} />

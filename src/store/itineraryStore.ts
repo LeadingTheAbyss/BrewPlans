@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { dbStorage } from '../lib/dbStorage';
 import { Place, ItineraryDay } from '../types/trip';
+import { useTripStore } from './tripStore';
 
 interface ItineraryState {
   days: ItineraryDay[];
   selectedPlaces: Place[]; // Global bag of places selected
+  isOptimizing: boolean;
 
   // Actions
   initializeDays: (numberOfDays: number, startDate: string) => void;
@@ -17,7 +19,9 @@ interface ItineraryState {
   movePlaceBetweenDays: (placeId: string, fromDay: number, toDay: number, newIndex?: number) => void;
   
   recalcDay: (dayNumber: number) => void;
+  updateDayExacts: (dayNumber: number, exactTravelMins: number, exactDistanceKm: number, exactCommuteCost: number) => void;
   autoSchedule: () => void;
+  batchAssign: (placeIds: string[], hotelCoords?: [number, number]) => Promise<void>;
   reset: () => void;
 }
 
@@ -26,6 +30,7 @@ export const useItineraryStore = create<ItineraryState>()(
     (set, get) => ({
   days: [],
   selectedPlaces: [],
+  isOptimizing: false,
 
   initializeDays: (numberOfDays, startDate) => {
     const newDays: ItineraryDay[] = Array.from({ length: numberOfDays }).map((_, i) => {
@@ -128,6 +133,15 @@ export const useItineraryStore = create<ItineraryState>()(
     return { days: newDays };
   }),
 
+  updateDayExacts: (dayNumber, exactTravelMins, exactDistanceKm, exactCommuteCost) => set((state) => {
+    const newDays = state.days.map(d => 
+      d.dayNumber === dayNumber 
+        ? { ...d, exactTravelMins, exactDistanceKm, exactCommuteCost } 
+        : d
+    );
+    return { days: newDays };
+  }),
+
   autoSchedule: () => set((state) => {
     const newDays = JSON.parse(JSON.stringify(state.days)) as ItineraryDay[];
     const assignedPlaceIds = new Set(newDays.flatMap(d => d.placeIds));
@@ -166,6 +180,55 @@ export const useItineraryStore = create<ItineraryState>()(
 
     return { days: newDays };
   }),
+
+  batchAssign: async (placeIds, hotelCoords) => {
+    set({ isOptimizing: true });
+    
+    try {
+      const state = get();
+      const placesToAssign = state.selectedPlaces.filter(p => placeIds.includes(p.id));
+      if (placesToAssign.length === 0) return;
+      
+      const tripPassengers = useTripStore.getState().passengers;
+      const payload = {
+        places: placesToAssign,
+        days_count: state.days.length,
+        hotel_coords: hotelCoords || null,
+        passengers: tripPassengers.map(p => ({ id: p.id, age: p.age, gender: p.gender })),
+      };
+
+      const res = await fetch('http://127.0.0.1:8002/api/optimize_itinerary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const assignments = data.assignments || {};
+        
+        // Apply assignments
+        set((currentState) => {
+          const newDays = JSON.parse(JSON.stringify(currentState.days)) as ItineraryDay[];
+          
+          for (const [placeId, dayNumber] of Object.entries(assignments)) {
+            const day = newDays.find(d => d.dayNumber === Number(dayNumber));
+            if (day && !day.placeIds.includes(placeId)) {
+              day.placeIds.push(placeId);
+            }
+          }
+          return { days: newDays };
+        });
+        
+        // Recalc all days
+        get().days.forEach(d => get().recalcDay(d.dayNumber));
+      }
+    } catch (e) {
+      console.error("OR-Tools routing failed:", e);
+    } finally {
+      set({ isOptimizing: false });
+    }
+  },
 
   reset: () => set({
     days: [],

@@ -31,67 +31,73 @@ export const api = {
     }
   },
 
-  getTransportOptions: async (source: string, destination: string, mode?: string) => {
+  getTransportOptions: async (source: string, destination: string, mode?: string, checkOnly?: boolean, signal?: AbortSignal) => {
     try {
       const modeParam = mode ? `&mode=${encodeURIComponent(mode)}` : '';
-      const url = `${BASE_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}${modeParam}`;
+      const checkParam = checkOnly ? `&check_only=true` : '';
+      const url = `${BASE_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}${modeParam}${checkParam}`;
       
       const cached = apiCache.get(url);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
       
-      const res = await fetch(url);
-      if (!res.ok) return [];
+      const res = await fetch(url, { signal });
+      if (!res.ok) return { options: [], cross_routes: [] };
       const data = await res.json();
-      if (data && data.length > 0) apiCache.set(url, { data, timestamp: Date.now() });
+      if (data && data.options && data.options.length > 0) apiCache.set(url, { data, timestamp: Date.now() });
       return data;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') throw e;
       console.error("Failed to fetch transport options:", e);
       return [];
     }
   },
 
-  getPlaces: async (destination: string, budget?: number, startDate?: string, endDate?: string) => {
+  getPlaces: async (destination: string, budget?: number, startDate?: string, endDate?: string, checkOnly?: boolean, signal?: AbortSignal) => {
     try {
       const params = new URLSearchParams({ destination });
       if (budget) params.append('budget', String(budget));
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
+      if (checkOnly) params.append('check_only', 'true');
       const url = `${BASE_URL}/places?${params.toString()}`;
       
       const cached = apiCache.get(url);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
       
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (!res.ok) return [];
       const data = await res.json();
       if (data && data.length > 0) apiCache.set(url, { data, timestamp: Date.now() });
       return data;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') throw e;
       console.error("Failed to fetch places:", e);
       return [];
     }
   },
 
-  getFood: async (destination: string, budget?: number, startDate?: string, endDate?: string) => {
+  getFood: async (destination: string, budget?: number, startDate?: string, endDate?: string, checkOnly?: boolean, signal?: AbortSignal) => {
     try {
       const params = new URLSearchParams({ destination });
       if (budget) params.append('budget', String(budget));
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
-      const res = await fetch(`${BASE_URL}/food?${params.toString()}`);
+      if (checkOnly) params.append('check_only', 'true');
+      const res = await fetch(`${BASE_URL}/food?${params.toString()}`, { signal });
       if (!res.ok) {
         if (res.status === 429) alert('Rate limit exceeded for Food API.');
         else if (res.status === 401) alert('You must be logged in.');
         return [];
       }
       return await res.json();
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') throw e;
       console.error("Failed to fetch food:", e);
       return [];
     }
   },
 
-  getHotels: async (destination: string, places: Array<{lat: number, lon: number}> = [], budget?: number, startDate?: string, endDate?: string) => {
+  getHotels: async (destination: string, places: Array<{lat: number, lon: number}> = [], budget?: number, startDate?: string, endDate?: string, checkOnly?: boolean, signal?: AbortSignal) => {
     try {
       const params = new URLSearchParams({ destination });
       if (places.length > 0) {
@@ -101,17 +107,19 @@ export const api = {
       if (budget) params.append('budget', String(budget));
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
+      if (checkOnly) params.append('check_only', 'true');
       const url = `${BASE_URL}/hotels?${params.toString()}`;
       
       const cached = apiCache.get(url);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
       
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (!res.ok) return { hotels: [], recommendation: null };
       const data = await res.json();
       if (data && data.hotels && data.hotels.length > 0) apiCache.set(url, { data, timestamp: Date.now() });
       return data;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') throw e;
       console.error("Failed to fetch hotels:", e);
       return { hotels: [], recommendation: null };
     }

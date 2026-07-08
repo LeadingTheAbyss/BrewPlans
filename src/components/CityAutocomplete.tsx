@@ -38,8 +38,7 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
-    onChange(val); // Keep parent state updated
-
+    
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     if (val.length >= 2) {

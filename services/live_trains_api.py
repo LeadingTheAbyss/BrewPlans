@@ -18,18 +18,18 @@ MAX_REQUESTS_PER_MINUTE = 9 # Keep it at 9 to be safe
 
 # Expanded city to station mapping for Indian Railways
 CITY_TO_STATION = {
-    "Delhi": "NDLS", "New Delhi": "NDLS",
-    "Mumbai": "CSMT",
-    "Bangalore": "SBC", "Bengaluru": "SBC",
-    "Chennai": "MAS",
-    "Kolkata": "HWH",
+    "Delhi": "NDLS", "New Delhi": "NDLS", "DEL": "NDLS",
+    "Mumbai": "CSMT", "BOM": "CSMT",
+    "Bangalore": "SBC", "Bengaluru": "SBC", "BLR": "SBC",
+    "Chennai": "MAS", "MAA": "MAS",
+    "Kolkata": "HWH", "CCU": "HWH",
     "Lucknow": "LKO",
-    "Jaipur": "JP",
+    "Jaipur": "JP", "JAI": "JP",
     "Agra": "AGC",
     "Varanasi": "BSB",
-    "Ahmedabad": "ADI",
-    "Pune": "PUNE",
-    "Hyderabad": "SC",
+    "Ahmedabad": "ADI", "AMD": "ADI",
+    "Pune": "PUNE", "PNQ": "PUNE",
+    "Hyderabad": "SC", "HYD": "SC",
     "Chandigarh": "CDG",
     "Amritsar": "ASR",
     "Kochi": "ERS", "Cochin": "ERS",
@@ -155,12 +155,12 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
     
     if not origin_code or not dest_code:
         print(f"[Warning] Could not dynamically map {clean_origin} or {clean_dest} to a station code.")
-        return _get_fallback_trains(origin_city, dest_city, date)
+        return []
 
     api_key = os.getenv("RAILRADAR_API_KEY")
     if not api_key:
         print("[Warning] No RAILRADAR_API_KEY found in .env. Falling back to mock trains.")
-        return _get_fallback_trains(origin_city, dest_city, date)
+        return []
 
     # 1. Determine station combinations to check (max 3 to avoid rate limit)
     origins = STATION_CLUSTERS.get(clean_origin, [origin_code])
@@ -275,8 +275,7 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
             print(f"[Error] Unexpected error in RailRadar API for {o_code}-{d_code}: {e}")
             
     if not options:
-        return _get_fallback_trains(origin_city, dest_city, date)
-        
+        return []
     # --- Save to DB Cache ---
     try:
         conn = await get_db_connection()
@@ -294,12 +293,6 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
         
     return sorted(options, key=lambda x: x.price)
 
-def _get_fallback_trains(source, dest, date_str):
-    """Provides graceful fallback if the API fails or rate-limits so the planner doesn't crash."""
-    d = datetime.strptime(date_str, "%Y-%m-%d")
-    return [
-        TransportOption(id="t2_fallback", type=TransportType.TRAIN, departure=d.replace(hour=18), arrival=d+timedelta(days=1, hours=8), duration_hours=14.0, price=1500, safety_score=8, comfort_score=6, provider="Shatabdi Express (Fallback)"),
-    ]
 
 async def get_train_route(train_number: str):
     """Fetches the full timetable (stops) of a specific train from RailRadar."""
@@ -314,6 +307,7 @@ async def get_train_route(train_number: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 async def get_live_train_status(train_number: str, date: str):
     """Fetches the real-time position and delay of a running train."""
     api_key = os.getenv("RAILRADAR_API_KEY")
@@ -326,6 +320,7 @@ async def get_live_train_status(train_number: str, date: str):
             return res.json()
     except Exception as e:
         return {"error": str(e)}
+
 
 async def get_station_board(station_code: str):
     """Fetches the live arrivals/departures board for a station in the next 4 hours."""

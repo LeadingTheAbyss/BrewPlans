@@ -103,7 +103,7 @@ export default function LoginPage() {
         
         <p className="text-center text-slate-400 text-xs leading-relaxed">
           By signing in, you agree to our <br/>
-          <Link href="/terms" className="text-indigo-500 hover:text-indigo-600 font-medium">Terms of Service</Link> & <Link href="/privacy" className="text-indigo-500 hover:text-indigo-600 font-medium">Privacy Policy</Link>
+          <Link href="/terms" className="text-indigo-500 hover:text-indigo-600 font-medium">Terms of Service</Link> and <Link href="/privacy" className="text-indigo-500 hover:text-indigo-600 font-medium">Privacy Policy</Link>
         </p>
       </div>
       

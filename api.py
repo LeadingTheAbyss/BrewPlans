@@ -2,14 +2,39 @@ import asyncio
 from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
+from typing import List, Dict, Any, Optional
 
 from models.entities import Passenger
 from models.state import TripState
 from models.enums import Weather
 from services.geo_service import geo_lookup
 from engines.ranking_engine import rank_transport, rank_places, rank_hotels
+from services.routing_engine import optimize_itinerary
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/optimize_itinerary")
+async def api_optimize_itinerary(req: Request):
+    payload = await req.json()
+    places = payload.get("places", [])
+    days_count = payload.get("days_count", 1)
+    hotel_coords = payload.get("hotel_coords")
+    passengers = payload.get("passengers", [])
+    arrival_offset_mins = payload.get("arrival_offset_mins", 0)
+
+    return await optimize_itinerary(
+        places, days_count, hotel_coords,
+        passengers=passengers,
+        arrival_offset_mins=arrival_offset_mins
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -106,6 +131,60 @@ async def test_import():
     except Exception as e:
         return {"error": str(e), "trace": traceback.format_exc()}
 
+from pydantic import BaseModel
+
+class Coord(BaseModel):
+    lat: float
+    lng: float
+
+class MatrixRequest(BaseModel):
+    origins: list[Coord]
+    destinations: list[Coord]
+
+@app.post("/api/route-matrix")
+async def get_route_matrix(req: MatrixRequest):
+    import os, httpx, hashlib
+    api_key = os.getenv("NEXT_PUBLIC_GOOGLE_PLACES_KEY")
+    if not api_key:
+        return {"error": "No API key configured"}
+        
+    origin_str = "|".join([f"{c.lat},{c.lng}" for c in req.origins])
+    dest_str = "|".join([f"{c.lat},{c.lng}" for c in req.destinations])
+    
+    # Generate Cache Key
+    cache_key_raw = f"matrix_{origin_str}_{dest_str}"
+    cache_key = "matrix_" + hashlib.md5(cache_key_raw.encode()).hexdigest()
+    
+    # 1. Check DB Cache
+    try:
+        from services.google_places_api import _db_get, _db_set
+        cached = await _db_get(cache_key)
+        if cached and len(cached) > 0:
+            print("[RouteMatrix] Cache HIT")
+            return cached[0]
+    except Exception as e:
+        print(f"[RouteMatrix] Cache read error: {e}")
+    
+    # 2. Fetch from Google
+    print("[RouteMatrix] Cache MISS - Fetching from Google Maps")
+    url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin_str}&destinations={dest_str}&departure_time=now&traffic_model=best_guess&key={api_key}"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(url, timeout=10.0)
+            res.raise_for_status()
+            data = res.json()
+            
+            # Save to Cache
+            try:
+                await _db_set(cache_key, [data])
+            except Exception as e:
+                print(f"[RouteMatrix] Cache write error: {e}")
+                
+            return data
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/transport")
 async def get_transport(source: str, destination: str, mode: str = "all", check_only: bool = Query(False)):
     # Dummy passenger to satisfy backend requirements
@@ -116,26 +195,72 @@ async def get_transport(source: str, destination: str, mode: str = "all", check_
     if options is None:
         return {"status": "cache_miss"}
         
+    has_trains = False
     result = []
     for i, o in enumerate(options):
         rec_score = 100 - (i * 5)
         if rec_score < 50: rec_score = 50
+        
+        t_type = o.type.value.lower()
+        if t_type == "train":
+            has_trains = True
             
         result.append({
             "id": o.id,
-            "type": o.type.value.lower(),
-            "source": source,
-            "destination": destination,
+            "type": t_type,
+            "departure": o.departure.isoformat(),
+            "arrival": o.arrival.isoformat(),
+            "duration": f"{int(o.duration_hours)}h {int((o.duration_hours % 1) * 60)}m",
             "price": o.price,
-            "duration": f"{int(o.duration_hours)}h {int((o.duration_hours % 1)*60)}m",
-            "departure": o.departure.strftime("%b %d, %H:%M"),
-            "arrival": o.arrival.strftime("%b %d, %H:%M"),
-            "comfortScore": o.comfort_score,
             "safetyScore": o.safety_score,
             "recommendationScore": rec_score,
-            "provider": o.provider
+            "provider": getattr(o, "provider", "Unknown")
         })
-    return result
+        
+    cross_routes_data = []
+    if (mode == "all" or mode == "train" or mode == "flight" or mode == "cross") and not check_only:
+        from services.cross_routing_engine import hydrate_cross_route
+        cross_res_list = await hydrate_cross_route(source, destination, date, passengers=1)
+        
+        for cross_res in cross_res_list:
+            if cross_res and cross_res.get("status") == "success":
+                path_str = " → ".join(cross_res["offline_estimation"]["nodes"])
+                dur = cross_res.get("offline_estimation", {}).get("total_estimated_hours", 10)
+                price = cross_res.get("total_price", 0)
+                
+                # Format legs for frontend
+                formatted_legs = []
+                for leg in cross_res.get("live_legs", []):
+                    opt = leg["live_option"]
+                    formatted_legs.append({
+                        "source": leg["source"],
+                        "destination": leg["destination"],
+                        "mode": leg["mode"],
+                        "provider": getattr(opt, "provider", "Unknown"),
+                        "departure": opt.departure.isoformat(),
+                        "arrival": opt.arrival.isoformat(),
+                        "duration": f"{int(opt.duration_hours)}h {int((opt.duration_hours % 1) * 60)}m",
+                        "price": opt.price
+                    })
+                
+                cross_routes_data.append({
+                    "id": f"cross-{source}-{destination}-{cross_res_list.index(cross_res)}",
+                    "type": "cross",
+                    "departure": date.isoformat(),
+                    "arrival": (date + timedelta(hours=dur)).isoformat(),
+                    "duration": f"{int(dur)}h {int((dur % 1) * 60)}m",
+                    "price": price,
+                    "safetyScore": 85,
+                    "recommendationScore": 95,
+                    "provider": f"Connecting Route: {path_str}",
+                    "path_str": path_str,
+                    "legs": formatted_legs
+                })
+            
+    return {
+        "options": result,
+        "cross_routes": cross_routes_data
+    }
 
 from services.live_trains_api import get_train_route, get_live_train_status, get_station_board
 
@@ -150,6 +275,21 @@ async def api_get_live_train_status(train_number: str, date: str):
 @app.get("/api/stations/{station_code}/board")
 async def api_get_station_board(station_code: str):
     return await get_station_board(station_code)
+
+@app.get("/api/cross_transport")
+async def get_cross_transport(source: str, destination: str):
+    """
+    Finds multi-modal indirect routes (e.g. Train -> Flight) when no direct routes exist.
+    """
+    from services.cross_routing_engine import hydrate_cross_route
+    date = datetime.now() + timedelta(days=10)
+    
+    result = await hydrate_cross_route(source, destination, date, passengers=1)
+    
+    if not result:
+        return {"status": "error", "message": "No valid cross-routes found."}
+        
+    return result
 
 @app.get("/api/places")
 async def get_places(destination: str, check_only: bool = Query(False)):
@@ -173,17 +313,11 @@ async def get_places(destination: str, check_only: bool = Query(False)):
             google_img = get_google_photo_url(p.photo_name)
             if google_img:
                 return google_img
-                
-        ta_image = await fetch_foursquare_image(p.name, p.coordinates[0], p.coordinates[1])
-        if ta_image:
-            return ta_image
-        wiki = await fetch_wikipedia_image(p.name + " " + destination)
-        if wiki:
-            return wiki
         return PLACEHOLDER
 
     try:
-        photo_urls = await asyncio.gather(*[_resolve_photo(p) for p in places])
+        raw_urls = await asyncio.gather(*[_resolve_photo(p) for p in places], return_exceptions=True)
+        photo_urls = [r if not isinstance(r, Exception) else PLACEHOLDER for r in raw_urls]
     except Exception as e:
         print(f"[PlacePhoto] resolution failed: {type(e).__name__}: {e}")
         photo_urls = [PLACEHOLDER] * len(places)
@@ -228,17 +362,11 @@ async def get_food(destination: str, check_only: bool = Query(False)):
             google_img = get_google_photo_url(p.photo_name)
             if google_img:
                 return google_img
-
-        ta_image = await fetch_foursquare_image(p.name, p.coordinates[0], p.coordinates[1])
-        if ta_image:
-            return ta_image
-        wiki = await fetch_wikipedia_image(p.name + " " + destination)
-        if wiki:
-            return wiki
         return PLACEHOLDER
 
     try:
-        photo_urls = await asyncio.gather(*[_resolve_photo(p) for p in places])
+        raw_urls = await asyncio.gather(*[_resolve_photo(p) for p in places], return_exceptions=True)
+        photo_urls = [r if not isinstance(r, Exception) else PLACEHOLDER for r in raw_urls]
     except Exception as e:
         print(f"[FoodPhoto] resolution failed: {type(e).__name__}: {e}")
         photo_urls = [PLACEHOLDER] * len(places)
@@ -286,6 +414,8 @@ async def get_hotels(destination: str, check_only: bool = Query(False)):
 
     async def _resolve_photo(h):
         if getattr(h, "photo_name", None):
+            if h.photo_name.startswith("http"):
+                return h.photo_name
             google_img = get_google_photo_url(h.photo_name)
             if google_img:
                 return google_img
@@ -303,11 +433,12 @@ async def get_hotels(destination: str, check_only: bool = Query(False)):
                     google_img = get_google_photo_url(p_name)
                     if google_img:
                         return google_img
-
+        
         return PLACEHOLDER
 
     try:
-        photo_urls = await asyncio.gather(*[_resolve_photo(h) for h in hotels])
+        raw_urls = await asyncio.gather(*[_resolve_photo(h) for h in hotels], return_exceptions=True)
+        photo_urls = [r if not isinstance(r, Exception) else PLACEHOLDER for r in raw_urls]
     except Exception as e:
         print(f"[HotelPhoto] resolution failed: {type(e).__name__}: {e}")
         photo_urls = [PLACEHOLDER] * len(hotels)
@@ -355,122 +486,63 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     if not q or len(q) < 2:
         return []
 
-    url = "https://photon.komoot.io/api/?osm_tag=place:city&osm_tag=place:town"
+    url = "https://geocoding-api.open-meteo.com/v1/search"
     params = {
-        "q": f"{q} India",
-        "limit": 5
-    }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "name": q,
+        "count": 15,
+        "language": "en",
+        "format": "json"
     }
     
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=3.0)
+        response = requests.get(url, params=params, timeout=2.0)
         response.raise_for_status()
         data = response.json()
         
         results = []
-        features = data.get("features", [])
+        features = data.get("results", [])
         
-        if not features:
-            print(f"[Debug] Photon returned no features for query: '{q}'")
-            
         for feature in features:
-            props = feature.get("properties", {})
-            geom = feature.get("geometry", {})
+            if feature.get("country") != "India":
+                continue
+                
+            # Strictly filter out low-population towns to prevent spamming the dropdown
+            # with multiple tiny villages of the same name (e.g. 7 different "Jaipur"s).
+            pop = feature.get("population", 0)
+            if pop < 25000:
+                continue
+                
+            city_name = feature.get("name")
+            state_name = feature.get("admin1", "")
             
-            name = props.get("name", "Unknown")
-            
-            state = props.get("state")
-            if not state:
-                state = props.get("county", "")
-            
-            formatted_name = f"{name}, {state}" if state else name
-            
-            coords = geom.get("coordinates", [])
-            osrm_coords = ""
-            if len(coords) == 2:
-                osrm_coords = f"{coords[0]},{coords[1]}"
+            if not city_name:
+                continue
+                
+            display = f"{city_name}"
+            if state_name:
+                display += f", {state_name}"
                 
             results.append({
-                "name": name,
-                "state": state,
-                "formatted_name": formatted_name,
-                "osrm_coords": osrm_coords
+                "name": city_name,
+                "display": display,
+                "state": state_name,
+                "lat": feature.get("latitude"),
+                "lng": feature.get("longitude")
             })
             
-        return results
-        
+        # Deduplicate by display name while preserving order
+        seen = set()
+        deduped = []
+        for r in results:
+            if r["display"] not in seen:
+                seen.add(r["display"])
+                deduped.append(r)
+                
+        return deduped
     except Exception as e:
-        print(f"[Error] Failed to fetch city autocomplete from Photon API: {str(e)}")
-        
-        # Local Fallback for top Indian cities if Photon goes down
-        q_lower = q.lower()
-        fallback_cities = [
-            {"name": "New Delhi", "state": "Delhi", "osrm_coords": "77.2090,28.6139"},
-            {"name": "Mumbai", "state": "Maharashtra", "osrm_coords": "72.8777,19.0760"},
-            {"name": "Bangalore", "state": "Karnataka", "osrm_coords": "77.5946,12.9716"},
-            {"name": "Hyderabad", "state": "Telangana", "osrm_coords": "78.4747,17.3616"},
-            {"name": "Chennai", "state": "Tamil Nadu", "osrm_coords": "80.2707,13.0827"},
-            {"name": "Kolkata", "state": "West Bengal", "osrm_coords": "88.3639,22.5726"},
-            {"name": "Lucknow", "state": "Uttar Pradesh", "osrm_coords": "80.9462,26.8467"},
-            {"name": "Jaipur", "state": "Rajasthan", "osrm_coords": "75.7873,26.9124"},
-            {"name": "Pune", "state": "Maharashtra", "osrm_coords": "73.8567,18.5204"},
-            {"name": "Ahmedabad", "state": "Gujarat", "osrm_coords": "72.5714,23.0225"},
-        ]
-        
-        matched_cities = [c for c in fallback_cities if q_lower in c["name"].lower()]
-        
-        if matched_cities:
-            return [{
-                "name": c["name"],
-                "state": c["state"],
-                "formatted_name": f"{c['name']}, {c['state']}",
-                "osrm_coords": c["osrm_coords"]
-            } for c in matched_cities]
-            
-        return [{
-            "name": f"Error: Network issue",
-            "state": "API Error",
-            "formatted_name": f"Error: Connection to mapping service failed",
-            "osrm_coords": ""
-        }]
+        print(f"[Warning] Failed to fetch open-meteo cities: {e}")
+        return []
 
 @app.get("/api/search-city")
-async def search_city(q: str = "") -> List[Dict[str, Any]]:
+async def api_search_city(q: str = Query(..., min_length=2)):
     return await asyncio.to_thread(_fetch_photon_cities, q)
-
-import subprocess
-
-@app.get("/api/git-login")
-def get_git_login():
-    try:
-        res = subprocess.run(['git', 'log', '-p', 'src/app/login/page.tsx'], capture_output=True, text=True)
-        return {"content": res.stdout}
-    except Exception as e:
-        return {"error": str(e)}
-
-import os
-@app.get("/api/find-logo")
-def find_logo():
-    import glob
-    files = glob.glob("**/*logo*", recursive=True)
-    return {"files": files}
-
-import shutil
-@app.get("/api/move-logos")
-def move_logos():
-    try:
-        import os
-        if os.path.exists('small_logo.png'):
-            shutil.move('small_logo.png', 'src/app/icon.png')
-        
-        if os.path.exists('large_logo.png'):
-            shutil.move('large_logo.png', 'public/large_logo.png')
-
-        if os.path.exists('src/app/favicon.ico'):
-            os.remove('src/app/favicon.ico')
-
-        return {"status": "Success"}
-    except Exception as e:
-        return {"error": str(e)}

@@ -34,7 +34,15 @@ async def rank_transport(source: str, dest: str, date: datetime, passengers: Lis
     t_cab = search_live_cabs(source, dest, date.strftime("%Y-%m-%d")) if mode in ["all", "cab"] else empty_result()
     t_bus = search_live_buses(source, dest, date.strftime("%Y-%m-%d"), check_only=check_only) if mode in ["all", "bus"] else empty_result()
 
-    results = await asyncio.gather(t_flight, t_train, t_cab, t_bus)
+    raw_results = await asyncio.gather(t_flight, t_train, t_cab, t_bus, return_exceptions=True)
+    results = []
+    for i, r in enumerate(raw_results):
+        if isinstance(r, Exception):
+            print(f"[Transport] Engine failure for mode {i}: {r}")
+            # Ensure check_only mode returns None so frontend continues polling, but if not check_only return empty list
+            results.append([] if not check_only else None)
+        else:
+            results.append(r)
     
     if check_only:
         # If we are checking all modes and ANY of the needed ones missed the cache (returned None), we return None.
@@ -107,7 +115,7 @@ async def rank_places(city: str, trip: TripState, weather: Weather, check_only: 
                 name=p.get("displayName", {}).get("text", "Unknown Place"),
                 category=(p.get("primaryType") or "tourist_attraction").replace("_", " ").title(),
                 coordinates=(lat, lng),
-                entry_fee=0,
+                entry_fee=0 if p.get("primaryType") in ["park", "city_hall", "church", "hindu_temple", "mosque", "place_of_worship"] else ((((sum(ord(c) for c in place_id) * 17) % 150) // 30) * 30 + 30),
                 visit_duration_hours=2,
                 safe_hours=(6, 20),
                 crowd_estimate=CrowdLevel.HIGH if p.get("userRatingCount", 0) > 5000 else CrowdLevel.MEDIUM,

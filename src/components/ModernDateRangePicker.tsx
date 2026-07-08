@@ -107,7 +107,9 @@ export default function ModernDateRangePicker({ label, startDate, endDate, onCha
   // Display value formatting
   const formatDisplay = (val: string | null) => {
     if (!val) return '';
-    return new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
   };
   
   let displayValue = 'Select Dates';
@@ -134,7 +136,7 @@ export default function ModernDateRangePicker({ label, startDate, endDate, onCha
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 w-72 mt-2 bg-popover/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 top-[100%] left-0 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute z-50 w-72 mt-2 bg-popover/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 top-[100%] right-0 transform transition-all animate-in fade-in zoom-in-95 duration-200">
           
           {/* Header */}
           <div className="flex items-center justify-between mb-4">

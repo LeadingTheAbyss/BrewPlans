@@ -11,7 +11,7 @@ interface TripState {
   endDate: string | null;
   
   passengers: Passenger[];
-  selectedTransports: { passengerId: string; transportOptionId: string; cost: number; }[];
+  selectedTransports: { passengerId: string; transportOptionId: string; cost: number; transport?: any }[];
   selectedHotel: Hotel | null;
 
   // Actions
@@ -71,7 +71,8 @@ export const useTripStore = create<TripState>()(
     const newSelection = {
       passengerId,
       transportOptionId: option.id,
-      cost: option.price
+      cost: option.price,
+      transport: option
     };
     return {
       selectedTransports: [

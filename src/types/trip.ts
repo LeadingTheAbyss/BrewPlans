@@ -79,5 +79,8 @@ export type ItineraryDay = {
   placeIds: string[];
   totalTimeHours: number;
   totalCost: number;
+  exactTravelMins?: number;
+  exactDistanceKm?: number;
+  exactCommuteCost?: number;
   warnings: string[];
 };
