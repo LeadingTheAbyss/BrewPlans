@@ -108,5 +108,17 @@ export const api = {
       console.error('Error searching city:', error);
       return [];
     }
+  },
+
+  olaSearch: async (query: string, city: string): Promise<Place[]> => {
+    if (!query || !city) return [];
+    try {
+      const response = await fetch(`/api/ola-search?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      return await response.json();
+    } catch (error) {
+      console.error('Error Ola search:', error);
+      return [];
+    }
   }
 };

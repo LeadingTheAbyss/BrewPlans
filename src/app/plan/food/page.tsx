@@ -52,25 +52,27 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
   const reviewCount = (place.id.length * 1234) % 25000;
 
   const handleActionClick = (action: string) => {
+    const query = encodeURIComponent(place.name + ' ' + destination);
+    const placeUrl = `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${place.id}`;
+
     switch (action) {
       case 'Directions':
-        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + destination)}`, '_blank');
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}&destination_place_id=${place.id}`, '_blank');
         break;
       case 'Nearby':
-        window.open(`https://www.google.com/maps/search/restaurants+near+${encodeURIComponent(place.name + ' ' + destination)}`, '_blank');
+        window.open(`https://www.google.com/maps/search/things+to+do+near+${query}`, '_blank');
         break;
       case 'Save':
-        alert(`Saved ${place.name} to your bookmarks!`);
-        break;
       case 'Send':
-        alert(`Sent ${place.name} details to your device.`);
+        window.open(placeUrl, '_blank');
         break;
       case 'Share':
         if (navigator.share) {
-          navigator.share({ title: place.name, text: `Check out ${place.name} in ${destination}!`, url: window.location.href })
+          navigator.share({ title: place.name, text: `Check out ${place.name} in ${destination}!`, url: placeUrl })
             .catch(() => alert('Link copied!'));
         } else {
-          alert('Link copied to clipboard!');
+          navigator.clipboard.writeText(placeUrl);
+          alert('Google Maps link copied to clipboard!');
         }
         break;
     }
@@ -117,7 +119,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
               loading="lazy"
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY}&location=${place.lat},${place.lng}&heading=210&pitch=10&fov=35`}
+              src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY}&location=${place.lat},${place.lng}&radius=50&pitch=0&fov=90`}
             ></iframe>
           ) : place.imageUrl ? (
             <img src={place.imageUrl} alt={place.name} className="w-full h-full object-cover" />
@@ -156,7 +158,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
 
           {/* Tabs */}
           <div className="flex gap-5 border-b border-zinc-800 mb-5 sticky top-0 bg-zinc-900 z-10 pt-1">
-            {['Overview', 'Tickets', 'Reviews', 'About'].map(tab => (
+            {['Overview', 'About'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -213,13 +215,6 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
             </div>
           )}
 
-          {/* Tickets Tab */}
-          {activeTab === 'Tickets' && (
-            <div className="text-zinc-400 py-10 text-center animate-in slide-in-from-right-4 duration-300">
-              <Ticket size={36} className="mx-auto mb-3 opacity-20" />
-              <p className="text-sm">Reservations can be made at the restaurant directly.</p>
-            </div>
-          )}
 
           {/* Reviews Tab */}
           {activeTab === 'Reviews' && (

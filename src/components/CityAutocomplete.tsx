@@ -89,9 +89,10 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
               className="p-3 hover:bg-muted cursor-pointer flex flex-col border-b last:border-0 border-border transition-colors"
               onClick={() => handleSelect(res.name)}
             >
-              <div className="font-semibold text-foreground flex items-center gap-2">
-                <MapPin size={14} className="text-muted-foreground" />
-                {i + 1}. {res.name} <span className="text-muted-foreground text-xs font-normal">({res.state})</span>
+              <div className="font-semibold text-foreground flex items-center gap-2 overflow-hidden">
+                <MapPin size={14} className="text-muted-foreground shrink-0" />
+                <span className="truncate">{res.name}</span>
+                <span className="text-muted-foreground text-xs font-normal truncate shrink-0">({res.state})</span>
               </div>
             </div>
           ))}

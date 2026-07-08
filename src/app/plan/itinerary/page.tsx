@@ -431,21 +431,21 @@ export default function ItineraryPage() {
                           <div className="h-32 rounded-xl flex flex-col items-center justify-center text-zinc-500 opacity-80 bg-[#111]/50 border border-dashed border-[#333] px-6 text-center transition-all hover:border-[#444] hover:bg-[#111]">
                             {day.dayNumber === 1 ? (
                               <>
-                                <span className="text-sm font-bold text-emerald-500 mb-2">Transit & Settle 🧳</span>
+                                <span className="text-sm font-bold text-emerald-500 mb-2">Transit & Settle</span>
                                 <span className="text-[10px] uppercase tracking-wider leading-relaxed">
                                   You arrive on <span className="text-zinc-300 font-bold">{formattedDate}</span>. No activities scheduled so you can comfortably reach your hotel and rest.
                                 </span>
                               </>
                             ) : day.dayNumber === itinerary.days.length ? (
                               <>
-                                <span className="text-sm font-bold text-blue-500 mb-2">Departure Day ✈️</span>
+                                <span className="text-sm font-bold text-blue-500 mb-2">Departure Day</span>
                                 <span className="text-[10px] uppercase tracking-wider leading-relaxed">
                                   Heading home on <span className="text-zinc-300 font-bold">{formattedDate}</span>. Safe travels!
                                 </span>
                               </>
                             ) : (
                               <>
-                                <span className="text-sm font-bold text-amber-500 mb-2">Rest Day ☕</span>
+                                <span className="text-sm font-bold text-amber-500 mb-2">Rest Day</span>
                                 <span className="text-[10px] uppercase tracking-wider leading-relaxed">
                                   No rigid plans! Relax, explore at your own pace, or drag places here.
                                 </span>
@@ -527,10 +527,8 @@ export default function ItineraryPage() {
               disabled={allUnassigned.length === 0 || itinerary.isOptimizing}
               className="w-full bg-[#111] border border-[#333] hover:border-emerald-500 hover:bg-[#1a1a1a] disabled:opacity-50 disabled:hover:border-[#333] text-zinc-300 hover:text-emerald-400 text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group"
             >
-              {itinerary.isOptimizing ? (
+              {itinerary.isOptimizing && (
                 <Loader2 size={16} className="text-emerald-400 animate-spin" />
-              ) : (
-                <Wand2 size={16} className={allUnassigned.length === 0 ? 'text-zinc-600' : 'text-emerald-400 group-hover:rotate-12 transition-transform'} />
               )}
               {itinerary.isOptimizing ? 'Optimizing Route...' : 'Schedule to maximize comfort'}
             </button>

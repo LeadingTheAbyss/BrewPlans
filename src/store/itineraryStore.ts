@@ -197,7 +197,7 @@ export const useItineraryStore = create<ItineraryState>()(
         passengers: tripPassengers.map(p => ({ id: p.id, age: p.age, gender: p.gender })),
       };
 
-      const res = await fetch('http://127.0.0.1:8002/api/optimize_itinerary', {
+      const res = await fetch('/api/optimize_itinerary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

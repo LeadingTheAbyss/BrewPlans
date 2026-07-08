@@ -30,19 +30,19 @@ async def api_optimize_itinerary(req: Request):
     passengers = payload.get("passengers", [])
     arrival_offset_mins = payload.get("arrival_offset_mins", 0)
 
-    return await optimize_itinerary(
-        places, days_count, hotel_coords,
-        passengers=passengers,
-        arrival_offset_mins=arrival_offset_mins
-    )
+    import traceback
+    try:
+        return await optimize_itinerary(
+            places, days_count, hotel_coords,
+            passengers=passengers,
+            arrival_offset_mins=arrival_offset_mins
+        )
+    except Exception as e:
+        with open("debug_opt_error.txt", "w") as f:
+            f.write(traceback.format_exc())
+        raise e
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 
 @app.get("/api/debug-db-cache")
 async def debug_db_cache():
@@ -511,10 +511,10 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
             if feature.get("country") != "India":
                 continue
                 
-            # Strictly filter out low-population towns to prevent spamming the dropdown
-            # with multiple tiny villages of the same name (e.g. 7 different "Jaipur"s).
-            pop = feature.get("population", 0)
-            if pop < 25000:
+            # Looser population check: only filter if population is known and very small.
+            # Many legitimate cities might not have a population field in Open-Meteo.
+            pop = feature.get("population")
+            if pop is not None and pop < 10000:
                 continue
                 
             city_name = feature.get("name")
@@ -551,3 +551,88 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
 @app.get("/api/search-city")
 async def api_search_city(q: str = Query(..., min_length=2)):
     return await asyncio.to_thread(_fetch_photon_cities, q)
+
+@app.get("/api/overpass-search")
+@app.get("/api/ola-search")
+async def ola_search(q: str = Query(...), city: str = Query(...)):
+    import requests
+    def _fetch():
+        import uuid
+        api_key = "vYv8ERMtzUwIm6A2vIAqzhEywl8CDO6T1Nd7ilDU"
+        
+        cities = _fetch_photon_cities(city)
+        location_param = ""
+        if cities:
+            city_coords = cities[0]['osrm_coords']
+            lon, lat = city_coords.split(',')
+            location_param = f"&location={lat},{lon}"
+            
+        url = f"https://api.olamaps.io/places/v1/autocomplete?input={requests.utils.quote(q)}{location_param}&api_key={api_key}"
+        headers = {'X-Request-Id': str(uuid.uuid4())}
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            data = response.json()
+        except Exception as e:
+            print("Ola Maps Request Error:", e)
+            raise e
+            
+        places = []
+        predictions = data.get('predictions', [])
+        if not predictions:
+            # Maybe it's a direct array or different format?
+            if isinstance(data, list):
+                predictions = data
+                
+        for p in predictions:
+            if not isinstance(p, dict):
+                continue
+                
+            name = p.get('structured_formatting', {}).get('main_text') or p.get('description', 'Unknown')
+            
+            # Position safely
+            geom = p.get('geometry') or {}
+            loc = geom.get('location') or {}
+            lat = loc.get('lat')
+            lng = loc.get('lng')
+            
+            # Fallback if ola maps returns different format
+            if not lat:
+                loc_fb = p.get('location') or {}
+                lat = loc_fb.get('lat')
+                lng = loc_fb.get('lng')
+                
+            if not lat or not lng:
+                # If autocomplete does not return geometry, we skip it for now.
+                # The user would need Place Details API to get coordinates, 
+                # but since we found geometry in tests, we assume it's usually there.
+                continue
+                
+            types = p.get('types', [])
+            category = "OTHER"
+            
+            # Very basic category mapping based on string
+            desc_lower = p.get('description', '').lower()
+            if any(t in types for t in ['restaurant', 'cafe', 'food']):
+                category = "FOOD"
+            elif 'cinema' in desc_lower or 'mall' in desc_lower:
+                category = "INDOOR_ENT"
+            elif any(t in types for t in ['park', 'stadium']):
+                category = "ACTIVE"
+            elif any(t in types for t in ['point_of_interest', 'establishment']):
+                category = "CULTURAL"
+                
+            places.append({
+                "id": p.get('place_id', str(lat)),
+                "name": name,
+                "category": category,
+                "lat": float(lat),
+                "lng": float(lng)
+            })
+        return places
+    try:
+        return await asyncio.to_thread(_fetch)
+    except Exception as e:
+        import traceback
+        return [{"id": "error", "name": f"Error: {str(e)} - {traceback.format_exc()}", "category": "OTHER", "lat": 0, "lng": 0}]
+

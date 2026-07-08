@@ -160,42 +160,25 @@ export default function TripSetupPage() {
               </div>
             </div>
 
-            {/* Row 2: Budget & Trip Style */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-              <div className="md:col-span-5 space-y-3">
-                <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Total Budget (INR)</label>
-                <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-2 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
-                  <span className="text-xl font-medium text-neutral-500">₹</span>
-                  <input 
-                    type="text" placeholder="100000"
-                    value={budget.totalBudget || ''}
-                    onChange={(e) => {
-                      const cleanStr = e.target.value.replace(/\D/g, '');
-                      if (!cleanStr) {
-                        budget.setTotalBudget(0);
-                      } else {
-                        const val = parseInt(cleanStr, 10);
-                        budget.setTotalBudget(isNaN(val) ? 0 : val);
-                      }
-                    }}
-                    className="w-full bg-transparent border-none focus:outline-none text-lg font-medium text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-700"
-                  />
-                </div>
-              </div>
-
-              <div className="md:col-span-7 space-y-3">
-                <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Trip Style</label>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {TRIP_STYLES.map(style => (
-                    <button
-                      key={style.id}
-                      onClick={() => setTripStyle(style.id)}
-                      className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all ${tripStyle === style.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-transparent border border-neutral-300 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:border-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}
-                    >
-                      {style.label}
-                    </button>
-                  ))}
-                </div>
+            {/* Row 2: Budget */}
+            <div className="space-y-3">
+              <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Total Budget (INR)</label>
+              <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-2 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
+                <span className="text-xl font-medium text-neutral-500">₹</span>
+                <input 
+                  type="text" placeholder="100000"
+                  value={budget.totalBudget || ''}
+                  onChange={(e) => {
+                    const cleanStr = e.target.value.replace(/\D/g, '');
+                    if (!cleanStr) {
+                      budget.setTotalBudget(0);
+                    } else {
+                      const val = parseInt(cleanStr, 10);
+                      budget.setTotalBudget(isNaN(val) ? 0 : val);
+                    }
+                  }}
+                  className="w-full bg-transparent border-none focus:outline-none text-lg font-medium text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-700"
+                />
               </div>
             </div>
 

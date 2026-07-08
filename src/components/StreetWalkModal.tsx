@@ -127,8 +127,8 @@ export function StreetWalkModal({
             });
           };
 
-          // Start with a strict 100m outdoor search
-          trySearch(100, StreetViewSource.OUTDOOR);
+          // Start with a strict 50m outdoor search (closer to the gate)
+          trySearch(50, StreetViewSource.OUTDOOR);
         }
       } catch (error) {
         console.error("Failed to load Google Maps API", error);
@@ -148,7 +148,7 @@ export function StreetWalkModal({
   // Iframe URL construction (fallback if dynamic fails or iframe mode is requested)
   // Needs a valid Maps Embed API key for streetview mode
   const embedKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY || '';
-  const iframeUrl = `https://www.google.com/maps/embed/v1/streetview?key=${embedKey}&location=${lat},${lng}&heading=210&pitch=10&fov=35`;
+  const iframeUrl = `https://www.google.com/maps/embed/v1/streetview?key=${embedKey}&location=${lat},${lng}&radius=50&pitch=0&fov=90`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">

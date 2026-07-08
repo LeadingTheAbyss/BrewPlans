@@ -123,15 +123,26 @@ def _primary_type(category: str) -> str:
 
 def _enrich(place: Dict) -> Dict:
     cat = place.get("category", "")
+    
+    # Handle both frontend (camelCase) and backend (snake_case/nested) field names
+    lat = place.get("lat")
+    lng = place.get("lng")
+    if lat is None or lng is None:
+        coords = place.get("coordinates", [0, 0])
+        lat, lng = coords[0], coords[1]
+        
+    dur = place.get("visitDurationHours") or place.get("visit_duration_hours") or 1.5
+    fee = place.get("entryFee") or place.get("entry_fee") or 0.0
+    
     return {
         "id":           place["id"],
-        "lat":          float(place["lat"]),
-        "lng":          float(place["lng"]),
-        "dur_mins":     int((place.get("visitDurationHours") or 1.5) * 60),
+        "lat":          float(lat),
+        "lng":          float(lng),
+        "dur_mins":     int(float(dur) * 60),
         "is_food":      _is_food(cat),
         "primary_type": _primary_type(cat),
         "rating":       float(place.get("rating") or 4.0),
-        "entry_fee":    float(place.get("entryFee") or 0),
+        "entry_fee":    float(fee),
     }
 
 
@@ -277,12 +288,12 @@ def _solve_ortools(
     # Penalises disparity between busiest and lightest day heavily
     time_dim.SetGlobalSpanCostCoefficient(100)
 
-    # --- Meal Cap Dimension (≤ 3 food POIs per day) ---
+    # --- Meal Cap Dimension (≤ 2 food POIs per day) ---
     def meal_cb(from_idx):
         return 1 if nodes[manager.IndexToNode(from_idx)]["is_food"] else 0
 
     meal_cb_idx = routing.RegisterUnaryTransitCallback(meal_cb)
-    routing.AddDimension(meal_cb_idx, 0, 3, True, "Meals")
+    routing.AddDimension(meal_cb_idx, 0, 2, True, "Meals")
 
     # --- Meal Temporal Pinning ---
     # Each food node gets a strict arrival time window matching a meal slot
@@ -292,6 +303,12 @@ def _solve_ortools(
     for fi in food_nodes:
         node_idx = manager.NodeToIndex(fi)
         _, slot_open, slot_close = MEAL_WINDOWS[meal_slot_idx % len(MEAL_WINDOWS)]
+        
+        # Safely clamp the old hardcoded times so they don't crash the solver bounds
+        slot_open = min(slot_open, fatigue_cap_mins - 60)
+        slot_close = min(slot_close, fatigue_cap_mins)
+        slot_open = max(0, slot_open)
+        
         time_dim.CumulVar(node_idx).SetRange(slot_open, slot_close)
         meal_slot_idx += 1
 
