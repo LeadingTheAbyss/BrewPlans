@@ -354,7 +354,7 @@ export default function PlacesPage() {
       <div className="max-w-5xl mx-auto space-y-6 pb-24">
 
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-1">Place Discovery</h1>
             <p className="text-zinc-400 text-sm">

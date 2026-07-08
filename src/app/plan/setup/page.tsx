@@ -110,7 +110,7 @@ export default function TripSetupPage() {
   };
 
   return (
-    <div className="w-full min-h-full flex items-center justify-center p-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className="w-full min-h-full flex flex-col items-center justify-center p-4 md:p-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -119,7 +119,7 @@ export default function TripSetupPage() {
       >
         
         {/* Main Configuration Body */}
-        <div className="flex-[1.2] bg-white dark:bg-[#111111] text-black dark:text-white p-8 lg:p-12 relative border-r border-neutral-200 dark:border-neutral-900 transition-colors">
+        <div className="flex-[1.2] bg-white dark:bg-[#111111] text-black dark:text-white p-6 lg:p-12 relative border-b md:border-b-0 md:border-r border-neutral-200 dark:border-neutral-900 transition-colors">
           
           <div className="flex justify-between items-center mb-10">
             <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-white">Trip Details</h2>

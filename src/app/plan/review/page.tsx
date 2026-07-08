@@ -130,9 +130,12 @@ export default function ReviewPage() {
     <div className="flex h-full w-full bg-[#050505] text-white overflow-hidden font-sans">
       
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col h-full transition-all duration-400 ease-out overflow-y-auto custom-scrollbar ${selectedDayForJourney !== null ? 'pr-[380px]' : ''}`}>
+      <div 
+        className={`flex-1 flex flex-col h-full transition-all duration-400 ease-out overflow-y-auto custom-scrollbar`}
+        style={{ paddingRight: selectedDayForJourney !== null ? (typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${panelWidth}px` : '0') : '0' }}
+      >
         
-        <div className="p-8 md:p-12 max-w-7xl mx-auto w-full space-y-12">
+        <div className="p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full space-y-12">
           
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -142,7 +145,7 @@ export default function ReviewPage() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#222] bg-[#111] text-sm">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#222] bg-[#111] text-sm shrink-0">
                 <Users size={16} className="text-green-500" />
                 <span className="font-medium">{trip.passengers.length} Members</span>
               </div>
@@ -232,7 +235,7 @@ export default function ReviewPage() {
           <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-[#222] gap-4">
             <button 
               onClick={() => router.push('/plan/itinerary')}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors font-medium text-sm px-4 py-2"
+              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors font-medium text-sm px-4 py-2 w-full sm:w-auto justify-center"
             >
               <ArrowLeft size={16} /> Go Back and Edit
             </button>
@@ -256,7 +259,7 @@ export default function ReviewPage() {
         className={`fixed top-14 right-0 bottom-0 bg-[#0a0a0a] border-l border-[#222] z-40 transform transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl flex ${
           selectedDayForJourney !== null ? 'translate-x-0' : 'translate-x-full'
         }`}
-        style={{ width: `${panelWidth}px` }}
+        style={{ width: typeof window !== 'undefined' && window.innerWidth < 1024 ? '100%' : `${panelWidth}px` }}
       >
         {/* Resize Handle */}
         <div 

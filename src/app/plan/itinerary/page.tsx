@@ -262,7 +262,7 @@ export default function ItineraryPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex h-full bg-[#050505] text-white relative overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full bg-[#050505] text-white relative overflow-y-auto lg:overflow-hidden">
       {/* Ambient Deep Background */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-30">
         <div className="absolute top-[-10%] left-[30%] w-[40%] h-[40%] rounded-full bg-emerald-600/10 blur-[120px]"></div>
@@ -278,7 +278,7 @@ export default function ItineraryPage() {
       >
         
         {/* PANE 1: Left Vault (Unassigned) */}
-        <div className="w-[320px] flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl border-r border-[#1a1a1a] z-20 shrink-0 shadow-2xl">
+        <div className="w-full lg:w-[320px] flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto">
           <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d]">
             <h2 className="text-xl font-bold tracking-tight mb-4 flex items-center gap-2 text-zinc-100">
               <MapPin size={18} className="text-emerald-500" />
@@ -350,7 +350,7 @@ export default function ItineraryPage() {
         </div>
 
         {/* PANE 2: Center Canvas (Horizontal Board) */}
-        <div className="flex-1 flex flex-col z-10 relative min-w-0">
+        <div className="flex-1 flex flex-col z-10 relative min-w-0 min-h-[60vh] lg:min-h-0">
           {/* Top Overview / Minimap Bar */}
           <div className="h-16 shrink-0 border-b border-[#1a1a1a] bg-[#0a0a0a]/80 backdrop-blur flex items-center px-8 justify-between z-20">
             <div>
@@ -463,7 +463,7 @@ export default function ItineraryPage() {
         </div>
 
         {/* PANE 3: Right Summary (Trip Overview) */}
-        <div className="w-[300px] bg-[#0a0a0a]/90 backdrop-blur-3xl border-l border-[#1a1a1a] z-20 shrink-0 flex flex-col shadow-2xl">
+        <div className="w-full lg:w-[300px] bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-l border-t lg:border-t-0 border-[#1a1a1a] z-20 shrink-0 flex flex-col shadow-2xl">
           <div className="px-6 py-8 border-b border-[#1a1a1a]">
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-300 mb-6">
               Trip Overview
