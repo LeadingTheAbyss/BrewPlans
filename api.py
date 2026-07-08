@@ -356,7 +356,7 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     if not q or len(q) < 2:
         return []
 
-    url = "https://photon.komoot.io/api/?osm_tag=place:city&osm_tag=place:town"
+    url = "https://photon.komoot.io/api/?osm_tag=place"
     params = {
         "q": f"{q} India",
         "limit": 5

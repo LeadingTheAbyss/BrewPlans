@@ -202,7 +202,7 @@ export default function TransportPage() {
       return;
     }
     
-    const key = `${pax.id}-${type}`;
+    const key = `${pax.id}-${pax.city}-${trip.destination}-${type}`;
     const isActive = activeTabs[pax.id] === type;
 
     if (!fetchedModes[key] && !loadingMode[key]) {
@@ -496,16 +496,31 @@ export default function TransportPage() {
                                           style={{ imageRendering: 'high-quality' }}
                                         />
                                       </div>
-                                    ) : (
-                                      <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0" style={{ width: '56px', height: '56px' }}>
-                                        {getTransportIcon(opt.type)}
-                                      </div>
-                                    )}
+                                    ) : opt.id.startsWith('tr_combo_') ? (
+                                        <div className="bg-background rounded-lg shadow-sm border border-border flex flex-col items-center justify-center shrink-0 gap-1" style={{ width: '56px', height: '56px' }}>
+                                          <div className="flex items-center gap-1">
+                                            <Train size={16} className="text-orange-500" />
+                                            <ArrowRight size={10} className="text-muted-foreground" />
+                                            <Car size={16} className="text-purple-500" />
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0" style={{ width: '56px', height: '56px' }}>
+                                          {getTransportIcon(opt.type)}
+                                        </div>
+                                      )}
 
                                     <div>
                                       <div className="flex items-center gap-2">
                                         <span className="font-bold uppercase tracking-wider text-sm">{opt.provider || opt.type}</span>
                                       </div>
+                                      {opt.id.startsWith('tr_combo_') && (
+                                        <div className="mt-1">
+                                          <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full px-2 py-0.5">
+                                            Train + Cab combo
+                                          </span>
+                                        </div>
+                                      )}
                                         <div className="text-sm text-muted-foreground mt-1">
                                           {opt.departure} <ArrowRight className="inline mx-1" size={14}/> {opt.arrival} ({opt.duration})
                                         </div>

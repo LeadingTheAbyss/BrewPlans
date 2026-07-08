@@ -561,15 +561,20 @@ export default function RecommendPage() {
                       <p className="text-xs text-neutral-400 font-bold uppercase tracking-[0.2em] mb-3">Est. Budget</p>
                       <p className="text-4xl font-light text-white">₹{expandedDest.budgetEstimate?.toLocaleString()}</p>
                     </div>
-                    <button 
-                      onClick={() => {
-                        setExpandedDest(null);
-                        handleSelectDestination(expandedDest.name);
-                      }} 
-                      className="mt-2 px-10 py-4 bg-white text-black hover:bg-neutral-200 transition-colors font-bold uppercase tracking-widest text-sm flex items-center gap-4"
-                    >
-                      Initiate Plan <ArrowRight size={18}/>
-                    </button>
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => {
+                          setExpandedDest(null);
+                          handleSelectDestination(expandedDest.name);
+                        }} 
+                        className="mt-2 px-10 py-4 bg-white text-black hover:bg-neutral-200 transition-colors font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-4 w-max"
+                      >
+                        Initiate Plan <ArrowRight size={18}/>
+                      </button>
+                      <p className="text-base text-white font-medium tracking-wide mt-1">
+                        * You can find more images and street views when you plan a trip!
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
