@@ -49,7 +49,7 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
         setResults(apiResults);
         setIsOpen(true);
         setLoading(false);
-      }, 500);
+      }, 150);
     } else {
       setResults([]);
       setIsOpen(false);
@@ -90,9 +90,14 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
               className="p-3 hover:bg-muted cursor-pointer flex flex-col border-b last:border-0 border-border transition-colors"
               onClick={() => handleSelect(res.name)}
             >
-              <div className="font-semibold text-foreground flex items-center gap-2">
-                <MapPin size={14} className="text-muted-foreground" />
-                {i + 1}. {res.name} <span className="text-muted-foreground text-xs font-normal">({res.state})</span>
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <MapPin size={16} className="text-primary" />
+                </div>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="font-semibold text-foreground truncate">{res.name}</span>
+                  <span className="text-xs text-muted-foreground truncate">{res.state}</span>
+                </div>
               </div>
             </div>
           ))}
