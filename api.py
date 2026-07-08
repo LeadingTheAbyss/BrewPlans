@@ -208,6 +208,8 @@ async def get_transport(source: str, destination: str, mode: str = "all", check_
         result.append({
             "id": o.id,
             "type": t_type,
+            "source": source,
+            "destination": destination,
             "departure": o.departure.isoformat(),
             "arrival": o.arrival.isoformat(),
             "duration": f"{int(o.duration_hours)}h {int((o.duration_hours % 1) * 60)}m",
@@ -246,6 +248,8 @@ async def get_transport(source: str, destination: str, mode: str = "all", check_
                 cross_routes_data.append({
                     "id": f"cross-{source}-{destination}-{cross_res_list.index(cross_res)}",
                     "type": "cross",
+                    "source": source,
+                    "destination": destination,
                     "departure": date.isoformat(),
                     "arrival": (date + timedelta(hours=dur)).isoformat(),
                     "duration": f"{int(dur)}h {int((dur % 1) * 60)}m",
