@@ -558,7 +558,11 @@ async def ola_search(q: str = Query(...), city: str = Query(...)):
     import requests
     def _fetch():
         import uuid
-        api_key = "vYv8ERMtzUwIm6A2vIAqzhEywl8CDO6T1Nd7ilDU"
+        import os
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+        
+        api_key = os.environ.get("OLA_MAPS_API_KEY", "")
         
         cities = _fetch_photon_cities(city)
         location_param = ""
@@ -572,18 +576,27 @@ async def ola_search(q: str = Query(...), city: str = Query(...)):
         
         try:
             response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                raise Exception(f"Ola API returned HTTP {response.status_code}: {response.text}")
             data = response.json()
         except Exception as e:
             print("Ola Maps Request Error:", e)
             raise e
             
-        places = []
         predictions = data.get('predictions', [])
         if not predictions:
             # Maybe it's a direct array or different format?
             if isinstance(data, list):
                 predictions = data
+            elif 'error_message' in data and data['error_message']:
+                raise Exception(f"Ola API Error: {data['error_message']}")
+            elif 'message' in data:
+                raise Exception(f"Ola API Error: {data['message']}")
+            else:
+                # If we get here and it's empty, we just return empty list
+                pass
                 
+        places = []
         for p in predictions:
             if not isinstance(p, dict):
                 continue

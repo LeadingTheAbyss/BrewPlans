@@ -137,6 +137,21 @@ function MapFitBounds({ members, stops, meetingPoint }: { members: MemberPin[]; 
   return null;
 }
 
+function MemberMarker({ m }: { m: MemberPin }) {
+  const icon = React.useMemo(() => createMemberIcon(m.name, m.color), [m.name, m.color]);
+  return <Marker position={[m.lat, m.lng]} icon={icon} />;
+}
+
+function MeetingMarker({ p }: { p: MeetingPin }) {
+  const icon = React.useMemo(() => createMeetingIcon('Meet Here'), []);
+  return <Marker position={[p.lat, p.lng]} icon={icon} />;
+}
+
+function StopMarker({ s, i }: { s: StopPin, i: number }) {
+  const icon = React.useMemo(() => createStopIcon(i + 1, s.name), [i, s.name]);
+  return <Marker position={[s.lat, s.lng]} icon={icon} />;
+}
+
 export default function QuickTripMapInner({ members, meetingPoint, stops }: QuickTripMapInnerProps) {
   const defaultCenter: [number, number] =
     members.length > 0 ? [members[0].lat, members[0].lng] :
@@ -186,17 +201,17 @@ export default function QuickTripMapInner({ members, meetingPoint, stops }: Quic
 
       {/* Member pins */}
       {members.map((m, i) => (
-        <Marker key={`member-${i}`} position={[m.lat, m.lng]} icon={createMemberIcon(m.name, m.color)} />
+        <MemberMarker key={`member-${i}`} m={m} />
       ))}
 
       {/* Meeting point */}
       {meetingPoint && (
-        <Marker position={[meetingPoint.lat, meetingPoint.lng]} icon={createMeetingIcon('Meet Here')} />
+        <MeetingMarker p={meetingPoint} />
       )}
 
       {/* Stop pins */}
       {stops.map((s, i) => (
-        <Marker key={`stop-${s.id}`} position={[s.lat, s.lng]} icon={createStopIcon(i + 1, s.name)} />
+        <StopMarker key={`stop-${s.id}`} s={s} i={i} />
       ))}
     </MapContainer>
   );
