@@ -60,6 +60,7 @@ export default function RecommendPage() {
   const [filterPrimaryOnly, setFilterPrimaryOnly] = useState(false);
   const [destPhotos, setDestPhotos] = useState<Record<string, string | null>>({});
   const [expandedDest, setExpandedDest] = useState<any | null>(null);
+  const [formCollapsed, setFormCollapsed] = useState(false);
   const fetchedNames = React.useRef<Set<string>>(new Set());
 
   const fetchPhoto = useCallback(async (name: string) => {
@@ -129,6 +130,7 @@ export default function RecommendPage() {
       preference: finalPreferences.join(' and '),
       constraints: constraints.trim()
     });
+    setFormCollapsed(true);
     setRawResults(data);
     setLoading(false);
   };
@@ -207,8 +209,18 @@ export default function RecommendPage() {
 
       <main className="max-w-[1400px] mx-auto px-12 pt-20 flex flex-col gap-24">
         
-        {/* Intent Configuration (Distilled) */}
-        <section className="flex flex-col xl:flex-row gap-16 items-start pb-24 border-b border-neutral-200 dark:border-neutral-900 transition-colors">
+        {/* Intent Configuration */}
+        <AnimatePresence initial={false}>
+          {!formCollapsed ? (
+        <motion.section
+          key="form-full"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.4, ease: 'easeInOut' }}
+          style={{ overflow: 'hidden' }}
+          className="flex flex-col xl:flex-row gap-16 items-start pb-24 border-b border-neutral-200 dark:border-neutral-900 transition-colors"
+        >
           <div className="flex-1 space-y-6 self-start">
             <h2 className="text-6xl lg:text-8xl font-light tracking-tighter text-neutral-900 dark:text-white transition-colors">Where next?</h2>
             <p className="text-neutral-500 dark:text-neutral-400 text-2xl font-light transition-colors">Tell us your vibe, and our AI will handle the rest.</p>
@@ -325,29 +337,41 @@ export default function RecommendPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">International Lookalike (Optional)</label>
-              <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
-                <input 
-                  type="text" 
-                  placeholder="e.g. Switzerland, Maldives..."
-                  className="w-full bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
-                  value={lookalike} 
-                  onChange={e => setLookalike(e.target.value)}
-                />
+            <div className="flex flex-row items-end gap-10">
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest min-h-[2.5rem] flex items-end">International Lookalike (Optional)</label>
+                <div className="flex items-start border-b border-neutral-300 dark:border-neutral-800 pb-2 focus-within:border-neutral-500 dark:focus-within:border-neutral-500 transition-colors">
+                  <textarea
+                    placeholder="e.g. Switzerland, Maldives..."
+                    className="flex-1 bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none leading-relaxed overflow-y-auto"
+                    rows={1}
+                    style={{ maxHeight: '9rem' }}
+                    value={lookalike}
+                    onChange={e => {
+                      setLookalike(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 144) + 'px';
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-4">
-              <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Specific Constraints (Optional)</label>
-              <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
-                <input 
-                  type="text" 
-                  placeholder="e.g. veg food only, no overcrowding..."
-                  className="w-full bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
-                  value={constraints} 
-                  onChange={e => setConstraints(e.target.value)}
-                />
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest min-h-[2.5rem] flex items-end">Specific Constraints (Optional)</label>
+                <div className="flex items-start border-b border-neutral-300 dark:border-neutral-800 pb-2 focus-within:border-neutral-500 dark:focus-within:border-neutral-500 transition-colors">
+                  <textarea
+                    placeholder="e.g. No overcrowding, avoid hill stations, etc."
+                    className="flex-1 bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none leading-relaxed overflow-y-auto"
+                    rows={1}
+                    style={{ maxHeight: '9rem' }}
+                    value={constraints}
+                    onChange={e => {
+                      setConstraints(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 144) + 'px';
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -366,7 +390,36 @@ export default function RecommendPage() {
               </button>
             </div>
           </div>
-        </section>
+        </motion.section>
+        ) : (
+          <motion.section
+            key="form-collapsed"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center justify-between gap-6 py-4 px-6 border border-neutral-200 dark:border-neutral-800 rounded-sm"
+          >
+            <div className="flex flex-wrap items-center gap-6 text-sm text-neutral-500 dark:text-neutral-400">
+              <span className="font-bold text-neutral-900 dark:text-white text-xs uppercase tracking-widest">Your Search</span>
+              <span>{form.passengers.map(p => p.city || '?').join(', ')}</span>
+              <span>·</span>
+              <span>{form.days} days</span>
+              <span>·</span>
+              <span>{form.groupSize} people</span>
+              <span>·</span>
+              <span>₹{form.budget?.toLocaleString('en-IN')}</span>
+              {constraints && <><span>·</span><span className="italic">{constraints.length > 40 ? constraints.slice(0, 40) + '…' : constraints}</span></>}
+            </div>
+            <button
+              onClick={() => setFormCollapsed(false)}
+              className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 border border-blue-500/30 px-4 py-2 transition-colors"
+            >
+              Edit
+            </button>
+          </motion.section>
+        )}
+        </AnimatePresence>
 
         {/* Results Dashboard */}
         <AnimatePresence mode="wait">
