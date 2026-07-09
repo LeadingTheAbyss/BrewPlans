@@ -198,7 +198,8 @@ export default function TransportPage() {
       return;
     }
     
-    const key = `${pax.id}-${type}`;
+    const destination = trip.destination || 'Unknown';
+    const key = `${pax.id}-${pax.city}-${destination}-${type}-v4`;
     const isActive = activeTabs[pax.id] === type;
 
     // Toggle tab
@@ -351,7 +352,8 @@ export default function TransportPage() {
                         {/* Accordion Sections for Transport Types */}
                     <div className="space-y-4">
                       {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
-                        const key = `${pax.id}-${type}`;
+                        const destination = trip.destination || 'Unknown';
+                        const key = `${pax.id}-${pax.city}-${destination}-${type}-v4`;
                         const isFetched = cachedData[key] !== undefined;
                         const task = fetchQueue.tasks.find(t => t.id === key);
                         const isLoading = task?.status === 'loading';

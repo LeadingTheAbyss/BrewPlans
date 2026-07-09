@@ -73,9 +73,13 @@ export function BackgroundFetcher() {
           queue.updateTaskStatus(nextTask.id, 'completed', result);
           
           // Inject straight into the cacheStore so it's instantly available to UI
-          const cacheKey = nextTask.category === 'transport' 
-            ? `${nextTask.paxId}-${nextTask.subType}` 
-            : nextTask.category;
+          let cacheKey = nextTask.category;
+          if (nextTask.category === 'transport' && nextTask.paxId && nextTask.subType) {
+            const pax = trip.passengers.find(p => p.id === nextTask.paxId);
+            const paxCity = pax?.city || 'Unknown';
+            const dest = trip.destination || 'Unknown';
+            cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v4`;
+          }
             
           cache.setCache(cacheKey, result);
         } else if (result.status === 'cache_miss') {

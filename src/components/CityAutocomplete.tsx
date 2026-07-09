@@ -91,8 +91,8 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
             >
               <div className="font-semibold text-foreground flex items-center gap-2 overflow-hidden">
                 <MapPin size={14} className="text-muted-foreground shrink-0" />
-                <span className="truncate">{res.name}</span>
-                <span className="text-muted-foreground text-xs font-normal truncate shrink-0">({res.state})</span>
+                <span className="shrink-0">{res.name}</span>
+                <span className="text-muted-foreground text-xs font-normal truncate">({res.state})</span>
               </div>
             </div>
           ))}

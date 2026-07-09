@@ -81,10 +81,11 @@ export const useFetchQueue = create<FetchQueueState>((set, get) => ({
     // 1-4: Transports for each passenger
     trip.passengers.forEach((pax: any) => {
       if (!pax.city) return;
-      enqueueTask({ id: `transport-${pax.id}-train`, category: 'transport', subType: 'train', paxId: pax.id, priority: 1, isLive: false });
-      enqueueTask({ id: `transport-${pax.id}-flight`, category: 'transport', subType: 'flight', paxId: pax.id, priority: 2, isLive: false });
-      enqueueTask({ id: `transport-${pax.id}-bus`, category: 'transport', subType: 'bus', paxId: pax.id, priority: 3, isLive: false });
-      enqueueTask({ id: `transport-${pax.id}-cab`, category: 'transport', subType: 'cab', paxId: pax.id, priority: 4, isLive: false });
+      const dest = trip.destination || 'Unknown';
+      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-train-v4`, category: 'transport', subType: 'train', paxId: pax.id, priority: 1, isLive: false });
+      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-flight-v4`, category: 'transport', subType: 'flight', paxId: pax.id, priority: 2, isLive: false });
+      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-bus-v4`, category: 'transport', subType: 'bus', paxId: pax.id, priority: 3, isLive: false });
+      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-cab-v4`, category: 'transport', subType: 'cab', paxId: pax.id, priority: 4, isLive: false });
     });
     
     // 5-7: Destinations

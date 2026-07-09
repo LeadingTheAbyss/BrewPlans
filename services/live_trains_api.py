@@ -234,12 +234,7 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
     except Exception as e:
         print(f"[Warning] Train DB cache check failed: {e}")
     # --- End DB Cache Check ---
-    
-    if not options:
-            nearest_dest = await get_nearest_station(coords["lat"], coords["lng"])
-            if nearest_dest:
-                dest_code = nearest_dest["code"]
-    
+
     if not origin_code or not dest_code:
         print(f"[Warning] Could not dynamically map {clean_origin} or {clean_dest} to a station code.")
         return []

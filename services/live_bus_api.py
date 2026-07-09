@@ -229,7 +229,8 @@ def validate_payload(data: List[dict]) -> bool:
 async def get_live_bus_data(origin: str, destination: str, travel_date: str, check_only: bool = False) -> dict:
     """The Multi-Source Redundancy Pipeline."""
     scraping_pipeline = [
-        fetch_redbus_api       # Strategy 1 (Live redBus API via parse.bot)
+        fetch_redbus_api,      # Strategy 1 (Live redBus API via parse.bot)
+        scrape_redbus_mobile   # Strategy 2 (Fallback Generator)
     ]
     
     for scrape_strategy in scraping_pipeline:
