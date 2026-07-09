@@ -6,12 +6,13 @@ import dynamic from 'next/dynamic';
 import {
   Plus, Trash2, MapPin, Users, ArrowRight, Sparkles,
   Clock, Car, Bike, Map, ChevronDown, ChevronUp, X, Loader2,
-  Zap, Search, GripVertical, Share2, RotateCcw
+  Search, GripVertical, Share2, RotateCcw, Footprints, LocateFixed
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { getDistanceInKm, calculateCost } from '@/lib/travelCost';
+import { getDistanceInKm, calculateCost, estimateTravelTime, TransportModeEnum } from '@/lib/travelCost';
 import { detectCategory, smartSortStops, buildTimeline, QuickStop, StopCategory } from '@/lib/quickTripSorter';
 import { getAvatarHex } from '@/components/QuickTripMapInner';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { api } from '@/lib/api';
 
 const QuickTripMapInnerDynamic = dynamic(
@@ -115,7 +116,7 @@ function PlaceSearchBox({
   onSelect: (place: PlaceResult) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PlaceResult[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -138,12 +139,26 @@ function PlaceSearchBox({
     setLoading(true);
     const t = setTimeout(async () => {
       try {
-        const data = await api.olaSearch(query, city);
-        setResults(data.slice(0, 10));
-        setIsOpen(true);
-      } catch (err) {}
-      finally { setLoading(false); }
-    }, 500);
+        const searchQuery = city ? `${query}, ${city}` : query;
+        let url = `/api/ola/autocomplete?input=${encodeURIComponent(searchQuery)}`;
+        if (city) url += `&city=${encodeURIComponent(city)}`;
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.predictions && data.predictions.length > 0) {
+          setResults(data.predictions);
+          setIsOpen(true);
+        } else {
+          setIsOpen(false);
+          setResults([]);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally { 
+        setLoading(false); 
+      }
+    }, 400);
     return () => clearTimeout(t);
   }, [query, city]);
 
@@ -156,11 +171,58 @@ function PlaceSearchBox({
     }
   };
 
-  const handleSelect = (place: PlaceResult) => {
-    onSelect(place);
-    setQuery('');
+  const handleSelect = async (place: any) => {
     setIsOpen(false);
+    setQuery('');
     setResults([]);
+    
+    // We construct a mock PlaceResult for the UI
+    const address = place.description;
+    const placeId = place.place_id || place.reference || '';
+    const mainText = place.structured_formatting ? place.structured_formatting.main_text : address;
+    
+    // If geometry is already bundled (e.g. from DB cache), use it directly!
+    if (place.geometry && place.geometry.location) {
+      onSelect({
+        id: placeId || `place-${Date.now()}`,
+        name: mainText,
+        category: 'ACTIVITY', // fallback
+        lat: place.geometry.location.lat,
+        lng: place.geometry.location.lng,
+      });
+      return;
+    }
+
+    // Otherwise, fetch exact coordinates from the Geocode/Details API
+    try {
+      let url = `/api/ola/geocode?address=${encodeURIComponent(address)}`;
+      if (placeId) url += `&place_id=${encodeURIComponent(placeId)}`;
+      else if (city && !address.toLowerCase().includes(city.toLowerCase())) url = `/api/ola/geocode?address=${encodeURIComponent(address + ', ' + city)}`;
+        
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      let lat, lng;
+      if (data.result && data.result.geometry) {
+        lat = data.result.geometry.location.lat;
+        lng = data.result.geometry.location.lng;
+      } else if (data.geocodingResults && data.geocodingResults.length > 0) {
+        lat = data.geocodingResults[0].geometry.location.lat;
+        lng = data.geocodingResults[0].geometry.location.lng;
+      }
+      
+      if (lat && lng) {
+        onSelect({
+          id: placeId || `place-${Date.now()}`,
+          name: mainText,
+          category: 'ACTIVITY', // fallback
+          lat,
+          lng,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -180,20 +242,22 @@ function PlaceSearchBox({
       </div>
 
       {isOpen && query.length >= 3 && (
-        <div className="absolute z-50 top-full mt-1 w-full bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+        <div className="absolute z-50 top-full mt-1 w-full bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
           {results.length > 0 ? (
-            results.map(place => {
-              const cat = detectCategory(place.category || '');
+            results.map((place, idx) => {
+              const mainText = place.structured_formatting ? place.structured_formatting.main_text : place.description;
+              const secondaryText = place.structured_formatting ? place.structured_formatting.secondary_text : "";
+              
               return (
                 <button
-                  key={place.id}
+                  key={place.place_id || idx}
                   onClick={() => handleSelect(place)}
                   className="w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors border-b border-zinc-800 last:border-0 flex items-center gap-3"
                 >
-                  <div className={`w-1.5 h-1.5 rounded-full ${cat === 'FOOD' ? 'bg-amber-400' : cat === 'ACTIVE' ? 'bg-orange-400' : cat === 'INDOOR_ENT' ? 'bg-blue-400' : 'bg-green-400'}`} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                   <div>
-                    <div className="text-sm font-medium text-white">{place.name}</div>
-                    <div className="text-xs text-zinc-500 capitalize">{place.category}</div>
+                    <div className="text-sm font-medium text-white">{mainText}</div>
+                    {secondaryText && <div className="text-xs text-zinc-500">{secondaryText}</div>}
                   </div>
                 </button>
               );
@@ -246,6 +310,7 @@ export default function QuickTripPage() {
 
   const [meetAtSomeone, setMeetAtSomeone] = useState(false);
   const [meetingMemberId, setMeetingMemberId] = useState<string>('member-1');
+  const [transportMode, setTransportMode] = useState<'cab' | 'personal_car' | 'personal_bike' | 'walk'>('cab');
 
   const [stops, setStops] = useState<ActiveStop[]>([]);
   const [autoSorted, setAutoSorted] = useState(false);
@@ -287,7 +352,7 @@ export default function QuickTripPage() {
     if (meetingMemberId === id) setMeetingMemberId(members[0]?.id || '');
   };
 
-  const updateMember = (id: string, field: keyof Member, value: string) => {
+  const updateMember = (id: string, field: keyof Member, value: string | number) => {
     setMembers(prev => prev.map(m => {
       if (m.id === id) {
         const updated: any = { ...m, [field]: value };
@@ -397,12 +462,26 @@ export default function QuickTripPage() {
     if (journeyPoints.length === 0) return { timelineItems: [], totalCost: 0 };
 
     const travelMins: number[] = [];
+    const roadDistances: number[] = [];
+
+    const modeMap: Record<string, TransportModeEnum> = {
+      'cab': TransportModeEnum.CAR,
+      'personal_car': TransportModeEnum.CAR,
+      'personal_bike': TransportModeEnum.BIKE,
+      'walk': TransportModeEnum.WALK,
+    };
+
+    const enumMode = modeMap[transportMode] || TransportModeEnum.CAR;
+
     for (let i = 0; i < journeyPoints.length - 1; i++) {
       const dist = getDistanceInKm(
         journeyPoints[i].lat!, journeyPoints[i].lng!,
         journeyPoints[i + 1].lat!, journeyPoints[i + 1].lng!,
       );
-      travelMins.push(Math.max(5, Math.round(dist * 2)));
+      
+      const estimate = estimateTravelTime(dist, enumMode);
+      travelMins.push(estimate.travelTimeMinutes);
+      roadDistances.push(estimate.distanceRoadKm);
     }
 
     const builtItems = buildTimeline(journeyPoints as any, travelMins, 9);
@@ -412,19 +491,16 @@ export default function QuickTripPage() {
       let commute = null;
       let travelDistanceStr = '';
       if (i < travelMins.length) {
-        const dist = getDistanceInKm(
-          journeyPoints[i].lat!, journeyPoints[i].lng!,
-          journeyPoints[i + 1].lat!, journeyPoints[i + 1].lng!,
-        );
-        commute = calculateCost(dist, travelMins[i], paxCount || 1);
-        travelDistanceStr = dist.toFixed(1);
+        const roadDist = roadDistances[i];
+        commute = calculateCost(roadDist, travelMins[i], paxCount || 1, transportMode);
+        travelDistanceStr = roadDist.toFixed(1);
         total += commute.cost;
       }
       return { ...item, commute, travelMins: travelMins[i] || 0, travelDistanceStr };
     });
 
     return { timelineItems: enriched, totalCost: total };
-  }, [stops, meetingPin, paxCount]);
+  }, [stops, meetingPin, paxCount, transportMode]);
 
   const formatDuration = (mins: number) => {
     if (mins < 60) return `${mins} min`;
@@ -468,7 +544,6 @@ export default function QuickTripPage() {
           </button>
           <div className="w-px h-4 bg-zinc-800" />
           <div className="flex items-center gap-2">
-            <Zap size={16} className="text-emerald-400" />
             <span className="font-bold text-base tracking-tight">Quick Trip</span>
           </div>
           <div className="text-xs text-zinc-600 hidden sm:block">Plan a hangout in 60 seconds</div>
@@ -533,6 +608,7 @@ export default function QuickTripPage() {
                     key={m.id}
                     member={m}
                     index={i}
+                    city={city}
                     onUpdate={updateMember}
                     onRemove={members.length > 2 ? () => removeMember(m.id) : undefined}
                   />
@@ -574,6 +650,31 @@ export default function QuickTripPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Transport Mode toggle */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-zinc-300">
+                      How are you getting around?
+                    </span>
+                  </div>
+                  <div className="flex bg-[#161616] border border-zinc-800 p-1 rounded-lg">
+                    {[
+                      { id: 'cab', label: 'Cab/Auto' },
+                      { id: 'personal_car', label: 'Car' },
+                      { id: 'personal_bike', label: 'Bike' },
+                      { id: 'walk', label: 'Walk' },
+                    ].map(t => (
+                      <button 
+                        key={t.id} 
+                        onClick={() => setTransportMode(t.id as any)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-md font-medium transition-all ${transportMode === t.id ? 'bg-zinc-800 text-white shadow-md border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
@@ -728,16 +829,22 @@ export default function QuickTripPage() {
                             <div className="bg-[#0a0a0a] py-1">
                               {item.commute.type === 'bike'
                                 ? <Bike size={13} className="text-blue-400" />
+                                : item.commute.type === 'walk'
+                                ? <Footprints size={13} className="text-amber-400" />
                                 : <Car size={13} className="text-green-400" />
                               }
                             </div>
                             <div className="flex flex-col">
                               <span>{formatDuration(item.travelMins)} ({item.travelDistanceStr || (item.commute.cost > 0 ? (item.commute.cost / 7).toFixed(1) : '2.0')} km)</span>
-                              <span className="text-[10px] text-zinc-600">Recommended: {item.commute.type === 'bike' ? 'Bike Ride' : 'Cab'}</span>
+                              <span className="text-[10px] text-zinc-600">
+                                {transportMode === 'cab' 
+                                  ? `Recommended: ${item.commute.type === 'bike' ? 'Bike Ride' : 'Cab'}` 
+                                  : `Transport: ${item.commute.service}`}
+                              </span>
                             </div>
                           </div>
                           <div className="font-medium text-zinc-400 bg-zinc-900 px-2 py-1 rounded text-xs">
-                            ₹{item.commute.cost}
+                            {item.commute.cost > 0 ? `₹${item.commute.cost}` : 'Free'}
                           </div>
                         </div>
                       )}
@@ -770,11 +877,12 @@ function SectionHeader({ icon, label, number }: { icon: React.ReactNode; label: 
 }
 
 function MemberRow({
-  member, index, onUpdate, onRemove,
+  member, index, city, onUpdate, onRemove,
 }: {
   member: Member;
   index: number;
-  onUpdate: (id: string, field: keyof Member, value: string) => void;
+  city?: string;
+  onUpdate: (id: string, field: keyof Member, value: string | number) => void;
   onRemove?: () => void;
 }) {
   const color = member.name ? getAvatarHex(member.name) : '#52525b';
@@ -805,17 +913,13 @@ function MemberRow({
         )}
       </div>
       <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
-        <MapPin size={12} className={member.lat ? "text-emerald-400" : "text-zinc-600"} />
-        <input
-          type="text"
-          placeholder="Starting from (neighbourhood / area)"
+        <LocationAutocomplete
+          memberId={member.id}
           value={member.location}
-          onChange={e => onUpdate(member.id, 'location', e.target.value)}
-          className="flex-1 bg-transparent text-xs text-zinc-400 placeholder:text-zinc-700 focus:outline-none"
+          lat={member.lat}
+          city={city}
+          onUpdate={onUpdate as any}
         />
-        {member.location && !member.lat && (
-          <Loader2 size={12} className="text-zinc-500 animate-spin shrink-0" />
-        )}
       </div>
     </div>
   );
