@@ -1,8 +1,10 @@
 import requests
 import json
 import re
+import os
+from dotenv import load_dotenv
 
-def build_prompt(passengers: list, total_budget: int, days: int, preference: str, group_size: int = 1) -> str:
+def build_prompt(passengers: list, total_budget: int, days: int, preference: str, group_size: int = 1, constraints: str = "") -> str:
     cities = [p.get("city", "Unknown") for p in passengers if p.get("city")]
     city_str = ", ".join(cities) if cities else "various locations"
     num_pax = group_size if group_size > 0 else (len(cities) if cities else 1)
@@ -60,6 +62,8 @@ A group of {num_pax} travelers want to take a trip.
 - Their travel preference / vibe: "{preference}"
 {guidance}
 Recommend EXACTLY 10 destinations in India that best match the preference "{preference}".
+
+{f"- HARD USER CONSTRAINTS: '{constraints}'\\n  You MUST respect these constraints. Destinations that violate these constraints are STRICTLY FORBIDDEN." if constraints else ""}
 ALL 10 destinations MUST strongly align with this preference. Do NOT recommend generic tourist spots that do not match.
 
 Respond ONLY with a JSON object containing a "destinations" array, where each item matches this EXACT structure:
@@ -95,23 +99,37 @@ Rules:
 def call_ollama(prompt: str) -> str:
     system_prompt = "You are an expert Indian travel planner. Respond ONLY with valid JSON."
     
+    # Re-read .env on every call so key changes are picked up without restarting the server
+    load_dotenv(override=True)
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    print(f"[Groq] Using key: {groq_api_key[:8] if groq_api_key else 'NONE'}...")
+    if not groq_api_key or groq_api_key == "your_groq_api_key_here":
+        return '{"error": "Groq API Key is missing. Please add GROQ_API_KEY to the .env file."}'
+        
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.4,
+        "response_format": {"type": "json_object"}
+    }
+    
     try:
-        res = requests.post("http://localhost:11434/api/generate", json={
-            "model": "gemma2:2b",
-            "prompt": f"{system_prompt}\n\n{prompt}",
-            "stream": False,
-            "format": "json",
-            "options": {
-                "temperature": 0.4,
-                "num_predict": 3072,
-                "num_ctx": 4096
-            }
-        }, timeout=180)
+        res = requests.post(url, headers=headers, json=payload, timeout=180)
         res.raise_for_status()
-        return res.json().get("response", "")
+        data = res.json()
+        return data["choices"][0]["message"]["content"]
     except Exception as e:
-        print(f"[Error] Ollama call failed: {e}")
+        print(f"[Error] Krutrim API call failed: {e}")
         return f"EXCEPTION: {str(e)}"
+
 
 def parse_response(raw: str) -> list:
     if not raw:
@@ -141,12 +159,12 @@ def parse_response(raw: str) -> list:
     print(raw.encode('ascii', 'replace').decode('ascii'))
     return []
 
-def recommend(passengers: list, total_budget: int, days: int, preference: str, group_size: int = 0) -> list:
+def recommend(passengers: list, total_budget: int, days: int, preference: str, group_size: int = 0, constraints: str = "") -> list:
     # Resolve num_pax: use explicit group_size if provided, else fall back to city count
     cities = [p for p in passengers if p.get("city")]
     num_pax = group_size if group_size > 0 else (len(cities) if cities else 1)
 
-    prompt = build_prompt(passengers, total_budget, days, preference, num_pax)
+    prompt = build_prompt(passengers, total_budget, days, preference, num_pax, constraints)
     raw_response = call_ollama(prompt)
     destinations = parse_response(raw_response)
     

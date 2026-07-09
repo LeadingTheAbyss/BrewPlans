@@ -34,7 +34,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
       const fetchReviews = async () => {
         setLoadingReviews(true);
         try {
-          const res = await fetch(`http://localhost:8000/api/places/reviews?location_id=${place.id}`);
+          const res = await fetch(`http://localhost:8002/api/places/reviews?location_id=${place.id}`);
           const data = await res.json();
           setReviews(data);
         } catch (e) {

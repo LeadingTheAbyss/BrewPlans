@@ -480,12 +480,20 @@ async def get_recommendations(preferences: dict):
     days = preferences.get("days", 3)
     preference = preferences.get("preference", "any")
     group_size = preferences.get("group_size", len(passengers) or 1)
+    constraints = preferences.get("constraints", "")
     
-    return await asyncio.to_thread(get_ai_recommendations, passengers, total_budget, days, preference, group_size)
+    return await asyncio.to_thread(get_ai_recommendations, passengers, total_budget, days, preference, group_size, constraints)
 
 
 import requests
+import unicodedata
 from typing import List, Dict, Any
+
+def _remove_diacritics(text: str) -> str:
+    if not text:
+        return text
+    return ''.join(c for c in unicodedata.normalize('NFD', str(text)) if unicodedata.category(c) != 'Mn')
+
 
 def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     if not q or len(q) < 2:
@@ -517,8 +525,8 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
             if pop is not None and pop < 10000:
                 continue
                 
-            city_name = feature.get("name")
-            state_name = feature.get("admin1", "")
+            city_name = _remove_diacritics(feature.get("name", ""))
+            state_name = _remove_diacritics(feature.get("admin1", ""))
             
             if not city_name:
                 continue

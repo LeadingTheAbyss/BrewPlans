@@ -7,6 +7,11 @@ import type { NextRequest } from 'next/server';
 const BAD_FILENAME_FRAGMENTS = [
   '_map', 'map.', '_flag', '_logo', '_icon', '_seal', '_emblem',
   'coat_of_arms', 'locator', '.svg',
+  // Topographic / geographic / satellite imagery — not travel photos
+  'relief', 'topograph', 'terrain', 'topo_', '_topo',
+  'physical_map', 'satellite', 'elevation', 'bathymetry',
+  'district_map', 'location_map', 'administrative',
+  '_plan', 'schematic', 'orthophoto',
 ];
 
 function isLikelyBadImage(url: string): boolean {

@@ -48,6 +48,7 @@ export default function RecommendPage() {
   const [showCustomVibe, setShowCustomVibe] = useState(false);
   const [customVibe, setCustomVibe] = useState('');
   const [lookalike, setLookalike] = useState('');
+  const [constraints, setConstraints] = useState('');
 
   const [error, setError] = useState('');
 
@@ -75,7 +76,12 @@ export default function RecommendPage() {
 
   const handleAddPassenger = () => {
     if (form.passengers.length >= 10) return;
-    setForm({ ...form, passengers: [...form.passengers, { city: '' }] });
+    const newPassengers = [...form.passengers, { city: '' }];
+    setForm({ 
+      ...form, 
+      passengers: newPassengers,
+      groupSize: Math.max(form.groupSize, newPassengers.length)
+    });
   };
 
   const handleCityChange = (index: number, city: string) => {
@@ -120,7 +126,8 @@ export default function RecommendPage() {
       total_budget: form.budget,
       days: form.days,
       group_size: form.groupSize,
-      preference: finalPreferences.join(' and ')
+      preference: finalPreferences.join(' and '),
+      constraints: constraints.trim()
     });
     setRawResults(data);
     setLoading(false);
@@ -262,10 +269,11 @@ export default function RecommendPage() {
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Travelers</label>
               <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
                 <input 
-                  type="number" min="1" max="20" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center"
+                  type="number" min={form.passengers.length} max="20" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center"
                   value={form.groupSize || ''} onChange={e => {
                     const val = parseInt(e.target.value);
-                    setForm({...form, groupSize: isNaN(val) ? 1 : Math.max(1, Math.min(20, val))});
+                    const minCount = form.passengers.length;
+                    setForm({...form, groupSize: isNaN(val) ? minCount : Math.max(minCount, Math.min(20, val))});
                   }}
                 />
                 <span className="text-neutral-600 text-sm font-light uppercase tracking-widest">People</span>
@@ -326,6 +334,19 @@ export default function RecommendPage() {
                   className="w-full bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
                   value={lookalike} 
                   onChange={e => setLookalike(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Specific Constraints (Optional)</label>
+              <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
+                <input 
+                  type="text" 
+                  placeholder="e.g. veg food only, no overcrowding..."
+                  className="w-full bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
+                  value={constraints} 
+                  onChange={e => setConstraints(e.target.value)}
                 />
               </div>
             </div>
@@ -398,12 +419,8 @@ export default function RecommendPage() {
 
                       <div className="flex gap-16 pt-12 mt-12 border-t border-neutral-900">
                         <div>
-                          <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Est. Budget</p>
+                          <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Total Est. Budget (Travel Included)</p>
                           <p className="text-5xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString('en-IN')}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Per Person</p>
-                          <p className="text-3xl font-light text-neutral-500 mt-2">~₹{Math.round((filteredResults[0].budgetEstimate || 0) / numTravelers).toLocaleString()}</p>
                         </div>
                       </div>
 
@@ -558,7 +575,7 @@ export default function RecommendPage() {
                   
                   <div className="flex gap-16 mt-12 pt-12 border-t border-white/20">
                     <div>
-                      <p className="text-xs text-neutral-400 font-bold uppercase tracking-[0.2em] mb-3">Est. Budget</p>
+                      <p className="text-xs text-neutral-400 font-bold uppercase tracking-[0.2em] mb-3">Total Est. Budget (Travel Included)</p>
                       <p className="text-4xl font-light text-white">₹{expandedDest.budgetEstimate?.toLocaleString()}</p>
                     </div>
                     <div className="flex flex-col gap-3">
