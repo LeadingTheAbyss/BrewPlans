@@ -12,6 +12,49 @@ from services.dgca_pdf_parser import CITY_TO_IATA
 from services.db import get_db_connection
 import uuid
 
+# Priority mapping: destinations that should always route through a well-connected hub.
+major_airports = {
+    # Himachal Pradesh / North India mountains
+    "manali":       {"iata": "IXC", "city": "Chandigarh"},
+    "kullu":        {"iata": "IXC", "city": "Chandigarh"},
+    "shimla":       {"iata": "IXC", "city": "Chandigarh"},
+    "kasauli":      {"iata": "IXC", "city": "Chandigarh"},
+    "dharamshala":  {"iata": "ATQ", "city": "Amritsar"},
+    "mcleod ganj":  {"iata": "ATQ", "city": "Amritsar"},
+    # Northeast / Sikkim
+    "gangtok":      {"iata": "IXB", "city": "Bagdogra"},
+    "darjeeling":   {"iata": "IXB", "city": "Bagdogra"},
+    "sikkim":       {"iata": "IXB", "city": "Bagdogra"},
+    # South India hills
+    "munnar":       {"iata": "COK", "city": "Kochi"},
+    "ooty":         {"iata": "CJB", "city": "Coimbatore"},
+    "kodaikanal":   {"iata": "IXM", "city": "Madurai"},
+    "coorg":        {"iata": "IXE", "city": "Mangalore"},
+    "wayanad":      {"iata": "COK", "city": "Kochi"},
+    # Uttarakhand
+    "rishikesh":    {"iata": "DED", "city": "Dehradun"},
+    "mussoorie":    {"iata": "DED", "city": "Dehradun"},
+    "auli":         {"iata": "DED", "city": "Dehradun"},
+    "valley of flowers": {"iata": "DED", "city": "Dehradun"},
+    "leh":          {"iata": "IXC", "city": "Chandigarh"},
+    "ladakh":       {"iata": "IXC", "city": "Chandigarh"},
+}
+
+_AIRPORT_COORDS_CACHE = None
+
+def _get_all_airport_coords() -> Dict[str, Any]:
+    global _AIRPORT_COORDS_CACHE
+    if _AIRPORT_COORDS_CACHE is not None:
+        return _AIRPORT_COORDS_CACHE
+    coords_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "airport_coords.json")
+    try:
+        with open(coords_path, "r") as f:
+            _AIRPORT_COORDS_CACHE = json.load(f)
+    except Exception as e:
+        print(f"[Warning] Could not load airport_coords.json: {e}")
+        _AIRPORT_COORDS_CACHE = {}
+    return _AIRPORT_COORDS_CACHE
+
 def _parse_days_of_operation(days_str: str) -> List[int]:
     """Parses a days of operation string into a list of Python weekday integers (0 = Mon, 6 = Sun)."""
     days = []
@@ -53,12 +96,8 @@ async def _get_city_coords(city_name: str) -> Optional[Dict[str, float]]:
 
 def _get_nearest_airport(lat: float, lon: float) -> Optional[Dict[str, Any]]:
     """Find the nearest IATA airport to the given coordinates using airport_coords.json."""
-    coords_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "airport_coords.json")
-    try:
-        with open(coords_path, "r") as f:
-            airport_coords = json.load(f)
-    except Exception as e:
-        print(f"[Warning] Could not load airport_coords.json: {e}")
+    airport_coords = _get_all_airport_coords()
+    if not airport_coords:
         return None
 
     nearest = None
@@ -232,11 +271,11 @@ async def search_live_flights(origin_city: str, dest_city: str, date: str, check
     print(f"\n[API Call] Fetching live flights: {origin_city} -> {dest_city} on {date}...")
 
     clean_origin = origin_city.upper().strip()
+    clean_dest_lower = dest_city.lower().strip()
     clean_dest = dest_city.upper().strip()
 
     origin_iata = CITY_TO_IATA.get(clean_origin)
     dest_iata = CITY_TO_IATA.get(clean_dest)
-
     nearest_origin = None
     nearest_dest = None
 
@@ -263,6 +302,21 @@ async def search_live_flights(origin_city: str, dest_city: str, date: str, check
         return [] if not check_only else None
 
     options = await _fetch_flights_for_iata(origin_iata, dest_iata, date, check_only)
+
+    # If no flights found, check if destination has a major hub fallback
+    if not options and clean_dest_lower in major_airports:
+        hub = major_airports[clean_dest_lower]
+        dest_iata = hub["iata"]
+        airport_data = _get_all_airport_coords().get(dest_iata, {})
+        nearest_dest = {
+            "iata": dest_iata,
+            "city": hub["city"],
+            "lat": airport_data.get("lat", 0.0),
+            "lon": airport_data.get("lon", 0.0),
+            "distance_km": 0.0,
+        }
+        print(f"[MajorAirport] No flights to primary. Routing '{dest_city}' through hub {dest_iata} ({hub['city']})")
+        options = await _fetch_flights_for_iata(origin_iata, dest_iata, date, check_only)
 
     if check_only and not options:
         return None

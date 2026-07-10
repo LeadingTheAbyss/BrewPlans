@@ -292,8 +292,10 @@ async def scrape_state_srtc(origin: str, destination: str, travel_date: str) -> 
     return []
 
 def validate_payload(data: List[dict]) -> bool:
-    if not data:
+    if not isinstance(data, list):
         return False
+    if not data:
+        return True
         
     # Ensures every single entry contains the strict 4 fields requested
     for entry in data:
@@ -305,8 +307,7 @@ def validate_payload(data: List[dict]) -> bool:
 async def get_live_bus_data(origin: str, destination: str, travel_date: str, check_only: bool = False) -> dict:
     """The Multi-Source Redundancy Pipeline."""
     scraping_pipeline = [
-        scrape_redbus_mobile,  # Strategy 1 (Heuristic Math Model - 100% Offline & Free)
-        fetch_redbus_api       # Strategy 2 (Live redBus API via parse.bot)
+        fetch_redbus_api       # Strategy 1 (Live redBus API via parse.bot)
     ]
     
     for scrape_strategy in scraping_pipeline:

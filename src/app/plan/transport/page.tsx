@@ -259,8 +259,8 @@ export default function TransportPage() {
 
   const getTransportIcon = (type: string) => {
     if (type === 'flight') return <Plane className="text-blue-500 shrink-0" size={20} />;
-    if (type === 'train') return <Train className="text-orange-500 shrink-0" size={20} />;
-    if (type === 'cab' || type === 'car') return <Car className="text-purple-500 shrink-0" size={20} />;
+    if (type === 'train') return <Train className="text-orange-500 shrink-0" size={28} />;
+    if (type === 'cab' || type === 'car') return <Car className="text-purple-500 shrink-0" size={28} />;
     if (type === 'cross') return <MapPin className="text-amber-500 shrink-0" size={20} />;
     return <Bus className="text-green-500 shrink-0" size={20} />;
   };
@@ -351,7 +351,7 @@ export default function TransportPage() {
 
                         {/* Accordion Sections for Transport Types */}
                     <div className="space-y-4">
-                      {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
+                      {['flight', 'train', 'bus', 'cab'].map((type) => {
                         const destination = trip.destination || 'Unknown';
                         const key = `${pax.id}-${pax.city}-${destination}-${type}-v4`;
                         const isFetched = cachedData[key] !== undefined;
@@ -537,11 +537,25 @@ export default function TransportPage() {
                                           {opt.departure.split('T')[1]?.slice(0,5) || opt.departure} <ArrowRight className="inline mx-1" size={14}/> {opt.arrival.split('T')[1]?.slice(0,5) || opt.arrival} ({opt.duration})
                                         </div>
                                         
-                                        {opt.type === 'train' && opt.id.startsWith('tr_') && (
+                                        {((opt as any).price_breakdown || opt.priceBreakdown) && (
+                                          <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                                            {Object.entries((opt as any).price_breakdown || opt.priceBreakdown).map(([key, value]: [string, any]) => (
+                                              <span key={key} className="text-[13px] font-semibold px-3 py-1.5 rounded-md bg-background text-foreground border border-border shadow-sm flex items-center">
+                                                {key === 'Train' ? <Train size={15} className="mr-1.5" /> : key === 'Cab' ? <Car size={15} className="mr-1.5" /> : <span>{key}</span>}
+                                                ₹{value.toLocaleString('en-IN')}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        
+                                        {opt.type === 'train' && opt.id.startsWith('tr_') && (() => {
+                                          const parts = opt.id.split('_');
+                                          const trainNum = parts[1] === 'combo' ? parts[2] : parts[1];
+                                          return (
                                           <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
                                             <button 
                                               onClick={() => {
-                                                setActiveTrainId(opt.id.split('_')[1]);
+                                                setActiveTrainId(trainNum);
                                                 setRouteModalOpen(true);
                                               }}
                                               className="text-xs font-semibold px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-colors border border-border"
@@ -550,7 +564,7 @@ export default function TransportPage() {
                                             </button>
                                             <button 
                                               onClick={() => {
-                                                setActiveTrainId(opt.id.split('_')[1]);
+                                                setActiveTrainId(trainNum);
                                                 setLiveModalOpen(true);
                                               }}
                                               className="text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20"
@@ -558,7 +572,8 @@ export default function TransportPage() {
                                               Live Status
                                             </button>
                                           </div>
-                                        )}
+                                          );
+                                        })()}
                                         {opt.type === 'cross' && opt.legs && (
                                           <div className="mt-3 space-y-2 border-t border-border pt-3 w-full" onClick={(e) => e.stopPropagation()}>
                                             {opt.legs.map((leg: any, lIdx: number) => (

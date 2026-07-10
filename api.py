@@ -216,7 +216,8 @@ async def get_transport(source: str, destination: str, mode: str = "all", check_
             "price": o.price,
             "safetyScore": o.safety_score,
             "recommendationScore": rec_score,
-            "provider": getattr(o, "provider", "Unknown")
+            "provider": getattr(o, "provider", "Unknown"),
+            "price_breakdown": getattr(o, "price_breakdown", None)
         })
         
     cross_routes_data = []
@@ -503,6 +504,21 @@ _shared_session = requests.Session()
 def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     if not q or len(q) < 2:
         return []
+
+    q_lower = q.lower().strip()
+    region_aliases = {
+        "ladakh": "Leh",
+        "goa": "Panjim",
+        "sikkim": "Gangtok",
+        "kashmir": "Srinagar",
+        "andaman": "Port Blair",
+        "nicobar": "Port Blair",
+        "lakshadweep": "Kavaratti"
+    }
+    
+    # If it's a known alias or starts with one, we could replace it, but direct match is safest
+    if q_lower in region_aliases:
+        q = region_aliases[q_lower]
 
     url = "https://geocoding-api.open-meteo.com/v1/search"
     params = {
