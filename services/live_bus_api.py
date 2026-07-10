@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 import random
 import os
+import json
 import httpx
 from models.entities import TransportOption
 from models.enums import TransportType
@@ -14,6 +15,31 @@ logging.basicConfig(level=logging.INFO)
 
 from dotenv import load_dotenv
 load_dotenv()
+
+def get_parse_api_key():
+    usage_file = "parse_key_usage.json"
+    count = 0
+    if os.path.exists(usage_file):
+        try:
+            with open(usage_file, "r") as f:
+                data = json.load(f)
+                count = data.get("count", 0)
+        except Exception:
+            pass
+            
+    count += 1
+    
+    try:
+        with open(usage_file, "w") as f:
+            json.dump({"count": count}, f)
+    except Exception:
+        pass
+        
+    key_index = ((count - 1) // 100) % 7 + 1
+    api_key = os.environ.get(f"PARSE_API_KEY{key_index}")
+    if not api_key:
+        api_key = os.environ.get("PARSE_API_KEY1")
+    return api_key
 
 async def fetch_redbus_api(origin: str, destination: str, travel_date: str, check_only: bool = False) -> List[dict]:
     """Strategy 1: Live redBus API via parse.bot"""
@@ -53,9 +79,9 @@ async def fetch_redbus_api(origin: str, destination: str, travel_date: str, chec
     if check_only:
         return None
 
-    api_key = os.environ.get("PARSE_API_KEY")
+    api_key = get_parse_api_key()
     if not api_key:
-        raise Exception("PARSE_API_KEY not found in environment.")
+        raise Exception("PARSE_API_KEY1 not found in environment.")
         
     base_url = "https://api.parse.bot/scraper/35a9b6fe-4009-43dd-89e2-993f11b60ad0"
     headers = {"X-API-Key": api_key}
