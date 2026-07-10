@@ -86,7 +86,7 @@ export default function TermsPage() {
             <section id="use" className="mb-12 scroll-mt-28">
               <h2 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white">2. Use of the Service</h2>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300">
-                You must provide accurate and complete information when creating an account or planning a trip. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer or device. PlanBro is intended for personal, non-commercial use only.
+                You must provide accurate and complete information when creating an account or planning a trip. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer or device. PlanBro is intended for personal, non-commercial use only. Our Service integrates with several third-party data providers, transport operators, and booking aggregators to provide live data. Your use of the Service is also subject to the terms and conditions of these respective third-party providers.
               </p>
             </section>
 
@@ -104,7 +104,7 @@ export default function TermsPage() {
                   <AlertTriangle size={18} /> Important Disclaimer
                 </h4>
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  PlanBro acts as a planning tool and aggregator. We do not guarantee the real-time accuracy of transport availability, live train status, prices, or hotel bookings. Always verify critical travel information directly with the official service providers.
+                  PlanBro acts as a planning tool and aggregator. We do not guarantee the real-time accuracy of transport availability, live train status, prices, or hotel bookings. Because we rely on various third-party data sources and aggregators, information such as photos, ratings, and fares may change without notice. Always verify critical travel information directly with the official service providers.
                 </p>
               </div>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300">

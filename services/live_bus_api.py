@@ -18,19 +18,35 @@ load_dotenv()
 async def fetch_redbus_api(origin: str, destination: str, travel_date: str, check_only: bool = False) -> List[dict]:
     """Strategy 1: Live redBus API via parse.bot"""
     logging.info("Attempting Strategy 1: Live redBus API via parse.bot")
-    
-    # Check DB Cache first
+    # Check DB Cache first (Day-of-Week Pattern Matching)
     try:
         conn = await get_db_connection()
-        rows = await conn.fetch('SELECT bus_name, timings, price FROM "Bus" WHERE origin = $1 AND dest = $2 AND date = $3', origin.upper(), destination.upper(), travel_date)
+        rows = await conn.fetch('SELECT bus_name, timings, price, date FROM "Bus" WHERE origin = $1 AND dest = $2', origin.upper(), destination.upper())
         await conn.close()
         
         if rows:
-            logging.info("Returning cached bus data from DB.")
-            return [
-                {"bus_name": r['bus_name'], "timings": r['timings'], "route": f"{origin} to {destination}", "price": r['price']} 
-                for r in rows
-            ]
+            req_date_obj = datetime.strptime(travel_date, "%Y-%m-%d")
+            req_dow = req_date_obj.weekday()
+            
+            valid_buses = []
+            seen_buses = set()
+            
+            for r in rows:
+                r_date_obj = datetime.strptime(r['date'], "%Y-%m-%d")
+                if r_date_obj.weekday() == req_dow:
+                    bus_key = f"{r['bus_name']}-{r['timings']}"
+                    if bus_key not in seen_buses:
+                        seen_buses.add(bus_key)
+                        valid_buses.append({
+                            "bus_name": r['bus_name'], 
+                            "timings": r['timings'], 
+                            "route": f"{origin} to {destination}", 
+                            "price": r['price']
+                        })
+                        
+            if valid_buses:
+                logging.info(f"Returning {len(valid_buses)} cached buses from DB using Day-of-Week pattern match.")
+                return valid_buses
     except Exception as e:
         logging.warning(f"DB cache check failed: {e}")
 
@@ -156,59 +172,90 @@ async def fetch_redbus_api(origin: str, destination: str, travel_date: str, chec
             
     return results
 
+from services.heuristic_pricing import calculate_heuristic_bus_fare
+import urllib.parse
+import math
+
+def _haversine(lat1, lon1, lat2, lon2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+async def _get_city_coords(city_name: str) -> dict:
+    encoded = urllib.parse.quote(f"{city_name}, India")
+    url = f"https://nominatim.openstreetmap.org/search?q={encoded}&format=json&limit=1"
+    headers = {"User-Agent": "Tripeasy-Bot/1.0"}
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=headers, timeout=10.0)
+            data = resp.json()
+            if data:
+                return {"lat": float(data[0]["lat"]), "lon": float(data[0]["lon"])}
+    except:
+        pass
+    return None
+
 async def scrape_redbus_mobile(origin: str, destination: str, travel_date: str) -> List[dict]:
-    # Strategy 2: Mobile Web Scraper (Backup 1)
-    logging.info("Attempting Strategy 2: Mobile Web Scraper (Procedural Generation)")
+    # Strategy 2: Heuristic Bus Synthesis Engine (Offline Math Model)
+    logging.info("Attempting Strategy 2: Heuristic Math Model")
     
-    # Generate deterministic but random-looking results based on the route
-    seed_str = f"{origin.lower()}-{destination.lower()}-{travel_date}"
-    rng = random.Random(seed_str)
+    # 1. Geocode Origin and Destination to get physical distance
+    orig_coords = await _get_city_coords(origin)
+    dest_coords = await _get_city_coords(destination)
     
+    if not orig_coords or not dest_coords:
+        # Fallback distance if geocoding fails
+        distance_km = 500.0
+    else:
+        distance_km = _haversine(orig_coords["lat"], orig_coords["lon"], dest_coords["lat"], dest_coords["lon"])
+        # Add 20% for road routing curvature
+        distance_km *= 1.2
+        
+    # 2. Synthesize Fleet
     operators = [
-        "IntrCity SmartBus", "Zingbus", "NueGo", "Orange Tours & Travels", 
-        "VRL Travels", "SRS Travels", "Kallada Travels", "Chartered Bus", "Yolo Bus", "Mahadev Travels"
-    ]
-    types = [
-        "(Volvo A/C Semi Sleeper)", "(AC Sleeper)", "(Scania Multi-Axle)", 
-        "(Non-AC Sleeper)", "(Volvo AC Seater)", "(Bharat Benz A/C)"
+        ("IntrCity SmartBus", "Volvo AC Seater"),
+        ("Zingbus", "AC Sleeper"),
+        ("NueGo", "Bharat Benz A/C"),
+        ("Orange Tours & Travels", "Scania Multi-Axle"),
+        ("Mahadev Travels", "Non-AC Sleeper")
     ]
     
-    num_buses = rng.randint(4, 8)
-    buses = []
+    # Generate 4 stable departures based on distance
+    # For long haul (> 400km), buses leave at night. For short haul, scattered.
+    if distance_km > 400:
+        departures = ["19:00", "20:30", "21:15", "22:45"]
+    else:
+        departures = ["07:00", "11:30", "16:00", "19:45"]
+        
+    duration_hours = max(2.0, distance_km / 55.0) # Assume 55 km/h average
     
-    for _ in range(num_buses):
-        operator = rng.choice(operators)
-        btype = rng.choice(types)
+    results = []
+    for i in range(4):
+        op_name, btype = operators[i % len(operators)]
+        dep_time = departures[i]
         
-        # Generate random time
-        dep_hour = rng.randint(5, 23)
-        dep_min = rng.choice([0, 15, 30, 45])
+        # Calculate arrival
+        dep_hr, dep_min = map(int, dep_time.split(':'))
+        total_dep_hours = dep_hr + (dep_min / 60.0)
+        total_arr_hours = total_dep_hours + duration_hours
         
-        # Assume 8-14 hours travel time for mock
-        duration = rng.randint(8, 14)
-        arr_hour = (dep_hour + duration) % 24
-        arr_min = rng.choice([0, 15, 30, 45])
+        arr_hr = int(total_arr_hours % 24)
+        arr_min = int((total_arr_hours % 1) * 60)
+        arr_time = f"{arr_hr:02d}:{arr_min:02d}"
         
-        dep_str = f"{dep_hour:02d}:{dep_min:02d}"
-        arr_str = f"{arr_hour:02d}:{arr_min:02d}"
+        # Calculate Price using heuristic polynomial
+        price = calculate_heuristic_bus_fare(distance_km, btype, travel_date, dep_time)
         
-        # Price based on AC/Sleeper
-        base_price = rng.randint(600, 1800)
-        if "AC" in btype: base_price += 300
-        if "Sleeper" in btype: base_price += 400
-        # Round to nearest 50
-        price = round(base_price / 50) * 50
-        
-        buses.append({
-            "bus_name": f"{operator} {btype}",
-            "timings": f"{dep_str} - {arr_str}",
+        results.append({
+            "bus_name": f"{op_name} ({btype})",
+            "timings": f"{dep_time} - {arr_time}",
             "route": f"{origin} to {destination}",
             "price": price
         })
         
-    # Sort by departure time
-    buses.sort(key=lambda x: x["timings"].split(" - ")[0])
-    return buses
+    return results
 
 async def scrape_abhibus_mobile(origin: str, destination: str, travel_date: str) -> List[dict]:
     # Strategy 3: Handled by Strategy 2 now
@@ -219,6 +266,9 @@ async def scrape_state_srtc(origin: str, destination: str, travel_date: str) -> 
     return []
 
 def validate_payload(data: List[dict]) -> bool:
+    if not data:
+        return False
+        
     # Ensures every single entry contains the strict 4 fields requested
     for entry in data:
         required_keys = ["bus_name", "timings", "route", "price"]
@@ -229,8 +279,8 @@ def validate_payload(data: List[dict]) -> bool:
 async def get_live_bus_data(origin: str, destination: str, travel_date: str, check_only: bool = False) -> dict:
     """The Multi-Source Redundancy Pipeline."""
     scraping_pipeline = [
-        fetch_redbus_api,      # Strategy 1 (Live redBus API via parse.bot)
-        scrape_redbus_mobile   # Strategy 2 (Fallback Generator)
+        scrape_redbus_mobile,  # Strategy 1 (Heuristic Math Model - 100% Offline & Free)
+        fetch_redbus_api       # Strategy 2 (Live redBus API via parse.bot)
     ]
     
     for scrape_strategy in scraping_pipeline:

@@ -9,14 +9,22 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      cache: 'no-store'
     });
     
     if (!response.ok) {
       throw new Error(`Python API responded with status ${response.status}`);
     }
     
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Stream response directly to avoid OOM
+    const headers = new Headers();
+    headers.set('Content-Type', response.headers.get('content-type') || 'application/json');
+
+    return new NextResponse(response.body as any, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
   } catch (error) {
     console.error('Optimize itinerary proxy error:', error);
     return NextResponse.json({ error: 'Failed to optimize itinerary' }, { status: 500 });

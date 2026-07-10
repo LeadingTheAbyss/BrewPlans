@@ -27,6 +27,8 @@ class Place(BaseModel):
     safety_score_base: int
     weather_sensitive: bool
     bad_weather_types: List[Weather] = []
+    rating: Optional[float] = None
+    user_rating_count: Optional[int] = None
 
 class Hotel(BaseModel):
     id: str  # Google Place ID (ChIJ...)

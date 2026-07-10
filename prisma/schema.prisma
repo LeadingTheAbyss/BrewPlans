@@ -120,6 +120,64 @@ model Session {
   createdAt DateTime @default(now())
 }
 
+model TransitStop {
+  stop_id        String  @id
+  stop_name      String
+  lat            Float
+  lon            Float
+  transport_type String  // "TRAIN" or "BUS"
+  
+  stopTimes TransitStopTime[]
+}
+
+model TransitRoute {
+  route_id   String  @id
+  short_name String
+  long_name  String
+  agency_id  String?
+  
+  trips TransitTrip[]
+}
+
+model TransitCalendar {
+  service_id String  @id
+  monday     Boolean
+  tuesday    Boolean
+  wednesday  Boolean
+  thursday   Boolean
+  friday     Boolean
+  saturday   Boolean
+  sunday     Boolean
+
+  trips TransitTrip[]
+}
+
+model TransitTrip {
+  trip_id    String  @id
+  route_id   String
+  service_id String
+  
+  route    TransitRoute    @relation(fields: [route_id], references: [route_id], onDelete: Cascade)
+  calendar TransitCalendar @relation(fields: [service_id], references: [service_id], onDelete: Cascade)
+  
+  stopTimes TransitStopTime[]
+}
+
+model TransitStopTime {
+  trip_id        String
+  stop_id        String
+  arrival_time   String
+  departure_time String
+  stop_sequence  Int
+  day_offset     Int
+  
+  trip TransitTrip @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
+  stop TransitStop @relation(fields: [stop_id], references: [stop_id], onDelete: Cascade)
+  
+  @@id([trip_id, stop_sequence])
+  @@index([stop_id])
+}
+
 model TripHistory {
   id          String   @id @default(cuid())
   userId      String

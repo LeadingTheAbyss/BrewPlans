@@ -50,6 +50,7 @@ export type Place = {
   visitDurationHours: number;
   travelTimeHours: number; // Avg commute
   rating: number;
+  reviewsCount?: number;
   safetyScore: number;
   weatherScore: number;
   crowdScore: number;

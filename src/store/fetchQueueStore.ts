@@ -72,25 +72,7 @@ export const useFetchQueue = create<FetchQueueState>((set, get) => ({
   },
   
   initBackgroundChecks: (trip) => {
-    const { enqueueTask, tasks } = get();
-    // Don't re-init if we already have tasks
-    if (tasks.length > 0) return;
-    
-    // Priority order for background checks: Trains(1) -> Flights(2) -> Bus(3) -> Cabs(4) -> Places(5) -> Food(6) -> Hotels(7)
-    
-    // 1-4: Transports for each passenger
-    trip.passengers.forEach((pax: any) => {
-      if (!pax.city) return;
-      const dest = trip.destination || 'Unknown';
-      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-train-v4`, category: 'transport', subType: 'train', paxId: pax.id, priority: 1, isLive: false });
-      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-flight-v4`, category: 'transport', subType: 'flight', paxId: pax.id, priority: 2, isLive: false });
-      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-bus-v4`, category: 'transport', subType: 'bus', paxId: pax.id, priority: 3, isLive: false });
-      enqueueTask({ id: `${pax.id}-${pax.city}-${dest}-cab-v4`, category: 'transport', subType: 'cab', paxId: pax.id, priority: 4, isLive: false });
-    });
-    
-    // 5-7: Destinations
-    enqueueTask({ id: 'places-main', category: 'places', priority: 5, isLive: false });
-    enqueueTask({ id: 'food-main', category: 'food', priority: 6, isLive: false });
-    enqueueTask({ id: 'hotels-main', category: 'hotels', priority: 7, isLive: false });
+    // Disabled aggressive background pre-fetching.
+    // We now enforce strict lazy loading: API calls are only made when a user explicitly clicks a tab or accordion.
   }
 }));

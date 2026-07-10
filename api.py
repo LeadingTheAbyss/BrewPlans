@@ -220,7 +220,7 @@ async def get_transport(source: str, destination: str, mode: str = "all", check_
         })
         
     cross_routes_data = []
-    if (mode == "all" or mode == "train" or mode == "flight" or mode == "cross") and not check_only:
+    if (mode == "all" or mode == "cross") and not check_only:
         from services.cross_routing_engine import hydrate_cross_route
         cross_res_list = await hydrate_cross_route(source, destination, date, passengers=1)
         
@@ -338,7 +338,9 @@ async def get_places(destination: str, check_only: bool = Query(False)):
             "recommendationScore": 90 - i,
             "imageUrl": photo_urls[i],
             "lat": p.coordinates[0],
-            "lng": p.coordinates[1]
+            "lng": p.coordinates[1],
+            "rating": p.rating,
+            "reviewsCount": p.user_rating_count
         })
     return result
 
@@ -387,7 +389,9 @@ async def get_food(destination: str, check_only: bool = Query(False)):
             "recommendationScore": 90 - i,
             "imageUrl": photo_urls[i],
             "lat": p.coordinates[0],
-            "lng": p.coordinates[1]
+            "lng": p.coordinates[1],
+            "rating": p.rating,
+            "reviewsCount": p.user_rating_count
         })
     return result
 
@@ -419,7 +423,8 @@ async def get_hotels(destination: str, check_only: bool = Query(False)):
     async def _resolve_photo(h):
         if getattr(h, "photo_name", None):
             if h.photo_name.startswith("http"):
-                return h.photo_name
+                import urllib.parse
+                return f"/api/proxy-image?url={urllib.parse.quote(h.photo_name)}"
             google_img = get_google_photo_url(h.photo_name)
             if google_img:
                 return google_img
@@ -494,7 +499,7 @@ def _remove_diacritics(text: str) -> str:
         return text
     return ''.join(c for c in unicodedata.normalize('NFD', str(text)) if unicodedata.category(c) != 'Mn')
 
-
+_shared_session = requests.Session()
 def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     if not q or len(q) < 2:
         return []
@@ -508,7 +513,7 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     }
     
     try:
-        response = requests.get(url, params=params, timeout=2.0)
+        response = _shared_session.get(url, params=params, timeout=2.0)
         response.raise_for_status()
         data = response.json()
         
@@ -583,7 +588,7 @@ async def ola_search(q: str = Query(...), city: str = Query(...)):
         headers = {'X-Request-Id': str(uuid.uuid4())}
         
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = _shared_session.get(url, headers=headers, timeout=10)
             if response.status_code != 200:
                 raise Exception(f"Ola API returned HTTP {response.status_code}: {response.text}")
             data = response.json()

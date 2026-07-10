@@ -95,7 +95,15 @@ During development, several complex issues typically arise that require specific
 - **Buses:** Removed hardcoded dummy buses from the RedBus scraping pipeline. Now, if the live scraper genuinely finds zero buses, it accurately returns an empty array instead of polluting the UI with fake data.
 - **Interactive Map:** The Haversine distance formula was moved directly into the Hotel frontend, allowing it to dynamically average the exact distance from each hotel to the specific GPS coordinates of the user's selected places in the `itineraryStore`. Furthermore, the `CityAutocomplete` was detached from firing map updates on every keystroke, forcing the globe to only update after the city is 100% resolved from the API dropdown.
 
-### 9. Google Places API Integration & Extracted Info
+### 9. Bypassing Third-Party Image Hotlinking (CORS/403)
+**The Problem:** Direct fetching of hotel images from external Online Travel Agencies (OTAs) like Expedia and Booking.com often fails on the frontend due to strict CORS policies and `Referer` / `User-Agent` checks, resulting in broken image placeholders.
+**The Fix:** We implemented a server-side proxy route in Next.js (`/api/proxy-image`). The Python backend routes all sensitive third-party image URLs to this Next.js endpoint, which then fetches the image using a generic User-Agent and streams the raw byte buffer directly to the client, effectively masking the origin and bypassing 403 Forbidden errors.
+
+### 10. Preventing TCP Socket Exhaustion (WinError 10055)
+**The Problem:** High-concurrency operations, such as typing in the `CityAutocomplete` (which fired multiple API requests) and Redis caching (which opened a new connection for every GET/SET), resulted in thousands of transient sockets left in the `TIME_WAIT` state, eventually exhausting available TCP ports and crashing Uvicorn.
+**The Fix:** We implemented global connection pooling across the Python backend. Synchronous requests (like Open-Meteo city searches and Ola Maps) now use a shared `requests.Session()`, while asynchronous Redis calls utilize a singleton `httpx.AsyncClient`. This enforces HTTP Keep-Alive, drastically reducing overhead and completely eliminating socket leakage.
+
+### 11. Google Places API Integration & Extracted Info
 **The Architecture:** The app uses the New Google Places API (REST) via `services/google_places_api.py`. To aggressively minimize costs and maximize speed, it uses a triple-layered caching system: `Redis (Fast Cache) -> PostgreSQL (Persistent Cache) -> Google API`.
 **Data Retrieved:** When fetching places of interest, the API strictly requests the following fields via a `fieldMask`:
 - `id`: Google Place ID (ChIJ...)
@@ -108,7 +116,7 @@ During development, several complex issues typically arise that require specific
 - `primaryType`: The category (museum, park, restaurant, historical_landmark)
 - `priceLevel`: Helps categorize budget constraints
 
-### 10. Smart Itinerary Bucket-Scheduling Algorithm
+### 12. Smart Itinerary Bucket-Scheduling Algorithm
 **The Architecture:** The "Smart Itinerary" feature (`autoSchedule` in `itineraryStore.ts`) operates strictly on the frontend. It is NOT powered by Ollama. 
 **The Logic:** It acts as a **Time-Bucket Scheduling Algorithm**:
 1. **Gathers Unassigned Places:** Looks at the global bag of user-selected places and filters out already scheduled ones.
@@ -116,3 +124,7 @@ During development, several complex issues typically arise that require specific
 3. **The 8-Hour Rule (Fatigue Cap):** Treats each trip day as a chronologically ordered bucket with a strict 8-hour limit to prevent physical exhaustion.
 4. **Greedy Packing:** Drops places into Day 1 until adding the next place would push the schedule past 8 hours, at which point it automatically overflows into Day 2.
 5. **Force-Packing:** If the user selects too many places and runs out of days entirely, it forces the remaining places into the final day and triggers a UI warning state: `"This day is getting too packed (>8 hours)"`.
+
+### 13. Component Uniformity & Legal Obfuscation
+**The UI Push:** We iteratively unified the design language across the application. For instance, the Hotel cards on the `/plan/hotels` route were completely overhauled to match the premium, responsive row-column layout of the `/plan/review` cards, exposing critical data like `SafetyScore` and `ComfortScore` immediately. 
+**The Legal Push:** To maintain a highly premium and somewhat white-labeled feel, the Privacy Policy and Terms of Service documents dynamically describe data flow without explicitly naming raw infrastructure providers (like Google, SerpApi, Ola, Open-Meteo, and IRCTC), instead referring to them as "third-party data partners, transport operators, and booking aggregators."

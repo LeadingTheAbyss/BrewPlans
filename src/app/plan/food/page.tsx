@@ -10,7 +10,7 @@ import { Place } from '@/types/trip';
 import { api } from '@/lib/api';
 import {
   ArrowRight, Clock, IndianRupee, MapPin, Star, X,
-  Bookmark, Navigation, Smartphone, Share2, Ticket,
+  Bookmark, Navigation, Smartphone, Share2, Ticket, ExternalLink,
   Filter, SlidersHorizontal
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -49,26 +49,26 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
 
   if (!isOpen) return null;
 
-  const reviewCount = (place.id.length * 1234) % 25000;
+  const reviewCount = place.reviewsCount ?? ((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850);
+  const displayRating = place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1);
 
   const handleActionClick = (action: string) => {
-    const query = encodeURIComponent(place.name + ' ' + destination);
+    const query = encodeURIComponent(place.name + (destination ? ' ' + destination : '')).replace(/%20/g, '+');
     const placeUrl = `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${place.id}`;
 
     switch (action) {
       case 'Directions':
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}&destination_place_id=${place.id}`, '_blank');
         break;
-      case 'Nearby':
+      case 'Explore Nearby':
         window.open(`https://www.google.com/maps/search/things+to+do+near+${query}`, '_blank');
         break;
-      case 'Save':
-      case 'Send':
+      case 'View More':
         window.open(placeUrl, '_blank');
         break;
       case 'Share':
         if (navigator.share) {
-          navigator.share({ title: place.name, text: `Check out ${place.name} in ${destination}!`, url: placeUrl })
+          navigator.share({ title: place.name, text: `Check out ${place.name}${destination ? ` in ${destination}` : ''}!`, url: placeUrl })
             .catch(() => alert('Link copied!'));
         } else {
           navigator.clipboard.writeText(placeUrl);
@@ -143,7 +143,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
           <h2 className="text-2xl font-bold text-white mb-1">{place.name}</h2>
           <div className="flex items-center gap-3 mb-5">
             <div className="flex items-center gap-1">
-              <span className="text-zinc-300 font-bold text-sm">{place.rating || 4.5}</span>
+              <span className="text-zinc-300 font-bold text-sm">{displayRating}</span>
               <div className="flex text-yellow-400">
                 {[...Array(4)].map((_, i) => <Star key={i} size={13} fill="currentColor" />)}
                 <Star size={13} fill="currentColor" className="opacity-40" />
@@ -179,9 +179,8 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
               <div className="flex justify-between px-1 mb-2">
                 {[
                   { icon: Navigation, label: 'Directions', color: 'bg-blue-600', text: 'text-white' },
-                  { icon: Bookmark, label: 'Save', color: 'bg-zinc-800', text: 'text-blue-400' },
-                  { icon: MapPin, label: 'Nearby', color: 'bg-zinc-800', text: 'text-blue-400' },
-                  { icon: Smartphone, label: 'Send', color: 'bg-zinc-800', text: 'text-blue-400' },
+                  { icon: MapPin, label: 'Explore Nearby', color: 'bg-zinc-800', text: 'text-blue-400' },
+                  { icon: ExternalLink, label: 'View More', color: 'bg-zinc-800', text: 'text-blue-400' },
                   { icon: Share2, label: 'Share', color: 'bg-zinc-800', text: 'text-blue-400' },
                 ].map(action => (
                   <div
@@ -459,7 +458,7 @@ export default function FoodPage() {
                         {place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1)}
                       </span>
                       <span className="text-xs text-zinc-600 ml-1">
-                        ({((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850).toLocaleString('en-IN')})
+                        ({(place.reviewsCount ?? ((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850)).toLocaleString('en-IN')})
                       </span>
                     </div>
 

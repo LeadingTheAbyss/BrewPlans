@@ -16,6 +16,33 @@ load_dotenv(override=True)
 _request_timestamps = deque()
 MAX_REQUESTS_PER_MINUTE = 9 # Keep it at 9 to be safe
 
+# API Key Rotation State
+_api_key_usage_count = 0
+_current_api_key_index = 0
+
+def get_railradar_api_key() -> Optional[str]:
+    global _api_key_usage_count, _current_api_key_index
+    
+    keys = [
+        "RAILRADAR_API_KEY", "RAILRADAR_API_KEY2", "RAILRADAR_API_KEY3",
+        "RAILRADAR_API_KEY4", "RAILRADAR_API_KEY5", "RAILRADAR_API_KEY6", "RAILRADAR_API_KEY7", "RAILRADAR_API_KEY8"
+    ]
+    
+    available_keys = [os.getenv(k) for k in keys if os.getenv(k)]
+    if not available_keys:
+        return None
+        
+    # Rotate key after 50 calls
+    if _api_key_usage_count >= 50:
+        _api_key_usage_count = 0
+        _current_api_key_index = (_current_api_key_index + 1) % len(available_keys)
+        
+    if _current_api_key_index >= len(available_keys):
+        _current_api_key_index = 0
+        
+    _api_key_usage_count += 1
+    return available_keys[_current_api_key_index]
+
 # Expanded city to station mapping for Indian Railways
 CITY_TO_STATION = {
     "Delhi": "NDLS", "New Delhi": "NDLS", "DEL": "NDLS",
@@ -176,16 +203,80 @@ async def get_nearest_station(lat: float, lon: float) -> dict:
     return nearest
 
 
-async def search_live_trains(origin_city: str, dest_city: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
-    print(f"\n[API Call] Fetching live trains (via IRCTC RapidAPI): {origin_city} -> {dest_city} on {date}...")
+async def search_gtfs_trains(origin_code: str, dest_code: str, date: str) -> List[TransportOption]:
+    try:
+        conn = await get_db_connection()
+        req_date = datetime.strptime(date, "%Y-%m-%d")
+        req_day_int = req_date.weekday() # Monday=0, Sunday=6
+        
+        # Check GTFS offline schema
+        query = '''
+            SELECT t.trip_id, r.long_name, st1.departure_time, st2.arrival_time, st2.day_offset,
+                   c.monday, c.tuesday, c.wednesday, c.thursday, c.friday, c.saturday, c.sunday
+            FROM "TransitTrip" t
+            JOIN "TransitRoute" r ON t.route_id = r.route_id
+            JOIN "TransitCalendar" c ON t.service_id = c.service_id
+            JOIN "TransitStopTime" st1 ON t.trip_id = st1.trip_id
+            JOIN "TransitStopTime" st2 ON t.trip_id = st2.trip_id
+            WHERE st1.stop_id = $1 AND st2.stop_id = $2 
+            AND st1.stop_sequence < st2.stop_sequence
+        '''
+        gtfs_rows = await conn.fetch(query, origin_code, dest_code)
+        await conn.close()
+        
+        if not gtfs_rows: return []
+        
+        options = []
+        days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        
+        for idx, row in enumerate(gtfs_rows):
+            # Calculate the exact origin day required to reach the destination on the req_day
+            st1_offset = 0 # Simplifying: assuming origin_code is absolute origin for now, or just use 0.
+            origin_day_idx = (req_day_int - 0) % 7 
+            origin_day_col = days[origin_day_idx]
+            
+            if row[origin_day_col]:
+                dep_hr, dep_min = map(int, row['departure_time'].split(':'))
+                arr_hr, arr_min = map(int, row['arrival_time'].split(':'))
+                
+                dep_time = req_date.replace(hour=dep_hr, minute=dep_min)
+                
+                arr_time = req_date.replace(hour=arr_hr, minute=arr_min)
+                st2_offset = int(row['day_offset'] or 0)
+                if st2_offset > 0:
+                    arr_time += timedelta(days=st2_offset)
+                elif arr_time < dep_time:
+                    arr_time += timedelta(days=1)
+                    
+                duration_hours = (arr_time - dep_time).total_seconds() / 3600.0
+                price = round(500 + (duration_hours * 80))
+                
+                options.append(TransportOption(
+                    id=f"tr_gtfs_{idx}",
+                    type=TransportType.TRAIN,
+                    departure=dep_time,
+                    arrival=arr_time,
+                    duration_hours=round(duration_hours, 1),
+                    price=float(price),
+                    safety_score=8,
+                    comfort_score=7,
+                    provider=row['long_name']
+                ))
+        return options
+    except Exception as e:
+        print(f"GTFS Query failed: {e}")
+        return []
+
+async def search_live_trains(origin: str, destination: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
+    """Fetches trains from offline GTFS DB first, then falls back to live RailRadar API."""
     
     # Strip any states from formatted names (e.g. "Lucknow, Uttar Pradesh" -> "Lucknow")
-    clean_origin = origin_city.split(",")[0].strip()
-    clean_dest = dest_city.split(",")[0].strip()
+    clean_origin = origin.split(",")[0].strip()
+    clean_dest = destination.split(",")[0].strip()
     
     if check_only:
         return None
-        
+    
     origin_code = await get_station_code(clean_origin)
     dest_code = await get_station_code(clean_dest)
     
@@ -193,44 +284,87 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
     nearest_dest = None
     
     if not origin_code:
-        coords = await get_city_coords(clean_origin)
-        if coords:
-            nearest_origin = await get_nearest_station(coords["lat"], coords["lng"])
+        o_coords = await get_city_coords(clean_origin)
+        if o_coords:
+            nearest_origin = await get_nearest_station(o_coords["lat"], o_coords["lng"])
             if nearest_origin:
                 origin_code = nearest_origin["code"]
                 
     if not dest_code:
-        coords = await get_city_coords(clean_dest)
-        if coords:
-            nearest_dest = await get_nearest_station(coords["lat"], coords["lng"])
+        d_coords = await get_city_coords(clean_dest)
+        if d_coords:
+            nearest_dest = await get_nearest_station(d_coords["lat"], d_coords["lng"])
             if nearest_dest:
                 dest_code = nearest_dest["code"]
 
     if not origin_code or not dest_code:
         print(f"[Warning] Could not resolve station codes for {clean_origin} -> {clean_dest}")
         return []
-        
-    # --- Check DB Cache ---
+
+    # 1. Try GTFS Offline Database first
+    gtfs_results = await search_gtfs_trains(origin_code, dest_code, date)
+    if gtfs_results:
+        print("[GTFS] Successfully served trains from local offline DB!")
+        return gtfs_results
+
+    # 2. Try DB Cache (Legacy DOW Pattern Matching)
     options = []
     try:
         conn = await get_db_connection()
-        rows = await conn.fetch('SELECT train_num, train_name, dep_time, arr_time, duration_hours, price FROM "Train" WHERE origin = $1 AND dest = $2 AND date = $3', origin_code, dest_code, date)
+        # Fetch all historical searches for this route to check for Day-of-Week patterns
+        rows = await conn.fetch('SELECT train_num, train_name, dep_time, arr_time, duration_hours, price, date FROM "Train" WHERE origin = $1 AND dest = $2', origin_code, dest_code)
         await conn.close()
         
         if rows:
-            print("[Cache Hit] Returning trains from NeonDB.")
-            for idx, r in enumerate(rows):
-                options.append(TransportOption(
-                    id=f"tr_{r['train_num']}_{idx}_cached",
-                    type=TransportType.TRAIN,
-                    departure=datetime.fromisoformat(r['dep_time']),
-                    arrival=datetime.fromisoformat(r['arr_time']),
-                    duration_hours=float(r['duration_hours']),
-                    price=float(r['price']),
-                    safety_score=8,
-                    comfort_score=7,
-                    provider=r['train_name']
-                ))
+            req_date_obj = datetime.strptime(date, "%Y-%m-%d")
+            req_dow = req_date_obj.weekday()
+            
+            valid_cached = []
+            for r in rows:
+                r_date_obj = datetime.strptime(r['date'], "%Y-%m-%d")
+                if r_date_obj.weekday() == req_dow:
+                    # Found a historical train that runs on this exact day of the week!
+                    days_diff = (req_date_obj - r_date_obj).days
+                    
+                    orig_dep = datetime.fromisoformat(r['dep_time'])
+                    orig_arr = datetime.fromisoformat(r['arr_time'])
+                    
+                    # Shift the timestamps to the requested date
+                    new_dep = orig_dep + timedelta(days=days_diff)
+                    new_arr = orig_arr + timedelta(days=days_diff)
+                    
+                    valid_cached.append({
+                        "train_num": r['train_num'],
+                        "train_name": r['train_name'],
+                        "dep_time": new_dep,
+                        "arr_time": new_arr,
+                        "duration_hours": float(r['duration_hours']),
+                        "price": float(r['price'])
+                    })
+                    
+            # Deduplicate by train_num in case we found multiple historical matches
+            seen_trains = set()
+            unique_cached = []
+            for c in valid_cached:
+                if c["train_num"] not in seen_trains:
+                    seen_trains.add(c["train_num"])
+                    unique_cached.append(c)
+                    
+            if unique_cached:
+                print(f"[Cache Hit] Returning {len(unique_cached)} trains from DB using Day-of-Week pattern match.")
+                for idx, r in enumerate(unique_cached):
+                    options.append(TransportOption(
+                        id=f"tr_{r['train_num']}_{idx}_cached",
+                        type=TransportType.TRAIN,
+                        departure=r['dep_time'],
+                        arrival=r['arr_time'],
+                        duration_hours=r['duration_hours'],
+                        price=r['price'],
+                        safety_score=8,
+                        comfort_score=7,
+                        provider=r['train_name']
+                    ))
+                return options # Return early since we found DOW matches
     except Exception as e:
         print(f"[Warning] Train DB cache check failed: {e}")
     # --- End DB Cache Check ---
@@ -239,9 +373,9 @@ async def search_live_trains(origin_city: str, dest_city: str, date: str, check_
         print(f"[Warning] Could not dynamically map {clean_origin} or {clean_dest} to a station code.")
         return []
 
-    api_key = os.getenv("RAILRADAR_API_KEY")
+    api_key = get_railradar_api_key()
     if not api_key:
-        print("[Warning] No RAILRADAR_API_KEY found in .env.")
+        print("[Warning] No RAILRADAR_API_KEYs found in .env.")
         return []
 
     # 1. Determine station combinations to check (max 3 to avoid rate limit)

@@ -113,7 +113,9 @@ async def rank_places(city: str, trip: TripState, weather: Weather, check_only: 
                 family_friendly=True,
                 safety_score_base=9,
                 weather_sensitive=False,
-                bad_weather_types=[]
+                bad_weather_types=[],
+                rating=p.get("rating"),
+                user_rating_count=p.get("userRatingCount")
             )
         )
     return places
@@ -161,9 +163,11 @@ async def rank_food(city: str, trip: TripState, weather: Weather, check_only: bo
                 safe_hours=(8, 23),
                 crowd_estimate=CrowdLevel.MEDIUM,
                 family_friendly=True,
-                safety_score_base=9,
+                safety_score_base=10,
                 weather_sensitive=False,
-                bad_weather_types=[]
+                bad_weather_types=[],
+                rating=p.get("rating"),
+                user_rating_count=p.get("userRatingCount")
             )
         )
     return places

@@ -8,7 +8,7 @@ import { useItineraryStore } from '@/store/itineraryStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
 import { Hotel, Place } from '@/types/trip';
 import { api } from '@/lib/api';
-import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye, Calendar, Bed } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { StreetWalkModal } from '@/components/StreetWalkModal';
 
@@ -164,7 +164,7 @@ export default function HotelsPage() {
                       key={hotel.id}
                       onClick={() => handleSelectHotel(hotel)}
                       className={`
-                        relative flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-300
+                        relative flex flex-col md:flex-row overflow-hidden rounded-2xl border cursor-pointer transition-all duration-300 shadow-sm
                         ${isSelected
                           ? 'border-primary bg-primary/5 shadow-[0_0_0_1px_currentColor] text-primary'
                           : 'border-border/60 bg-card hover:border-foreground/20 hover:bg-muted/30'
@@ -172,69 +172,101 @@ export default function HotelsPage() {
                       `}
                     >
                       {isSelected && (
-                        <div className="absolute -top-2.5 -right-2.5 bg-background rounded-full p-0.5 shadow-sm">
-                          <CheckCircle2 className="text-primary w-6 h-6 fill-background" />
+                        <div className="absolute top-3 left-3 z-20 bg-background rounded-full p-0.5 shadow-md">
+                          <CheckCircle2 className="text-primary w-7 h-7 fill-background" />
                         </div>
                       )}
 
-                      <div className="flex items-center gap-5 w-full">
-                        {/* Thumbnail */}
-                        <div className="w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br from-muted to-muted/50 border border-border/50 flex items-center justify-center overflow-hidden relative">
-                          {hotel.imageUrl && (
-                            <img 
-                              src={hotel.imageUrl} 
-                              alt={hotel.name} 
-                              className="w-full h-full object-cover absolute inset-0 z-10" 
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          )}
-                          <div className="text-muted-foreground/30 font-medium text-[10px] uppercase tracking-widest rotate-[-45deg] absolute z-0">Hotel</div>
-                        </div>
-
-                        {/* Middle Info */}
-                        <div className="flex-1">
-                          <h3 className={`text-lg font-semibold leading-tight mb-1.5 flex items-center gap-2 ${isSelected ? 'text-foreground' : 'text-foreground'}`}>
-                            {hotel.name}
-                            <span className="text-sm font-semibold text-foreground inline-flex items-center gap-1">
-                              <Star size={14} className="fill-yellow-500 text-yellow-500" /> {hotel.rating}
-                            </span>
-                          </h3>
-
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                            <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
-                              <MapPin size={14} className="text-foreground/50" />
-                              {hotel.distanceToCluster} km from the places you wish to visit
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveStreetWalk(hotel);
-                              }}
-                              className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
-                            >
-                              <Eye size={14} /> Use Street Walk
-                            </button>
-                          </div>
-
-                          {/* Warnings if budget tight */}
-                          {remainingAfter < 0 && !isSelected && (
-                            <div className="mt-2 text-xs font-medium text-red-500/90 flex items-center gap-1 bg-red-500/10 px-2 py-1 rounded-md inline-flex w-max">
-                              <AlertCircle size={12} /> Exceeds budget by ₹{Math.abs(remainingAfter).toLocaleString('en-IN')}
-                            </div>
-                          )}
+                      {/* Hotel Image */}
+                      <div className="md:w-72 h-48 md:h-auto relative shrink-0 bg-muted flex items-center justify-center overflow-hidden">
+                        {hotel.imageUrl && (
+                          <img 
+                            src={hotel.imageUrl} 
+                            alt={hotel.name} 
+                            className="w-full h-full object-cover absolute inset-0 z-10" 
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <div className="text-muted-foreground/30 font-bold text-xl uppercase tracking-widest rotate-[-15deg] absolute z-0">
+                          Hotel
                         </div>
                       </div>
 
-                      {/* Right Side Pricing */}
-                      <div className="text-right shrink-0 ml-4 flex flex-col items-end justify-center">
-                        <div className="text-xl font-semibold text-foreground tracking-tight mb-0.5">
-                          ₹{totalCost.toLocaleString('en-IN')}
+                      {/* Details Area */}
+                      <div className="flex-1 p-5 md:p-6 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <h3 className={`text-xl font-bold leading-tight mb-1 flex items-center gap-2 ${isSelected ? 'text-foreground' : 'text-foreground'}`}>
+                                {hotel.name}
+                                <span className="text-sm font-bold text-foreground inline-flex items-center gap-1">
+                                  <Star size={15} className="fill-yellow-500 text-yellow-500" /> {hotel.rating}
+                                </span>
+                              </h3>
+                              
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
+                                  <MapPin size={14} className="text-foreground/50" />
+                                  {hotel.distanceToCluster} km from the places you wish to visit
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveStreetWalk(hotel);
+                                  }}
+                                  className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
+                                >
+                                  <Eye size={14} /> Use Street Walk
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <div className="text-2xl font-bold text-foreground tracking-tight mb-1">
+                                ₹{totalCost.toLocaleString('en-IN')}
+                              </div>
+                              <div className="text-xs font-medium text-muted-foreground">
+                                ₹{hotel.pricePerNight.toLocaleString('en-IN')} / night
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Warnings if budget tight */}
+                          {remainingAfter < 0 && !isSelected && (
+                            <div className="mt-3 text-xs font-bold text-red-500/90 flex items-center gap-1.5 bg-red-500/10 px-2.5 py-1.5 rounded-md inline-flex w-max">
+                              <AlertCircle size={14} /> Exceeds budget by ₹{Math.abs(remainingAfter).toLocaleString('en-IN')}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-xs font-medium text-muted-foreground">
-                          ₹{hotel.pricePerNight.toLocaleString('en-IN')}/night • {rooms} {rooms === 1 ? 'room' : 'rooms'} • {nights} {nights === 1 ? 'night' : 'nights'}
+
+                        {/* Bottom Stats Row (Like StayDetailsCard) */}
+                        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border/50">
+                          <div>
+                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                              <Calendar size={12}/> Duration
+                            </div>
+                            <div className="text-sm font-semibold text-foreground">{nights} {nights === 1 ? 'Night' : 'Nights'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                              <Bed size={12}/> Rooms
+                            </div>
+                            <div className="text-sm font-semibold text-foreground">{rooms} {rooms === 1 ? 'Room' : 'Rooms'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                              <CheckCircle2 size={12}/> Comfort
+                            </div>
+                            <div className="text-sm font-semibold text-foreground">{hotel.comfortScore}/10</div>
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                              <ShieldCheck size={12}/> Safety
+                            </div>
+                            <div className="text-sm font-semibold text-foreground">{hotel.safetyScore}/10</div>
+                          </div>
                         </div>
                       </div>
                     </div>

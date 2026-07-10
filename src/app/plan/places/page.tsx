@@ -10,7 +10,7 @@ import { Place } from '@/types/trip';
 import { api } from '@/lib/api';
 import {
   ArrowRight, Clock, IndianRupee, MapPin, Star, X,
-  Bookmark, Navigation, Smartphone, Share2, Ticket,
+  Bookmark, Navigation, Smartphone, Share2, Ticket, ExternalLink,
   Filter, SlidersHorizontal
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -49,27 +49,26 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
 
   if (!isOpen) return null;
 
-  const reviewCount = (place.id.length * 1234) % 25000;
+  const reviewCount = place.reviewsCount ?? ((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850);
+  const displayRating = place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1);
 
   const handleActionClick = (action: string) => {
-    const query = encodeURIComponent(place.name + ' ' + destination);
+    const query = encodeURIComponent(place.name + (destination ? ' ' + destination : '')).replace(/%20/g, '+');
     const placeUrl = `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${place.id}`;
 
     switch (action) {
       case 'Directions':
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}&destination_place_id=${place.id}`, '_blank');
         break;
-      case 'Nearby':
+      case 'Explore Nearby':
         window.open(`https://www.google.com/maps/search/things+to+do+near+${query}`, '_blank');
         break;
-      case 'Save':
-      case 'Send':
-        // Redirecting to the Google Maps Place page where users can native save/send
+      case 'View More':
         window.open(placeUrl, '_blank');
         break;
       case 'Share':
         if (navigator.share) {
-          navigator.share({ title: place.name, text: `Check out ${place.name} in ${destination}!`, url: placeUrl })
+          navigator.share({ title: place.name, text: `Check out ${place.name}${destination ? ` in ${destination}` : ''}!`, url: placeUrl })
             .catch(() => alert('Link copied!'));
         } else {
           navigator.clipboard.writeText(placeUrl);
@@ -98,31 +97,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
 
         {/* Hero Image */}
         <div className="relative h-64 w-full shrink-0 bg-zinc-800">
-          {/* Toggle Button */}
-          {place.lat && place.lng && (
-            <div className="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md rounded-full flex overflow-hidden p-1 border border-white/10">
-              <button 
-                onClick={(e) => { e.stopPropagation(); setViewMode('photo'); }} 
-                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${viewMode === 'photo' ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-white'}`}
-              >Photo</button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setViewMode('streetview'); }} 
-                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${viewMode === 'streetview' ? 'bg-emerald-600 text-white' : 'text-zinc-400 hover:text-white'}`}
-              >Street Walk</button>
-            </div>
-          )}
-
-          {viewMode === 'streetview' && place.lat && place.lng ? (
-            <iframe 
-              width="100%" 
-              height="100%" 
-              style={{ border: 0 }}
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY}&location=${place.lat},${place.lng}&radius=50&pitch=0&fov=90`}
-            ></iframe>
-          ) : place.imageUrl ? (
+          {place.imageUrl ? (
             <img src={place.imageUrl} alt={place.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 gap-2">
@@ -144,7 +119,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
           <h2 className="text-2xl font-bold text-white mb-1">{place.name}</h2>
           <div className="flex items-center gap-3 mb-5">
             <div className="flex items-center gap-1">
-              <span className="text-zinc-300 font-bold text-sm">{place.rating || 4.5}</span>
+              <span className="text-zinc-300 font-bold text-sm">{displayRating}</span>
               <div className="flex text-yellow-400">
                 {[...Array(4)].map((_, i) => <Star key={i} size={13} fill="currentColor" />)}
                 <Star size={13} fill="currentColor" className="opacity-40" />
@@ -180,9 +155,8 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
               <div className="flex justify-between px-1 mb-2">
                 {[
                   { icon: Navigation, label: 'Directions', color: 'bg-blue-600', text: 'text-white' },
-                  { icon: Bookmark, label: 'Save', color: 'bg-zinc-800', text: 'text-blue-400' },
-                  { icon: MapPin, label: 'Nearby', color: 'bg-zinc-800', text: 'text-blue-400' },
-                  { icon: Smartphone, label: 'Send', color: 'bg-zinc-800', text: 'text-blue-400' },
+                  { icon: MapPin, label: 'Explore Nearby', color: 'bg-zinc-800', text: 'text-blue-400' },
+                  { icon: ExternalLink, label: 'View More', color: 'bg-zinc-800', text: 'text-blue-400' },
                   { icon: Share2, label: 'Share', color: 'bg-zinc-800', text: 'text-blue-400' },
                 ].map(action => (
                   <div
@@ -462,7 +436,7 @@ export default function PlacesPage() {
                         {place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1)}
                       </span>
                       <span className="text-xs text-zinc-600 ml-1">
-                        ({((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850).toLocaleString('en-IN')})
+                        ({(place.reviewsCount ?? ((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850)).toLocaleString('en-IN')})
                       </span>
                     </div>
 

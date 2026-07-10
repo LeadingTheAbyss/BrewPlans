@@ -22,6 +22,14 @@ except ImportError:
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
+_shared_redis_client: Optional[httpx.AsyncClient] = None
+
+def _get_redis_client() -> httpx.AsyncClient:
+    global _shared_redis_client
+    if _shared_redis_client is None or _shared_redis_client.is_closed:
+        _shared_redis_client = httpx.AsyncClient(timeout=5.0)
+    return _shared_redis_client
+
 
 async def _cache_get(key: str) -> Optional[str]:
     """Return the cached string value for `key`, or None on miss/error."""
@@ -29,12 +37,12 @@ async def _cache_get(key: str) -> Optional[str]:
         return None
     try:
         headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            res = await client.get(
-                f"{UPSTASH_URL}/get/imgcache:{key}", headers=headers
-            )
-            if res.status_code == 200:
-                return res.json().get("result")
+        client = _get_redis_client()
+        res = await client.get(
+            f"{UPSTASH_URL}/get/imgcache:{key}", headers=headers
+        )
+        if res.status_code == 200:
+            return res.json().get("result")
     except Exception as e:
         print(f"[Cache] get error: {e}")
     return None
@@ -46,11 +54,11 @@ async def _cache_set(key: str, value: str, ttl_seconds: int = 86400) -> None:
         return
     try:
         headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(
-                f"{UPSTASH_URL}/pipeline",
-                headers=headers,
-                json=[["SET", f"imgcache:{key}", value, "EX", ttl_seconds]],
-            )
+        client = _get_redis_client()
+        await client.post(
+            f"{UPSTASH_URL}/pipeline",
+            headers=headers,
+            json=[["SET", f"imgcache:{key}", value, "EX", ttl_seconds]],
+        )
     except Exception as e:
         print(f"[Cache] set error: {e}")

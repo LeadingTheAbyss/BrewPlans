@@ -524,16 +524,16 @@ export default function LandingPage() {
               Recommend Trips
             </button>
             <button 
-              onClick={() => handleNavigation('/quick-trip')} 
-              className="text-base tracking-wide font-bold text-white/80 hover:text-white hover:scale-105 transition-all flex items-center gap-1.5"
-            >
-              Quick Trip
-            </button>
-            <button 
               onClick={() => handleNavigation('/plan/setup')} 
               className="text-base tracking-wide font-bold text-white/80 hover:text-white hover:scale-105 transition-all"
             >
               Plan a Trip
+            </button>
+            <button 
+              onClick={() => handleNavigation('/quick-trip')} 
+              className="text-base tracking-wide font-bold text-white/80 hover:text-white hover:scale-105 transition-all flex items-center gap-1.5"
+            >
+              Quick Trip
             </button>
           </div>
         </div>

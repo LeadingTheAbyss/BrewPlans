@@ -18,11 +18,10 @@ export default function LocationAutocomplete({ memberId, value, lat, city, onUpd
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const skipFetchRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (value !== query && !isOpen) {
-      // Only sync external changes if we aren't actively searching
       setQuery(value);
     }
   }, [value]);
@@ -37,47 +36,46 @@ export default function LocationAutocomplete({ memberId, value, lat, city, onUpd
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  useEffect(() => {
-    if (query.length < 3) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    onUpdate(memberId, 'location', val);
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    if (val.length >= 3) {
+      setLoading(true);
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const searchQuery = city ? `${val}, ${city}` : val;
+          let url = `/api/ola/autocomplete?input=${encodeURIComponent(searchQuery)}`;
+          if (city) url += `&city=${encodeURIComponent(city)}`;
+          
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.predictions && data.predictions.length > 0) {
+            setResults(data.predictions);
+            setIsOpen(true);
+          } else {
+            setIsOpen(false);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      }, 400);
+    } else {
       setResults([]);
       setIsOpen(false);
-      return;
+      setLoading(false);
     }
-
-    if (skipFetchRef.current) {
-      skipFetchRef.current = false;
-      return;
-    }
-
-    setLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const searchQuery = city ? `${query}, ${city}` : query;
-        let url = `/api/ola/autocomplete?input=${encodeURIComponent(searchQuery)}`;
-        if (city) url += `&city=${encodeURIComponent(city)}`;
-        
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.predictions && data.predictions.length > 0) {
-          setResults(data.predictions);
-          setIsOpen(true);
-        } else {
-          setIsOpen(false);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [query, city]);
+  };
 
   const handleSelect = async (place: any) => {
     const address = place.description;
     const placeId = place.place_id || place.reference || '';
     
-    skipFetchRef.current = true;
     setQuery(address);
     onUpdate(memberId, 'location', address);
     setIsOpen(false);
@@ -153,10 +151,7 @@ export default function LocationAutocomplete({ memberId, value, lat, city, onUpd
         <input
           type="text"
           value={query}
-          onChange={(e) => {
-             setQuery(e.target.value);
-             onUpdate(memberId, 'location', e.target.value); 
-          }}
+          onChange={handleInputChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           placeholder={placeholder}
           className="w-full bg-transparent text-xs text-zinc-400 placeholder:text-zinc-700 focus:outline-none pr-12"

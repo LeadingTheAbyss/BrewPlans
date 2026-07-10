@@ -131,43 +131,42 @@ function PlaceSearchBox({
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  useEffect(() => {
-    if (query.length < 3) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const searchQuery = city ? `${query}, ${city}` : query;
-        let url = `/api/ola/autocomplete?input=${encodeURIComponent(searchQuery)}`;
-        if (city) url += `&city=${encodeURIComponent(city)}`;
-        
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (data.predictions && data.predictions.length > 0) {
-          setResults(data.predictions);
-          setIsOpen(true);
-        } else {
-          setIsOpen(false);
-          setResults([]);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally { 
-        setLoading(false); 
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [query, city]);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    if (e.target.value.length >= 3) {
-      setIsOpen(true);
+    const val = e.target.value;
+    setQuery(val);
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    if (val.length >= 3) {
+      setLoading(true);
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const searchQuery = city ? `${val}, ${city}` : val;
+          let url = `/api/ola/autocomplete?input=${encodeURIComponent(searchQuery)}`;
+          if (city) url += `&city=${encodeURIComponent(city)}`;
+          
+          const res = await fetch(url);
+          const data = await res.json();
+          
+          if (data.predictions && data.predictions.length > 0) {
+            setResults(data.predictions);
+            setIsOpen(true);
+          } else {
+            setIsOpen(false);
+            setResults([]);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally { 
+          setLoading(false); 
+        }
+      }, 400);
     } else {
       setIsOpen(false);
+      setResults([]);
+      setLoading(false);
     }
   };
 

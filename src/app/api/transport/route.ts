@@ -95,23 +95,27 @@ export async function GET(req: Request) {
     }
 
     // 3. Proxy to Python Backend
-    const response = await fetch(`${PYTHON_API_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}`);
+    const response = await fetch(`${PYTHON_API_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}`, {
+      cache: 'no-store'
+    });
     
     if (!response.ok) {
       throw new Error(`Python API responded with status ${response.status}`);
     }
     
-    const data = await response.json();
-    
-    // Track granular API metric
+    // Stream response directly to avoid OOM (Array buffer allocation failed)
     await trackApiCall('/api/transport');
 
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      }
+    const headers = new Headers();
+    headers.set('Content-Type', response.headers.get('content-type') || 'application/json');
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
+
+    return new NextResponse(response.body as any, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
     });
     
   } catch (error) {

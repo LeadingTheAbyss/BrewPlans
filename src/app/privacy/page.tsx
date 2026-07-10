@@ -98,14 +98,14 @@ export default function PrivacyPage() {
             <section id="sharing" className="mb-12 scroll-mt-28">
               <h2 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white">3. Sharing Your Information</h2>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300 mb-4">
-                We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations.
+                We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations. To provide real-time travel recommendations, we may securely transmit non-identifying search queries (such as destination cities and dates) to our third-party data partners, transport operators, and booking aggregators.
               </p>
               <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6 my-6">
                 <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
                   <Shield size={18} /> Our Promise
                 </h4>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  We will <strong>never</strong> sell your personal data or travel itineraries to third-party marketers or advertisers.
+                  We will <strong>never</strong> sell your personal data or travel itineraries to third-party marketers or advertisers. Any data shared with external APIs is strictly for generating your trip plans.
                 </p>
               </div>
             </section>
