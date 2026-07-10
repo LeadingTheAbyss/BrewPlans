@@ -156,22 +156,30 @@ async def _fetch_flights_for_iata(origin_iata: str, dest_iata: str, date: str, c
                     segments = {s['id']: s for s in data.get('segments', [])}
                     new_flights = []
                     for leg in data.get('legs', []):
-                        if leg.get('stop_count', 0) == 0 and leg.get('segment_ids'):
+                        if leg.get('stop_count', 0) <= 1 and leg.get('segment_ids'):
                             segment_id = leg['segment_ids'][0]
                             segment = segments.get(segment_id)
                             if segment:
                                 carrier_name = carriers.get(segment.get('marketing_carrier_id'), 'Unknown Airline')
                                 flight_no = f"{carrier_name[:2].upper()} {segment.get('marketing_flight_number', '')}".strip()
-                                dep_time_full = segment.get('departure', '')
-                                arr_time_full = segment.get('arrival', '')
+                                
+                                dep_time_full = leg.get('departure', segment.get('departure', ''))
+                                arr_time_full = leg.get('arrival', segment.get('arrival', ''))
+                                
                                 if 'T' in dep_time_full and 'T' in arr_time_full:
                                     dep_time = dep_time_full.split('T')[1][:5]
                                     arr_time = arr_time_full.split('T')[1][:5]
+                                    
+                                    stops = leg.get('stop_count', 0)
+                                    provider_name = carrier_name
+                                    if stops > 0:
+                                        provider_name += f" ({stops} Stop)"
+                                        
                                     new_flights.append({
                                         "flight_no": flight_no,
                                         "origin": origin_iata.upper(),
                                         "dest": dest_iata.upper(),
-                                        "airline": carrier_name,
+                                        "airline": provider_name,
                                         "freq": "1234567",
                                         "arr_time": arr_time,
                                         "dep_time": dep_time

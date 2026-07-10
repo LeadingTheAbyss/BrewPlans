@@ -488,12 +488,53 @@ export default function TransportPage() {
                                       </div>
                                     )}
 
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-bold uppercase tracking-wider text-sm">{opt.provider || opt.type}</span>
+                                    {opt.type === 'flight' ? (
+                                      <div className="flex-1 ml-2 flex flex-col">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                                          {opt.provider.split('(')[0].replace('*', '').trim()}
+                                        </div>
+                                        <div className="flex items-center text-center gap-8">
+                                          {/* Departure */}
+                                          <div className="flex flex-col items-start">
+                                            <span className="text-3xl font-bold text-foreground tracking-tight">
+                                              {new Date(opt.departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                            </span>
+                                            <span className="text-sm text-muted-foreground">{opt.source}</span>
+                                          </div>
+                                          
+                                          {/* Duration Line */}
+                                          <div className="flex flex-col items-center justify-center min-w-[120px]">
+                                            <span className="text-[11px] text-muted-foreground mb-2">{opt.duration}</span>
+                                            <div className="w-full relative flex items-center justify-center h-1">
+                                              <div className="absolute w-full h-[2px] bg-orange-300 dark:bg-orange-600/50 rounded"></div>
+                                              <div className="w-2 h-2 rounded-full bg-orange-400 dark:bg-orange-500 z-10 ring-2 ring-background"></div>
+                                            </div>
+                                            <span className="text-[10px] text-orange-600 dark:text-orange-400 mt-2 font-medium tracking-wide">
+                                              {opt.provider.includes('Stop') ? opt.provider.match(/\((.*?)\)/)?.[1] || '1 Stop' : 'Non Stop'}
+                                            </span>
+                                          </div>
+                                          
+                                          {/* Arrival */}
+                                          <div className="flex flex-col items-end relative">
+                                            <div className="flex items-start">
+                                              <span className="text-3xl font-bold text-foreground tracking-tight">
+                                                {new Date(opt.arrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                              </span>
+                                              {new Date(opt.arrival).getDate() !== new Date(opt.departure).getDate() && (
+                                                <span className="text-[9px] leading-[10px] text-red-600 font-bold ml-1 mt-1 text-left">+1<br/>DAY</span>
+                                              )}
+                                            </div>
+                                            <span className="text-sm text-muted-foreground">{opt.destination}</span>
+                                          </div>
+                                        </div>
                                       </div>
+                                    ) : (
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-bold uppercase tracking-wider text-sm">{opt.provider || opt.type}</span>
+                                        </div>
                                         <div className="text-sm text-muted-foreground mt-1">
-                                          {opt.departure} <ArrowRight className="inline mx-1" size={14}/> {opt.arrival} ({opt.duration})
+                                          {opt.departure.split('T')[1]?.slice(0,5) || opt.departure} <ArrowRight className="inline mx-1" size={14}/> {opt.arrival.split('T')[1]?.slice(0,5) || opt.arrival} ({opt.duration})
                                         </div>
                                         
                                         {opt.type === 'train' && opt.id.startsWith('tr_') && (
@@ -535,6 +576,7 @@ export default function TransportPage() {
                                           </div>
                                         )}
                                       </div>
+                                    )}
                                   </div>
 
                                   <div className="text-right">
