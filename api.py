@@ -520,6 +520,9 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
         results = []
         features = data.get("results", [])
         
+        # Sort features by population descending to ensure major cities appear first
+        features.sort(key=lambda x: x.get("population") or 0, reverse=True)
+        
         for feature in features:
             if feature.get("country") != "India":
                 continue
