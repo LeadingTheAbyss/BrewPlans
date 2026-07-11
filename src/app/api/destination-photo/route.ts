@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
 // Wikipedia article cover images are already human-curated, so heavy filtering is unnecessary.
 const BAD_FILENAME_FRAGMENTS = [
   '_map', 'map.', '_flag', '_logo', '_icon', '_seal', '_emblem',
-  'coat_of_arms', 'locator', '.svg',
+  'coat_of_arms', 'locator', '.svg', '.png',
   // Topographic / geographic / satellite imagery — not travel photos
   'relief', 'topograph', 'terrain', 'topo_', '_topo',
   'physical_map', 'satellite', 'elevation', 'bathymetry',

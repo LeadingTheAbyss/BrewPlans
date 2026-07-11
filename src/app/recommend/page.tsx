@@ -60,6 +60,7 @@ export default function RecommendPage() {
   const [filterPrimaryOnly, setFilterPrimaryOnly] = useState(false);
   const [destPhotos, setDestPhotos] = useState<Record<string, string | null>>({});
   const [expandedDest, setExpandedDest] = useState<any | null>(null);
+  const [hideOverlay, setHideOverlay] = useState(false);
   const [formCollapsed, setFormCollapsed] = useState(false);
   const fetchedNames = React.useRef<Set<string>>(new Set());
 
@@ -601,6 +602,11 @@ export default function RecommendPage() {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="relative w-full max-w-7xl h-full max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-end group cursor-default"
               onClick={(e) => e.stopPropagation()}
+              onMouseDown={() => setHideOverlay(true)}
+              onMouseUp={() => setHideOverlay(false)}
+              onMouseLeave={() => setHideOverlay(false)}
+              onTouchStart={() => setHideOverlay(true)}
+              onTouchEnd={() => setHideOverlay(false)}
             >
               <img
                 src={destPhotos[expandedDest.name]!}
@@ -609,7 +615,7 @@ export default function RecommendPage() {
               />
               
               {/* Elegant Text Overlay */}
-              <div className="relative z-10 p-12 md:p-20 bg-gradient-to-t from-black via-black/80 to-transparent">
+              <div className={`relative z-10 p-12 md:p-20 bg-gradient-to-t from-black via-black/80 to-transparent transition-opacity duration-300 ${hideOverlay ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="max-w-4xl">
                   <div className="flex items-center gap-6 mb-6">
                     <span className="px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em]">

@@ -87,7 +87,8 @@ Respond ONLY with a JSON object containing a "destinations" array, where each it
 Rules:
 - STRICT GEOGRAPHY RULE: EVERY destination MUST be located within the country of India. DO NOT recommend foreign countries like Bhutan, Nepal, Sri Lanka, Maldives, or Dubai under any circumstances.
 - name MUST be the actual city or place name ONLY (e.g. "Indore", "Goa", "Shimla"). DO NOT add descriptors.
-- budgetEstimate MUST be a realistic total cost in INR for ALL {num_pax} people for {days} days (transport from {city_str}, stay, food). Provide a REAL number, not 0.
+- budgetEstimate MUST be the ACTUAL, realistic cost in INR for a standard mid-range trip for ALL {num_pax} people for {days} days (transport from {city_str}, stay, food). Provide a REAL number.
+- CRITICAL RULE: The ₹{total_budget} is a MAXIMUM limit, NOT a target. Do NOT artificially inflate the cost! A cheap destination must still show a cheap budget (e.g., 15000) even if their limit is 100000.
 - budgetEstimate MUST NOT exceed ₹{total_budget}.
 - perPersonEstimate MUST equal (budgetEstimate / {num_pax}).
 - matchScore is 0-100, score between 70-98 based on how well the destination matches the preference.
@@ -102,6 +103,8 @@ def call_ollama(prompt: str) -> str:
     # Re-read .env on every call so key changes are picked up without restarting the server
     load_dotenv(override=True)
     groq_api_key = os.getenv("GROQ_API_KEY")
+    fallback_api_key = os.getenv("GROQ_FALLBACK_API_KEY")
+    
     print(f"[Groq] Using key: {groq_api_key[:8] if groq_api_key else 'NONE'}...")
     if not groq_api_key or groq_api_key == "your_groq_api_key_here":
         return '{"error": "Groq API Key is missing. Please add GROQ_API_KEY to the .env file."}'
@@ -112,7 +115,7 @@ def call_ollama(prompt: str) -> str:
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct", # Upgraded to Llama 4 Scout for massive 30k TPM rate limits!
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -126,8 +129,24 @@ def call_ollama(prompt: str) -> str:
         res.raise_for_status()
         data = res.json()
         return data["choices"][0]["message"]["content"]
+    except requests.exceptions.HTTPError as http_err:
+        if http_err.response.status_code == 429 and fallback_api_key and fallback_api_key != groq_api_key:
+            print("[Groq] ⚠️ Primary key rate-limited (429). Retrying with fallback API key...")
+            headers["Authorization"] = f"Bearer {fallback_api_key}"
+            try:
+                res_fallback = requests.post(url, headers=headers, json=payload, timeout=180)
+                res_fallback.raise_for_status()
+                data_fallback = res_fallback.json()
+                print("[Groq] ✅ Fallback key succeeded.")
+                return data_fallback["choices"][0]["message"]["content"]
+            except Exception as fallback_e:
+                print(f"[Error] Groq fallback API call failed: {fallback_e}")
+                return f"EXCEPTION: {str(fallback_e)}"
+        else:
+            print(f"[Error] Groq API call failed: {http_err}")
+            return f"EXCEPTION: {str(http_err)}"
     except Exception as e:
-        print(f"[Error] Krutrim API call failed: {e}")
+        print(f"[Error] Groq API call failed: {e}")
         return f"EXCEPTION: {str(e)}"
 
 
@@ -198,33 +217,31 @@ def recommend(passengers: list, total_budget: int, days: int, preference: str, g
             unique_destinations.append(dest)
     destinations = unique_destinations
 
-    # --- Realistic budget calculation (don't trust the LLM's math) ---
-    # Per-person-per-day costs in INR based on destination category
-    # These cover: mid-range hotel, 3 meals, local transport, and entry fees
+    # --- Realistic budget calculation ---
+    # We now trust the LLM's estimate since we use a high-quality model,
+    # but we still apply sanity checks and clamp to the user's max budget.
     COST_PER_PERSON_PER_DAY = {
-        "mountains": 2500,
-        "hills":     2500,
-        "beaches":   3000,
-        "heritage":  2000,
-        "spiritual": 1800,
-        "wildlife":  3500,
-        "desert":    2800,
-        "adventure": 3200,
-        "food":      2200,
-        "any":       2500,
+        "mountains": 2500, "hills": 2500, "beaches": 3000,
+        "heritage": 2000, "spiritual": 1800, "wildlife": 3500,
+        "desert": 2800, "adventure": 3200, "food": 2200, "any": 2500,
     }
-    # One-time round-trip transport cost per person (rough average across India)
     TRANSPORT_COST_PER_PERSON = 2000
 
     for dest in destinations:
         if not isinstance(dest, dict):
             continue
         try:
+            llm_estimate = int(dest.get("budgetEstimate", 0))
+            
             category = str(dest.get("category", "any")).lower()
             daily_rate = COST_PER_PERSON_PER_DAY.get(category, 2500)
-            realistic_total = (daily_rate * days + TRANSPORT_COST_PER_PERSON) * num_pax
+            fallback_total = (daily_rate * days + TRANSPORT_COST_PER_PERSON) * num_pax
+            
+            # Use LLM's estimate if it's > 0, otherwise fallback to the hardcoded baseline
+            base_estimate = llm_estimate if llm_estimate > 0 else fallback_total
+            
             # Clamp to the user's budget ceiling so we never exceed it
-            budget_estimate = min(realistic_total, total_budget)
+            budget_estimate = min(base_estimate, total_budget)
             dest["budgetEstimate"] = budget_estimate
             dest["perPersonEstimate"] = budget_estimate // num_pax
         except Exception as e:
