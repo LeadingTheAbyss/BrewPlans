@@ -199,7 +199,7 @@ export default function TransportPage() {
     }
     
     const destination = trip.destination || 'Unknown';
-    const key = `${pax.id}-${pax.city}-${destination}-${type}-v4`;
+    const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
     const isActive = activeTabs[pax.id] === type;
 
     // Toggle tab
@@ -259,8 +259,8 @@ export default function TransportPage() {
 
   const getTransportIcon = (type: string) => {
     if (type === 'flight') return <Plane className="text-blue-500 shrink-0" size={20} />;
-    if (type === 'train') return <Train className="text-orange-500 shrink-0" size={28} />;
-    if (type === 'cab' || type === 'car') return <Car className="text-purple-500 shrink-0" size={28} />;
+    if (type === 'train') return <Train className="text-orange-500 shrink-0" size={20} />;
+    if (type === 'cab' || type === 'car') return <Car className="text-purple-500 shrink-0" size={20} />;
     if (type === 'cross') return <MapPin className="text-amber-500 shrink-0" size={20} />;
     return <Bus className="text-green-500 shrink-0" size={20} />;
   };
@@ -351,9 +351,9 @@ export default function TransportPage() {
 
                         {/* Accordion Sections for Transport Types */}
                     <div className="space-y-4">
-                      {['flight', 'train', 'bus', 'cab'].map((type) => {
+                      {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
                         const destination = trip.destination || 'Unknown';
-                        const key = `${pax.id}-${pax.city}-${destination}-${type}-v4`;
+                        const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
                         const isFetched = cachedData[key] !== undefined;
                         const task = fetchQueue.tasks.find(t => t.id === key);
                         const isLoading = task?.status === 'loading';
@@ -488,74 +488,48 @@ export default function TransportPage() {
                                       </div>
                                     )}
 
-                                    {opt.type === 'flight' ? (
-                                      <div className="flex-1 ml-2 flex flex-col">
-                                        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                                          {opt.provider.split('(')[0].replace('*', '').trim()}
-                                        </div>
-                                        <div className="flex items-center text-center gap-8">
-                                          {/* Departure */}
-                                          <div className="flex flex-col items-start">
-                                            <span className="text-3xl font-bold text-foreground tracking-tight">
-                                              {new Date(opt.departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                                            </span>
-                                            <span className="text-sm text-muted-foreground">{opt.source}</span>
-                                          </div>
-                                          
-                                          {/* Duration Line */}
-                                          <div className="flex flex-col items-center justify-center min-w-[120px]">
-                                            <span className="text-[11px] text-muted-foreground mb-2">{opt.duration}</span>
-                                            <div className="w-full relative flex items-center justify-center h-1">
-                                              <div className="absolute w-full h-[2px] bg-orange-300 dark:bg-orange-600/50 rounded"></div>
-                                              <div className="w-2 h-2 rounded-full bg-orange-400 dark:bg-orange-500 z-10 ring-2 ring-background"></div>
+                                    <div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="font-bold uppercase tracking-wider text-sm">
+                                          {opt.type === 'flight' ? (opt.provider || '').split('*')[0].trim() : (opt.provider || opt.type)}
+                                        </span>
+                                        {opt.type !== 'cross' && isSelected && (
+                                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground ml-2 bg-muted/30 px-3 py-1 rounded-full border border-border/50">
+                                            <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{pax.city}</span>
+                                            <div className="relative w-16 h-3 flex items-center justify-center">
+                                              <div className="absolute inset-x-0 border-t border-dashed border-primary/40 top-1/2 -translate-y-1/2"></div>
+                                              <motion.div
+                                                initial={{ left: "0%", opacity: 0 }}
+                                                animate={{ left: ["0%", "20%", "80%", "100%"], opacity: [0, 1, 1, 0] }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                                              >
+                                                {opt.type === 'flight' ? (
+                                                  <Plane size={12} className="text-primary rotate-45" fill="currentColor" />
+                                                ) : opt.type === 'train' ? (
+                                                  <Train size={12} className="text-primary" />
+                                                ) : opt.type === 'bus' ? (
+                                                  <Bus size={12} className="text-primary" />
+                                                ) : (
+                                                  <Car size={12} className="text-primary" />
+                                                )}
+                                              </motion.div>
                                             </div>
-                                            <span className="text-[10px] text-orange-600 dark:text-orange-400 mt-2 font-medium tracking-wide">
-                                              {opt.provider.includes('Stop') ? opt.provider.match(/\((.*?)\)/)?.[1] || '1 Stop' : 'Non Stop'}
-                                            </span>
-                                          </div>
-                                          
-                                          {/* Arrival */}
-                                          <div className="flex flex-col items-end relative">
-                                            <div className="flex items-start">
-                                              <span className="text-3xl font-bold text-foreground tracking-tight">
-                                                {new Date(opt.arrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                                              </span>
-                                              {new Date(opt.arrival).getDate() !== new Date(opt.departure).getDate() && (
-                                                <span className="text-[9px] leading-[10px] text-red-600 font-bold ml-1 mt-1 text-left">+1<br/>DAY</span>
-                                              )}
-                                            </div>
-                                            <span className="text-sm text-muted-foreground">{opt.destination}</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-bold uppercase tracking-wider text-sm">{opt.provider || opt.type}</span>
-                                        </div>
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                          {opt.departure.split('T')[1]?.slice(0,5) || opt.departure} <ArrowRight className="inline mx-1" size={14}/> {opt.arrival.split('T')[1]?.slice(0,5) || opt.arrival} ({opt.duration})
-                                        </div>
-                                        
-                                        {((opt as any).price_breakdown || opt.priceBreakdown) && (
-                                          <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                                            {Object.entries((opt as any).price_breakdown || opt.priceBreakdown).map(([key, value]: [string, any]) => (
-                                              <span key={key} className="text-[13px] font-semibold px-3 py-1.5 rounded-md bg-background text-foreground border border-border shadow-sm flex items-center">
-                                                {key === 'Train' ? <Train size={15} className="mr-1.5" /> : key === 'Cab' ? <Car size={15} className="mr-1.5" /> : <span>{key}</span>}
-                                                ₹{value.toLocaleString('en-IN')}
-                                              </span>
-                                            ))}
+                                            <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{trip.destination}</span>
                                           </div>
                                         )}
+                                      </div>
+                                      {(!(opt.type !== 'cross' && isSelected)) && opt.type !== 'cross' && (
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                          {String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure} <ArrowRight className="inline mx-1" size={14}/> {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival} ({opt.duration})
+                                        </div>
+                                      )}
                                         
-                                        {opt.type === 'train' && opt.id.startsWith('tr_') && (() => {
-                                          const parts = opt.id.split('_');
-                                          const trainNum = parts[1] === 'combo' ? parts[2] : parts[1];
-                                          return (
+                                        {opt.type === 'train' && opt.id.startsWith('tr_') && (
                                           <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
                                             <button 
                                               onClick={() => {
-                                                setActiveTrainId(trainNum);
+                                                setActiveTrainId(opt.id.split('_')[1]);
                                                 setRouteModalOpen(true);
                                               }}
                                               className="text-xs font-semibold px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-colors border border-border"
@@ -564,7 +538,7 @@ export default function TransportPage() {
                                             </button>
                                             <button 
                                               onClick={() => {
-                                                setActiveTrainId(trainNum);
+                                                setActiveTrainId(opt.id.split('_')[1]);
                                                 setLiveModalOpen(true);
                                               }}
                                               className="text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20"
@@ -572,8 +546,7 @@ export default function TransportPage() {
                                               Live Status
                                             </button>
                                           </div>
-                                          );
-                                        })()}
+                                        )}
                                         {opt.type === 'cross' && opt.legs && (
                                           <div className="mt-3 space-y-2 border-t border-border pt-3 w-full" onClick={(e) => e.stopPropagation()}>
                                             {opt.legs.map((leg: any, lIdx: number) => (
@@ -591,7 +564,6 @@ export default function TransportPage() {
                                           </div>
                                         )}
                                       </div>
-                                    )}
                                   </div>
 
                                   <div className="text-right">
