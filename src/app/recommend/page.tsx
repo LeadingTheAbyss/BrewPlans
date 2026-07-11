@@ -222,8 +222,8 @@ export default function RecommendPage() {
           className="flex flex-col xl:flex-row gap-16 items-start pb-24 border-b border-neutral-200 dark:border-neutral-900 transition-colors"
         >
           <div className="flex-1 space-y-6 self-start">
-            <h2 className="text-6xl lg:text-8xl font-light tracking-tighter text-neutral-900 dark:text-white transition-colors">Where next?</h2>
-            <p className="text-neutral-500 dark:text-neutral-400 text-2xl font-light transition-colors">Tell us your vibe, and our AI will handle the rest.</p>
+            <h2 className="text-5xl lg:text-7xl font-light tracking-tighter text-neutral-900 dark:text-white transition-colors">Where next?</h2>
+            <p className="text-neutral-500 dark:text-neutral-400 text-xl font-light transition-colors">Tell us your vibe, and our AI will handle the rest.</p>
           </div>
           
           <div className="flex-[2] flex flex-wrap gap-10 items-end justify-end">
@@ -460,20 +460,20 @@ export default function RecommendPage() {
                       </div>
 
                       <div>
-                        <h3 className="text-7xl lg:text-9xl font-light tracking-tighter text-white leading-none mb-4">
+                        <h3 className="text-5xl lg:text-7xl font-light tracking-tighter text-white leading-none mb-4">
                           {filteredResults[0].name}
                         </h3>
-                        <p className="text-3xl font-light text-neutral-500">{filteredResults[0].state}</p>
+                        <p className="text-xl font-light text-neutral-500">{filteredResults[0].state}</p>
                       </div>
 
-                      <p className="text-2xl font-light leading-relaxed text-neutral-400 max-w-3xl">
+                      <p className="text-lg font-light leading-relaxed text-neutral-400 max-w-3xl">
                         {filteredResults[0].why}
                       </p>
 
                       <div className="flex gap-16 pt-12 mt-12 border-t border-neutral-900">
                         <div>
                           <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Total Est. Budget (Travel Included)</p>
-                          <p className="text-5xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString('en-IN')}</p>
+                          <p className="text-4xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString('en-IN')}</p>
                         </div>
                       </div>
 
@@ -529,13 +529,13 @@ export default function RecommendPage() {
                           </div>
                         )}
                         <div>
-                          <h3 className="text-5xl font-light text-white">{dest.name}</h3>
-                          <p className="text-xl font-light text-neutral-500 mt-2">{dest.state}</p>
+                          <h3 className="text-3xl font-light text-white">{dest.name}</h3>
+                          <p className="text-base font-light text-neutral-500 mt-2">{dest.state}</p>
                         </div>
                       </div>
 
                       <div className="flex-1 px-12 hidden lg:block">
-                        <p className="text-lg font-light text-neutral-400 line-clamp-2">
+                        <p className="text-base font-light text-neutral-400 line-clamp-2">
                           {dest.why}
                         </p>
                       </div>
