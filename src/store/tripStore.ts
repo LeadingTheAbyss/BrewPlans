@@ -24,6 +24,7 @@ interface TripState {
   selectTransport: (passengerId: string, option: any) => void;
   deselectTransport: (passengerId: string) => void;
   setHotel: (hotel: Hotel | null) => void;
+  loadSnapshot: (snapshot: any, destination: string) => void;
   reset: () => void;
 }
 
@@ -87,6 +88,16 @@ export const useTripStore = create<TripState>()(
   })),
 
   setHotel: (hotel) => set({ selectedHotel: hotel }),
+
+  loadSnapshot: (snapshot, destination) => set({
+    destination,
+    source: snapshot.source || '',
+    startDate: snapshot.startDate || null,
+    endDate: snapshot.endDate || null,
+    passengers: snapshot.passengers || [],
+    selectedTransports: snapshot.selectedTransports || [],
+    selectedHotel: snapshot.selectedHotel || null,
+  }),
 
   reset: () => set({
     mode: null,

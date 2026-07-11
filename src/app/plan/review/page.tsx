@@ -56,10 +56,14 @@ export default function ReviewPage() {
     setIsSaving(true);
     try {
       const snapshot = {
+        source: trip.source,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
         passengers: trip.passengers,
         selectedTransports: trip.selectedTransports,
         selectedHotel: trip.selectedHotel,
         itinerary: itinerary.days,
+        selectedPlaces: itinerary.selectedPlaces,
         budget: {
           total: budget.totalBudget,
           spent: budget.spentTransport + budget.spentHotels + budget.spentPlaces,

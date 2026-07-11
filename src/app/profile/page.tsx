@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit2, LogOut, Map, History, Compass, ChevronRight } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { UserAvatar } from '@/components/UserAvatar';
+import { useTripStore } from '@/store/tripStore';
+import { useItineraryStore } from '@/store/itineraryStore';
+import { useBudgetStore } from '@/store/budgetStore';
 
 export default function ProfilePage() {
   const { user, fetchUser, isLoading, logout } = useAuthStore();
@@ -35,6 +38,18 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
+  };
+
+  const handleTripClick = (trip: any) => {
+    const snap = trip.snapshot as any;
+    
+    // Load into global stores
+    useTripStore.getState().loadSnapshot(snap, trip.destination);
+    useItineraryStore.getState().loadSnapshot(snap);
+    useBudgetStore.getState().loadSnapshot(snap);
+    
+    // Redirect to review page in read-only mode
+    router.push('/plan/review');
   };
 
   if (isLoading || !user) {
@@ -131,7 +146,7 @@ export default function ProfilePage() {
                 {trips.map((trip, i) => {
                   const snap = trip.snapshot as any;
                   return (
-                    <div key={trip.id} className="group flex items-center justify-between py-8 border-b border-white/10 hover:bg-white/[0.02] -mx-8 px-8 transition-colors cursor-pointer" onClick={() => {/* Future route to view past trip */}}>
+                    <div key={trip.id} className="group flex items-center justify-between py-8 border-b border-white/10 hover:bg-white/[0.02] -mx-8 px-8 transition-colors cursor-pointer" onClick={() => handleTripClick(trip)}>
                       
                       <div className="flex items-center gap-8">
                         <span className="text-white/20 font-bold text-xl group-hover:text-white/40 transition-colors">

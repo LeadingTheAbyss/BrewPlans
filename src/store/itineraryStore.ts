@@ -22,6 +22,7 @@ interface ItineraryState {
   updateDayExacts: (dayNumber: number, exactTravelMins: number, exactDistanceKm: number, exactCommuteCost: number) => void;
   autoSchedule: () => void;
   batchAssign: (placeIds: string[], hotelCoords?: [number, number]) => Promise<void>;
+  loadSnapshot: (snapshot: any) => void;
   reset: () => void;
 }
 
@@ -229,6 +230,11 @@ export const useItineraryStore = create<ItineraryState>()(
       set({ isOptimizing: false });
     }
   },
+
+  loadSnapshot: (snapshot) => set({
+    days: snapshot.itinerary || [],
+    selectedPlaces: snapshot.selectedPlaces || []
+  }),
 
   reset: () => set({
     days: [],

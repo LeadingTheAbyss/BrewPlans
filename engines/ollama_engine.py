@@ -37,7 +37,8 @@ def build_prompt(passengers: list, total_budget: int, days: int, preference: str
     matched_cities = []
     all_exclusions = []
     for keyword, city_list, exclusions in guidance_rules:
-        if keyword in preference_lower:
+        # Use word boundaries so 'veg' doesn't match 'las vegas'
+        if re.search(rf'\b{re.escape(keyword)}\b', preference_lower):
             shuffled = city_list[:]
             random.shuffle(shuffled)
             matched_cities.extend(shuffled)
@@ -61,10 +62,10 @@ A group of {num_pax} travelers want to take a trip.
 - Duration: {days} days (excluding travel days)
 - Their travel preference / vibe: "{preference}"
 {guidance}
-Recommend EXACTLY 10 destinations in India that best match the preference "{preference}".
+Recommend UP TO 10 destinations in India that best match the preference "{preference}".
 
 {f"- HARD USER CONSTRAINTS: '{constraints}'\\n  You MUST respect these constraints. Destinations that violate these constraints are STRICTLY FORBIDDEN." if constraints else ""}
-ALL 10 destinations MUST strongly align with this preference. Do NOT recommend generic tourist spots that do not match.
+ALL recommended destinations MUST strongly align with this preference. Do NOT recommend generic tourist spots that do not match. If there are fewer than 10 strong matches, just return the ones that match. DO NOT pad the list with bad recommendations.
 
 Respond ONLY with a JSON object containing a "destinations" array, where each item matches this EXACT structure:
 {{
@@ -91,9 +92,10 @@ Rules:
 - CRITICAL RULE: The ₹{total_budget} is a MAXIMUM limit, NOT a target. Do NOT artificially inflate the cost! A cheap destination must still show a cheap budget (e.g., 15000) even if their limit is 100000.
 - budgetEstimate MUST NOT exceed ₹{total_budget}.
 - perPersonEstimate MUST equal (budgetEstimate / {num_pax}).
-- matchScore is 0-100, score between 70-98 based on how well the destination matches the preference.
-- isPrimaryMatch must be true for all 10.
-- Return EXACTLY 10 destinations.
+- matchScore MUST be an integer between 70 and 98 based on how well the destination matches. Do not include weak matches.
+- The "why" explanation MUST be confident. Explain exactly why it fits the vibe.
+- isPrimaryMatch must be true for all returned destinations.
+- Return UP TO 10 destinations (fewer is fine if there aren't enough strong matches).
 - DO NOT use any emojis.
 """
 

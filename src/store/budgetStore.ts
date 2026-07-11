@@ -10,6 +10,7 @@ interface BudgetStoreState extends BudgetState {
   addExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;
   refundExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;
   recalcBudget: () => void;
+  loadSnapshot: (snapshot: any) => void;
   reset: () => void;
 }
 
@@ -91,6 +92,17 @@ export const useBudgetStore = create<BudgetStoreState>()(
       projectedTotal: totalSpent,
       remaining
     };
+  }),
+
+  loadSnapshot: (snapshot) => set({
+    totalBudget: snapshot.budget?.total || 0,
+    remaining: snapshot.budget?.remaining || 0,
+    projectedTotal: snapshot.budget?.spent || 0,
+    spentTransport: 0,
+    spentPlaces: 0,
+    spentHotels: 0,
+    spentCommute: 0,
+    spentFood: 0,
   }),
 
   reset: () => set({
