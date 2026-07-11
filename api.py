@@ -502,7 +502,7 @@ def _remove_diacritics(text: str) -> str:
 
 _shared_session = requests.Session()
 def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
-    if not q or len(q) < 2:
+    if not q or len(q) < 1:
         return []
 
     q_lower = q.lower().strip()
@@ -581,7 +581,7 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
         return []
 
 @app.get("/api/search-city")
-async def api_search_city(q: str = Query(..., min_length=2)):
+async def api_search_city(q: str = Query(..., min_length=1)):
     return await asyncio.to_thread(_fetch_photon_cities, q)
 
 @app.get("/api/overpass-search")

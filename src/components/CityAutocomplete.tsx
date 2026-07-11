@@ -41,7 +41,7 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    if (val.length >= 2) {
+    if (val.length >= 1) {
       setLoading(true);
       timeoutRef.current = setTimeout(async () => {
         const apiResults = await api.searchCity(val);

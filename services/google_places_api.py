@@ -43,7 +43,7 @@ REDIS_TTL_SECONDS = 60 * 60 * 24 * 30   # 30 days
 DB_TTL_DAYS = 30
 
 # Semaphore: max concurrent Google Place Details requests
-_DETAILS_SEMAPHORE = asyncio.Semaphore(2)
+_DETAILS_SEMAPHORE = None
 
 # ── Redis helpers (imported from image_service to reuse existing abstraction) ──
 
@@ -124,7 +124,7 @@ async def _db_set(cache_key: str, data: List[Dict[str, Any]]):
             await _ensure_table()
             _table_ensured = True
 
-        expires_at = datetime.now(timezone.utc) + timedelta(days=DB_TTL_DAYS)
+        expires_at = datetime.utcnow() + timedelta(days=DB_TTL_DAYS)
         conn = await get_db_connection()
         try:
             await conn.execute(
@@ -170,9 +170,12 @@ def _rank(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 # Semaphore to prevent DB/Redis connection exhaustion from bursting
-_SEARCH_SEMAPHORE = asyncio.Semaphore(3)
+_SEARCH_SEMAPHORE = None
 
 async def search_google_places(query: str, max_results: int = 30, check_only: bool = False) -> Optional[List[Dict[str, Any]]]:
+    global _SEARCH_SEMAPHORE
+    if _SEARCH_SEMAPHORE is None:
+        _SEARCH_SEMAPHORE = asyncio.Semaphore(3)
     async with _SEARCH_SEMAPHORE:
         return await _search_google_places_impl(query, max_results, check_only)
 
@@ -182,7 +185,7 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
 
     Data flow: Redis → DB → Google → DB → Redis → return.
     """
-    with open("debug_err.txt", "a") as f:
+    with open("debug_err.txt", "a", encoding="utf-8") as f:
         f.write(f"[GooglePlaces] Entered search_google_places for query={query!r} key={PLACES_API_KEY[:8] if PLACES_API_KEY else 'NONE'}...\n")
 
     if not PLACES_API_KEY:
@@ -194,24 +197,24 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
     # ── 1. Redis ──────────────────────────────────────────────────────────────
     try:
         raw = await _cache_get(cache_key)
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             f.write(f"[GooglePlaces] Redis lookup for {cache_key}: {'HIT (len=' + str(len(raw)) + ')' if raw else 'MISS'}\n")
         if raw:
             data = json.loads(raw)
-            print(f"[GooglePlaces] Redis hit: {query!r}")
+            pass
             return data
     except Exception as e:
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             f.write(f"[GooglePlaces] Redis check exception: {e}\n")
         print(f"[GooglePlaces] Redis get error: {e}")
 
     # ── 2. DB ─────────────────────────────────────────────────────────────────
     try:
         db_data = await _db_get(cache_key)
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             f.write(f"[GooglePlaces] DB lookup for {cache_key}: {'HIT' if db_data is not None else 'MISS'}\n")
         if db_data is not None:
-            print(f"[GooglePlaces] DB hit: {query!r}")
+            pass
             # Warm Redis so next request skips DB
             try:
                 await _cache_set(cache_key, json.dumps(db_data), REDIS_TTL_SECONDS)
@@ -219,18 +222,18 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
                 pass
             return db_data
     except Exception as e:
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             f.write(f"[GooglePlaces] DB check exception: {e}\n")
 
     if check_only:
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             f.write(f"[GooglePlaces] check_only=True, aborting API call for {query!r}\n")
         return None
 
     # ── 3. Google Places API ──────────────────────────────────────────────────
-    with open("debug_err.txt", "a") as f:
+    with open("debug_err.txt", "a", encoding="utf-8") as f:
         f.write(f"[GooglePlaces] Calling Google API for {query!r}...\n")
-    print(f"[GooglePlaces] API call: {query!r} (max={max_results})")
+    pass
 
     url = "https://places.googleapis.com/v1/places:searchText"
     field_mask = "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos,places.location,places.primaryType,places.priceLevel"
@@ -258,13 +261,13 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
 
                 resp = await client.post(url, headers=headers, json=payload)
 
-                with open("debug_err.txt", "a") as f:
+                with open("debug_err.txt", "a", encoding="utf-8") as f:
                     f.write(f"[GooglePlaces] query={query} status={resp.status_code}\n")
                     if resp.status_code != 200:
                         f.write(f"[GooglePlaces] Error body={resp.text}\n")
 
                 if resp.status_code == 429:
-                    print(f"[GooglePlaces] 429 quota exhausted for {query!r}")
+                    pass
                     break
                 if resp.status_code != 200:
                     print(f"[GooglePlaces] Error {resp.status_code}: {resp.text[:300]}")
@@ -282,13 +285,13 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
                     break
 
     except Exception as e:
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             import traceback
             f.write(f"[GooglePlaces] Network error: {e}\n{traceback.format_exc()}\n")
         print(f"[GooglePlaces] Network error: {e}")
 
     if not raw_results:
-        with open("debug_err.txt", "a") as f:
+        with open("debug_err.txt", "a", encoding="utf-8") as f:
             f.write(f"[GooglePlaces] No raw results for query={query}\n")
         return []
 
@@ -342,7 +345,7 @@ async def fetch_wikipedia_image(query: str) -> Optional[str]:
                     if "original" in page_data:
                         return page_data["original"]["source"]
     except Exception as e:
-        print(f"[Wikipedia] Error fetching image for {query}: {e}")
+        pass
     return None
 
 async def fetch_foursquare_image(name: str, lat: float, lng: float) -> Optional[str]:
@@ -512,6 +515,9 @@ async def fetch_google_place_details_photo(place_id: str) -> Optional[str]:
 
     for attempt in range(3):
         try:
+            global _DETAILS_SEMAPHORE
+            if _DETAILS_SEMAPHORE is None:
+                _DETAILS_SEMAPHORE = asyncio.Semaphore(2)
             async with _DETAILS_SEMAPHORE:
                 async with httpx.AsyncClient(timeout=10.0) as client:
                     resp = await client.get(url, headers=headers)

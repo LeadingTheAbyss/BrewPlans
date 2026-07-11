@@ -99,7 +99,7 @@ export const api = {
   },
 
   searchCity: async (query: string): Promise<{ name: string; state: string; formatted_name: string; osrm_coords: string }[]> => {
-    if (!query || query.length < 2) return [];
+    if (!query || query.length < 1) return [];
     try {
       const response = await fetch(`/api/search-city?q=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Network response was not ok');

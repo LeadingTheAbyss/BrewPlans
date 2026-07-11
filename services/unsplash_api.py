@@ -10,7 +10,7 @@ except ImportError:
     pass
 
 # Allow max 2 simultaneous requests
-UNSPLASH_SEMAPHORE = asyncio.Semaphore(2)
+UNSPLASH_SEMAPHORE = None
 
 def _get_unsplash_key() -> Optional[str]:
     key = os.getenv("UNSPLASH_API_KEY")
@@ -38,6 +38,9 @@ async def fetch_unsplash_image(query: str) -> Optional[str]:
                 "per_page": 3
             }
             
+            global UNSPLASH_SEMAPHORE
+            if UNSPLASH_SEMAPHORE is None:
+                UNSPLASH_SEMAPHORE = asyncio.Semaphore(2)
             async with UNSPLASH_SEMAPHORE:
                 async with httpx.AsyncClient() as client:
                     res = await client.get(url, params=params, timeout=5.0)

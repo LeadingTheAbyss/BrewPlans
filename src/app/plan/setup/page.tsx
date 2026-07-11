@@ -99,7 +99,7 @@ export default function TripSetupPage() {
     validPassengers.forEach(pax => {
       if (!pax.city) return;
       ['flight', 'train', 'bus', 'cab'].forEach(mode => {
-        const key = `${pax.id}-${mode}`;
+        const key = `${pax.id}-${pax.city}-${dest}-${mode}-v6`;
         api.getTransportOptions(pax.city, dest, mode, true).then((res: any) => {
           if (res && !res.status) useCacheStore.getState().setCache(key, res);
         }).catch(console.error);

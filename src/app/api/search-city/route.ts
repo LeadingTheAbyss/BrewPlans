@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 
 const PYTHON_API_URL = 'http://127.0.0.1:8002/api';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

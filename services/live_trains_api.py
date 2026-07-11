@@ -470,9 +470,8 @@ async def search_live_trains(origin: str, destination: str, date: str, check_onl
                             response = await client.get(url, headers=headers, timeout=15.0)
                             response.raise_for_status()
                             json_resp = response.json()
-                            
-                            if not json_resp.get("success"):
-                                continue
+                            # if not json_resp.get("success"):
+                            #     continue
                                 
                             data_obj = json_resp.get("data", {})
                             train_list = data_obj if isinstance(data_obj, list) else data_obj.get("trains", [])

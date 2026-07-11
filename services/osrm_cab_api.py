@@ -9,9 +9,12 @@ from models.enums import TransportType
 import urllib.parse
 
 _GEOCODE_CACHE: Dict[str, Dict[str, float]] = {}
-_GEOCODE_LOCK = asyncio.Lock()
+_GEOCODE_LOCK = None
 
 async def get_coordinates(city_name: str) -> Dict[str, float]:
+    global _GEOCODE_LOCK
+    if _GEOCODE_LOCK is None:
+        _GEOCODE_LOCK = asyncio.Lock()
     """Dynamically fetch coordinates using Nominatim API with in-memory caching and rate limit lock."""
     cache_key = city_name.lower().strip()
     if cache_key in _GEOCODE_CACHE:

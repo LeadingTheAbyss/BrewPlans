@@ -78,7 +78,7 @@ export function BackgroundFetcher() {
             const pax = trip.passengers.find(p => p.id === nextTask.paxId);
             const paxCity = pax?.city || 'Unknown';
             const dest = trip.destination || 'Unknown';
-            cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v4`;
+            cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v6`;
           }
             
           cache.setCache(cacheKey, result);
