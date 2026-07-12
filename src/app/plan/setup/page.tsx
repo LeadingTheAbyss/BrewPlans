@@ -84,15 +84,15 @@ export default function TripSetupPage() {
 
     // FIRE BACKGROUND CACHE CHECKS
     const dest = trip.destination;
-    api.getPlaces(dest, true).then((res: any) => {
+    api.getPlaces(dest, undefined, undefined, undefined, true).then((res: any) => {
       if (res && !res.status) useCacheStore.getState().setCache('places', res);
     }).catch(console.error);
 
-    api.getFood(dest, true).then((res: any) => {
+    api.getFood(dest, undefined, undefined, undefined, true).then((res: any) => {
       if (res && !res.status) useCacheStore.getState().setCache('food', res);
     }).catch(console.error);
 
-    api.getHotels(dest, undefined, true).then((res: any) => {
+    api.getHotels(dest, undefined, undefined, undefined, undefined, true).then((res: any) => {
       if (res && !res.status) useCacheStore.getState().setCache('hotels', res);
     }).catch(console.error);
     
