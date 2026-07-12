@@ -764,7 +764,7 @@ export default function TransportPage() {
                                                     src={getAirlineLogo(opt.provider)!} 
                                                     alt={opt.provider} 
                                                     className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
-                                                    style={{ imageRendering: 'high-quality' }}
+                                                    style={{ imageRendering: 'high-quality' as any }}
                                                   />
                                                 </div>
                                               ) : (opt.type === 'cab' || opt.type === 'car') && getCabLogo(opt.provider) ? (
@@ -773,7 +773,7 @@ export default function TransportPage() {
                                                     src={getCabLogo(opt.provider)!} 
                                                     alt={opt.provider} 
                                                     className={`object-contain mix-blend-multiply ${getCabLogoStyles(opt.provider)}`}
-                                                    style={{ imageRendering: 'high-quality' }}
+                                                    style={{ imageRendering: 'high-quality' as any }}
                                                   />
                                                 </div>
                                               ) : (
