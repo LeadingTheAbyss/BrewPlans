@@ -128,7 +128,7 @@ export default function ReviewPage() {
     });
     
     return Object.values(groups);
-  }, [trip.passengers, trip.selectedTransports, cache.transportOptions]);
+  }, [trip.passengers, trip.selectedTransports, cache.cache.transportOptions]);
 
   return (
     <div className="flex h-full w-full bg-[#050505] text-white overflow-hidden font-sans">
