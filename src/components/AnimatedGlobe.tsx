@@ -17,7 +17,8 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
 interface AnimatedGlobeProps {
   passengers: { city: string }[];
   destination: string;
-  mode?: string;
+  mode?: string; // fallback single mode
+  routeModes?: Record<string, string>; // city -> mode mapping
 }
 
 interface Coordinate {
@@ -35,7 +36,7 @@ interface Route {
   mode?: string;
 }
 
-export default function AnimatedGlobe({ passengers, destination, mode }: AnimatedGlobeProps) {
+export default function AnimatedGlobe({ passengers, destination, mode, routeModes }: AnimatedGlobeProps) {
   const [coords, setCoords] = useState<Coordinate[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -86,7 +87,7 @@ export default function AnimatedGlobe({ passengers, destination, mode }: Animate
                 id: `route-${city}-${destination}`,
                 start: originCoord,
                 end: destCoord,
-                mode: mode
+                mode: routeModes?.[city] ?? mode
               });
             }
           }

@@ -128,6 +128,17 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
             comfort = min(10, int(rating * 2))
             safety = min(10, int(rating * 2) + 1)
             
+            # Fallback to Google Places for missing images
+            if not photo_url:
+                try:
+                    from services.google_places_api import search_google_places
+                    # Await the google places search to fetch photos
+                    places_res = await search_google_places(f"{name} {city}", max_results=1)
+                    if places_res and places_res[0].get("photos"):
+                        photo_url = places_res[0]["photos"][0].get("name")
+                except Exception as e:
+                    print(f"[Warning] Failed to fetch fallback hotel image for {name}: {e}")
+            
             hotels.append(Hotel(
                 id=item.get("property_token", name),
                 name=name,

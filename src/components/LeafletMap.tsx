@@ -153,14 +153,26 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
 
           return (
             <g key={`icon-${path.id}`}>
-               {/* We wrap the React component in a <g> so we can apply the centering transform */}
-               <g transform="translate(-12, -12)">
-                 {path.mode === 'flight' && <Plane size={24} className="text-blue-500 fill-current" style={{ transform: 'rotate(45deg)' }} />}
-                 {path.mode === 'train' && <Train size={24} className="text-orange-500" />}
-                 {path.mode === 'bus' && <Bus size={24} className="text-green-500" />}
-                 {(path.mode === 'cab' || path.mode === 'car') && <Car size={24} className="text-purple-500" />}
-               </g>
-               <animateMotion dur="2.5s" repeatCount="indefinite" path={path.d} rotate={path.mode === 'flight' ? "auto" : 0} />
+              {/* Glow aura */}
+              <circle r="18" fill="none"
+                stroke={path.mode === 'flight' ? '#3b82f6' : path.mode === 'train' ? '#f97316' : path.mode === 'bus' ? '#22c55e' : '#a855f7'}
+                strokeWidth="12" opacity="0.25" filter="url(#hyperGlow)"
+              />
+              {/* 3D bubble shell */}
+              <circle r="14"
+                fill={path.mode === 'flight' ? '#1d4ed8' : path.mode === 'train' ? '#c2410c' : path.mode === 'bus' ? '#15803d' : '#7e22ce'}
+                opacity="0.95"
+              />
+              {/* Shine highlight */}
+              <ellipse cx="-4" cy="-5" rx="5" ry="3" fill="white" opacity="0.25" />
+              {/* Icon itself — centered at 0,0 via translate */}
+              <g transform="translate(-8, -8)">
+                {path.mode === 'flight' && <Plane size={16} className="text-white" style={{ color: 'white', fill: 'white' }} />}
+                {path.mode === 'train' && <Train size={16} style={{ color: 'white' }} />}
+                {path.mode === 'bus' && <Bus size={16} style={{ color: 'white' }} />}
+                {(path.mode === 'cab' || path.mode === 'car') && <Car size={16} style={{ color: 'white' }} />}
+              </g>
+              <animateMotion dur="3s" repeatCount="indefinite" path={path.d} rotate={path.mode === 'flight' ? 'auto' : '0'} />
             </g>
           );
         })}

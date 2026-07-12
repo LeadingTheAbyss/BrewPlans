@@ -178,7 +178,7 @@ export default function VisualJourneyMap({ dayNumber, date, places, hotel, paxCo
       setIsLoadingRoutes(true);
       try {
         const coords = fullJourney.map(p => ({ lat: p.lat, lng: p.lng }));
-        const res = await fetch('http://localhost:8000/api/route-matrix', {
+        const res = await fetch('/api/route-matrix', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ origins: coords, destinations: coords })
