@@ -4,10 +4,10 @@ const PYTHON_API_URL = 'http://127.0.0.1:8002/api';
 
 export async function GET(
   req: Request,
-  { params }: { params: { pincode: string } }
+  { params }: { params: Promise<{ pincode: string }> }
 ) {
   try {
-    const pincode = params.pincode;
+    const pincode = (await params).pincode;
     const response = await fetch(`${PYTHON_API_URL}/pincode/${pincode}`);
     if (!response.ok) {
       throw new Error(`Python API responded with status ${response.status}`);
