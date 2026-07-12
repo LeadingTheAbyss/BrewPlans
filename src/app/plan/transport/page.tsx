@@ -379,7 +379,7 @@ export default function TransportPage() {
                 <p className="text-white/70 text-sm drop-shadow">
                   Travelling to <span className="font-semibold text-white">{trip.destination || 'the destination'}</span>
                   {' · '}{trip.passengers.length} {trip.passengers.length === 1 ? 'traveller' : 'travellers'}
-                  {' · '}{trip.days || 0} days
+                  {' · '}{(trip.startDate && trip.endDate) ? Math.max(1, Math.ceil((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 3600 * 24))) : 0} days
                 </p>
               </div>
             </div>
