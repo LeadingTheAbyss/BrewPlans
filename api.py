@@ -4,13 +4,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
-from models.entities import Passenger
-from models.state import TripState
-from models.enums import Weather
-from services.geo_service import geo_lookup
-from engines.ranking_engine import rank_transport, rank_places, rank_hotels
-from services.cache_logger import log_cache_event
-from services.routing_engine import optimize_itinerary
+import sys
+import traceback
+
+try:
+    from models.entities import Passenger
+    from models.state import TripState
+    from models.enums import Weather
+    from services.geo_service import geo_lookup
+    from engines.ranking_engine import rank_transport, rank_places, rank_hotels
+    from services.cache_logger import log_cache_event
+    from services.routing_engine import optimize_itinerary
+except Exception as e:
+    print("CRITICAL IMPORT ERROR DURING STARTUP:", flush=True)
+    traceback.print_exc()
+    sys.exit(1)
 
 app = FastAPI()
 
