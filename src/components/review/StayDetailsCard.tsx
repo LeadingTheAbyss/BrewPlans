@@ -13,7 +13,7 @@ interface StayDetailsCardProps {
 }
 
 export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxCount }: StayDetailsCardProps) {
-  const nights = hotel.nights || 1;
+  const nights = (hotel as any).nights || 1;
   const rooms = Math.ceil(paxCount / 3);
   const totalCost = rooms * hotel.pricePerNight * nights;
 
@@ -56,7 +56,7 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
               {hotel.name}
               <span className="text-yellow-500 text-sm">{'★'.repeat(Math.round(hotel.rating || 5))}</span>
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">{hotel.location || 'City Center, Destination'}</p>
+            <p className="text-sm text-zinc-400 mt-1">{(hotel as any).location || 'City Center, Destination'}</p>
           </div>
           <Link 
             href="/plan/hotels"
@@ -81,7 +81,7 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
           
           <div>
             <div className="text-[11px] text-zinc-500 mb-1 flex items-center gap-1.5"><Calendar size={12}/> Duration</div>
-            <div className="text-sm font-medium text-zinc-200">{Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24))} Nights</div>
+            <div className="text-sm font-medium text-zinc-200">{nights} Nights</div>
           </div>
 
           <div>
@@ -92,7 +92,7 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
           <div className="text-right md:ml-auto">
             <div className="text-[11px] text-zinc-500 mb-1">Total Cost</div>
             <div className="text-lg font-bold text-white">₹{totalCost.toLocaleString('en-IN')}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">₹{Math.round(totalCost / Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24))).toLocaleString('en-IN')} / night</div>
+            <div className="text-xs text-zinc-500 mt-0.5">₹{Math.round(totalCost / nights).toLocaleString('en-IN')} / night</div>
           </div>
 
         </div>

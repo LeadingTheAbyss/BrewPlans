@@ -9,7 +9,8 @@ export const mockHotels: Hotel[] = [
     safetyScore: 9,
     comfortScore: 8,
     recommendationScore: 92,
-    rating: 4.8
+    rating: 4.8,
+    coordinates: [0, 0]
   },
   {
     id: 'h_2',
@@ -18,8 +19,9 @@ export const mockHotels: Hotel[] = [
     distanceToCluster: 5.0,
     safetyScore: 9,
     comfortScore: 10,
-    recommendationScore: 75, // Lower because of distance
-    rating: 4.9
+    recommendationScore: 75,
+    rating: 4.9,
+    coordinates: [0, 0]
   },
   {
     id: 'h_3',
@@ -29,6 +31,7 @@ export const mockHotels: Hotel[] = [
     safetyScore: 6,
     comfortScore: 5,
     recommendationScore: 85,
-    rating: 4.2
+    rating: 4.2,
+    coordinates: [0, 0]
   }
 ];
