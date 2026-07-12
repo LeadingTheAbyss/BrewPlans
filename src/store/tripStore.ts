@@ -15,7 +15,7 @@ interface TripState {
   selectedHotel: Hotel | null;
 
   // Actions
-  setTripDetails: (details: Partial<Pick<TripState, 'mode' | 'source' | 'destination' | 'startDate' | 'endDate'>>) => void;
+  setTripDetails: (details: Partial<Pick<TripState, 'mode' | 'source' | 'destination' | 'startDate' | 'endDate' | 'selectedTransports' | 'selectedHotel'>>) => void;
   
   addPassenger: (passenger: Passenger) => void;
   removePassenger: (id: string) => void;

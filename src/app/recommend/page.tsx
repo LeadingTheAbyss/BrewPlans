@@ -144,8 +144,7 @@ export default function RecommendPage() {
 
     trip.setTripDetails({ 
       mode: 'recommend',
-      destination: destName.split(',')[0],
-      baseBudget: form.budget
+      destination: destName.split(',')[0]
     });
 
     useBudgetStore.getState().setTotalBudget(form.budget);
