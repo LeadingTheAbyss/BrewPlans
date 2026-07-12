@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from models.entities import TransportOption
 from models.enums import TransportType
 from services.db import get_db_connection
+from services.cache_logger import log_cache_event
 import uuid
 
 load_dotenv(override=True)
@@ -425,6 +426,7 @@ async def search_live_trains(origin: str, destination: str, date: str, check_onl
                                 unique_cached.append(c)
                                 
                         if unique_cached:
+                            log_cache_event("LiveTrains", "HIT", "NeonDB", f"{o_code}-{d_code}", f"Returning {len(unique_cached)} trains via DOW pattern match")
                             print(f"[Cache Hit] Returning {len(unique_cached)} trains from DB using Day-of-Week pattern match for {o_code}-{d_code}.")
                             for idx, r in enumerate(unique_cached):
                                 options.append(TransportOption(
@@ -439,6 +441,7 @@ async def search_live_trains(origin: str, destination: str, date: str, check_onl
                                     provider=r['train_name']
                                 ))
                 except Exception as e:
+                    log_cache_event("LiveTrains", "MISS", "NeonDB", f"{clean_origin}-{clean_dest}", str(e))
                     print(f"[Warning] Train DB cache check failed: {e}")
                     
             # 3. Fetch from RailRadar if GTFS/Cache failed

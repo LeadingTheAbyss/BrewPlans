@@ -9,6 +9,7 @@ from models.state import TripState
 from models.enums import Weather
 from services.geo_service import geo_lookup
 from engines.ranking_engine import rank_transport, rank_places, rank_hotels
+from services.cache_logger import log_cache_event
 from services.routing_engine import optimize_itinerary
 
 app = FastAPI()
@@ -160,12 +161,13 @@ async def get_route_matrix(req: MatrixRequest):
         from services.google_places_api import _db_get, _db_set
         cached = await _db_get(cache_key)
         if cached and len(cached) > 0:
+            log_cache_event("RouteMatrix", "HIT", "NeonDB", cache_key)
             print("[RouteMatrix] Cache HIT")
             return cached[0]
     except Exception as e:
         print(f"[RouteMatrix] Cache read error: {e}")
     
-    # 2. Fetch from Google
+    log_cache_event("RouteMatrix", "MISS", "NeonDB", cache_key)
     print("[RouteMatrix] Cache MISS - Fetching from Google Maps")
     url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin_str}&destinations={dest_str}&departure_time=now&traffic_model=best_guess&key={api_key}"
     

@@ -72,6 +72,7 @@ model Hotel {
   rating          Float
   lat             Float
   lon             Float
+  image_url       String?
   
   @@unique([hotel_id, city, check_in_date, check_out_date])
 }

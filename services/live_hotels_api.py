@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 from models.entities import Hotel
 from services.db import get_db_connection
 import uuid
+import json
+from services.image_service import _cache_get, _cache_set
+from services.cache_logger import log_cache_event
 
 load_dotenv()
 
@@ -27,15 +30,49 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
         if not check_out_date:
             check_out_date = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
             
+        cache_key = f"hotels_{city.upper()}_{check_in_date}_{check_out_date}"
+        
+        # --- Check Redis Cache ---
+        try:
+            cached_str = await _cache_get(cache_key)
+            if cached_str:
+                log_cache_event("LiveHotels", "HIT", "Redis", cache_key)
+                cached_data = json.loads(cached_str)
+                return [Hotel(**h) for h in cached_data]
+        except Exception as e:
+            print(f"[Warning] Redis cache check failed: {e}")
+            
         # --- Check DB Cache ---
         try:
             conn = await get_db_connection()
-            rows = await conn.fetch('SELECT hotel_id, name, price, rating, lat, lon FROM "Hotel" WHERE city = $1 AND check_in_date = $2 AND check_out_date = $3', city.upper(), check_in_date, check_out_date)
+            rows = await conn.fetch('SELECT hotel_id, name, price, rating, lat, lon, image_url FROM "Hotel" WHERE city = $1 AND check_in_date = $2 AND check_out_date = $3', city.upper(), check_in_date, check_out_date)
             await conn.close()
             
             if rows:
-                print("[Cache Hit] Found in NeonDB, but bypassing to fetch fresh images from SerpApi.")
-                # We bypass because Hotel table lacks image_url, preventing photos from showing!
+                log_cache_event("LiveHotels", "HIT", "NeonDB", cache_key)
+                hotels = []
+                for r in rows:
+                    comfort = min(10, int(r['rating'] * 2))
+                    safety = min(10, int(r['rating'] * 2) + 1)
+                    hotels.append(Hotel(
+                        id=r['hotel_id'],
+                        name=r['name'],
+                        photo_name=r['image_url'],
+                        coordinates=(r['lat'], r['lon']),
+                        price_per_night=r['price'],
+                        comfort_score=comfort,
+                        safety_score=safety,
+                        rating=r['rating']
+                    ))
+                sorted_cache = sorted(hotels, key=lambda x: x.price_per_night)
+                
+                # Save to Redis for next time
+                try:
+                    await _cache_set(cache_key, json.dumps([h.model_dump() for h in sorted_cache]), ttl_seconds=86400)
+                except:
+                    pass
+                    
+                return sorted_cache
         except Exception as e:
             print(f"[Warning] Hotel DB cache check failed: {e}")
         # --- End DB Cache Check ---
@@ -111,16 +148,24 @@ async def search_live_hotels(city: str, check_in_date: str = None, check_out_dat
                 for h in sorted_hotels:
                     db_id = uuid.uuid4().hex
                     await conn.execute('''
-                        INSERT INTO "Hotel" (id, hotel_id, city, check_in_date, check_out_date, name, price, rating, lat, lon)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                        ON CONFLICT (hotel_id, city, check_in_date, check_out_date) DO NOTHING
-                    ''', db_id, h.id, city.upper(), check_in_date, check_out_date, h.name, h.price_per_night, h.rating, h.coordinates[0], h.coordinates[1])
+                        INSERT INTO "Hotel" (id, hotel_id, city, check_in_date, check_out_date, name, price, rating, lat, lon, image_url)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                        ON CONFLICT (hotel_id, city, check_in_date, check_out_date) DO UPDATE SET image_url = EXCLUDED.image_url
+                    ''', db_id, h.id, city.upper(), check_in_date, check_out_date, h.name, h.price_per_night, h.rating, h.coordinates[0], h.coordinates[1], h.photo_name)
                 await conn.close()
+                
+                # Save to Redis
+                try:
+                    await _cache_set(cache_key, json.dumps([h.model_dump() for h in sorted_hotels]), ttl_seconds=86400)
+                except Exception as e:
+                    print(f"[Warning] Failed to cache hotels to Redis: {e}")
+                    
             except Exception as e:
                 print(f"[Warning] Failed to cache hotels to DB: {e}")
                 
         return sorted_hotels
         
     except Exception as e:
+        log_cache_event("LiveHotels", "MISS", "Both", cache_key, f"Error fetching via SerpApi: {e}")
         print(f"Error fetching live hotels via SerpApi: {e}")
         return []

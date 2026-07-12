@@ -48,6 +48,7 @@ _DETAILS_SEMAPHORE = None
 # ── Redis helpers (imported from image_service to reuse existing abstraction) ──
 
 from services.image_service import _cache_get, _cache_set
+from services.cache_logger import log_cache_event
 
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
@@ -118,6 +119,7 @@ async def _db_get(cache_key: str) -> Optional[List[Dict[str, Any]]]:
 async def _db_set(cache_key: str, data: List[Dict[str, Any]]):
     """Write to PostgreSQL PlaceCache (upsert). Non-fatal on error."""
     global _table_ensured
+    import uuid
     try:
         from services.db import get_db_connection
         if not _table_ensured:
@@ -127,15 +129,17 @@ async def _db_set(cache_key: str, data: List[Dict[str, Any]]):
         expires_at = datetime.utcnow() + timedelta(days=DB_TTL_DAYS)
         conn = await get_db_connection()
         try:
+            db_id = uuid.uuid4().hex
             await conn.execute(
                 """
-                INSERT INTO "PlaceCache" ("cacheKey", data, "expiresAt", "updatedAt")
-                VALUES ($1, $2::jsonb, $3, NOW())
+                INSERT INTO "PlaceCache" (id, "cacheKey", data, "expiresAt", "updatedAt")
+                VALUES ($1, $2, $3::jsonb, $4, NOW())
                 ON CONFLICT ("cacheKey") DO UPDATE
                     SET data = EXCLUDED.data,
                         "expiresAt" = EXCLUDED."expiresAt",
                         "updatedAt" = NOW()
                 """,
+                db_id,
                 cache_key,
                 json.dumps(data),
                 expires_at,
@@ -197,8 +201,10 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
     # ── 1. Redis ──────────────────────────────────────────────────────────────
     try:
         raw = await _cache_get(cache_key)
+        hit_str = f"HIT (len={len(raw)})" if raw else "MISS"
+        log_cache_event("GooglePlaces", hit_str.split()[0], "Redis", cache_key, hit_str)
         with open("debug_err.txt", "a", encoding="utf-8") as f:
-            f.write(f"[GooglePlaces] Redis lookup for {cache_key}: {'HIT (len=' + str(len(raw)) + ')' if raw else 'MISS'}\n")
+            f.write(f"[GooglePlaces] Redis lookup for {cache_key}: {hit_str}\n")
         if raw:
             data = json.loads(raw)
             pass
@@ -211,8 +217,10 @@ async def _search_google_places_impl(query: str, max_results: int = 30, check_on
     # ── 2. DB ─────────────────────────────────────────────────────────────────
     try:
         db_data = await _db_get(cache_key)
+        hit_str = "HIT" if db_data is not None else "MISS"
+        log_cache_event("GooglePlaces", hit_str, "NeonDB", cache_key)
         with open("debug_err.txt", "a", encoding="utf-8") as f:
-            f.write(f"[GooglePlaces] DB lookup for {cache_key}: {'HIT' if db_data is not None else 'MISS'}\n")
+            f.write(f"[GooglePlaces] DB lookup for {cache_key}: {hit_str}\n")
         if db_data is not None:
             pass
             # Warm Redis so next request skips DB
