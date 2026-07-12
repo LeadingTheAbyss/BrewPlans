@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCacheStore } from '@/store/cacheStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
 import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/components/ui/TrainModals';
+import AnimatedGlobe from '@/components/AnimatedGlobe';
 
 const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -192,6 +193,15 @@ export default function TransportPage() {
   // Track active transport tab per passenger
   const [activeTabs, setActiveTabs] = useState<Record<string, string>>({});
 
+  const [activePassengerId, setActivePassengerId] = useState<string | null>(null);
+  const [isPassengerDropdownOpen, setIsPassengerDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (trip.passengers.length > 0 && !activePassengerId) {
+      setActivePassengerId(trip.passengers[0].id);
+    }
+  }, [trip.passengers, activePassengerId]);
+
   const handleAccordionClick = (pax: Passenger, type: string) => {
     if (!pax.city) {
       alert(`Please go back to Setup and enter a starting city for ${pax.name || 'this passenger'}`);
@@ -294,7 +304,7 @@ export default function TransportPage() {
 
   return (
     <div className="min-h-screen bg-background pt-10 px-4 transition-colors duration-300">
-      <div className="max-w-4xl mx-auto space-y-12 pb-24 text-foreground">
+      <div className="max-w-6xl mx-auto space-y-12 pb-24 text-foreground">
         
         {/* Header */}
         <motion.div 
@@ -324,272 +334,404 @@ export default function TransportPage() {
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="space-y-10"
+              className="flex flex-col lg:flex-row gap-8"
             >
-              {trip.passengers.map((pax) => {
-                const selectedTransportId = trip.selectedTransports.find(t => t.passengerId === pax.id)?.transportOptionId;
-
-                return (
-                  <motion.section 
-                    variants={itemVariants}
-                    key={pax.id} 
-                    className="bg-card p-6 rounded-2xl border border-border shadow-lg transition-colors"
-                  >
-                    <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
+              <div className="flex-1 space-y-6">
+                {/* Dropdown for passenger selection */}
+                {trip.passengers.length > 0 && (
+                  <div className="relative">
+                    <div 
+                      onClick={() => setIsPassengerDropdownOpen(!isPassengerDropdownOpen)}
+                      className="bg-card p-4 rounded-xl border-2 border-primary cursor-pointer flex justify-between items-center shadow-md hover:bg-muted/50 transition-colors"
+                    >
                       <div>
-                        <h3 className="text-xl font-bold text-foreground">{pax.name}</h3>
+                        <h3 className="text-xl font-bold text-primary">
+                          {trip.passengers.find(p => p.id === activePassengerId)?.name || trip.passengers[0].name}
+                        </h3>
                         <p className="text-sm text-muted-foreground">
-                          {pax.city || 'Unknown Origin'} → {trip.destination}
+                          {trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'} → {trip.destination}
                         </p>
                       </div>
-                      {pax.transportPreference && pax.transportPreference !== 'any' && (
-                        <div className="text-sm font-medium bg-muted text-muted-foreground px-3 py-1 rounded-full border border-border">
-                          Prefers: {pax.transportPreference}
-                        </div>
-                      )}
+                      <ChevronDown className={`transition-transform duration-300 ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
                     </div>
+                    
+                    <AnimatePresence>
+                      {isPassengerDropdownOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+                        >
+                          {trip.passengers.map(p => (
+                            <div 
+                              key={p.id}
+                              onClick={() => {
+                                setActivePassengerId(p.id);
+                                setIsPassengerDropdownOpen(false);
+                              }}
+                              className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border last:border-b-0 flex justify-between items-center ${p.id === activePassengerId ? 'bg-primary/10' : ''}`}
+                            >
+                              <div>
+                                <div className="font-bold">{p.name}</div>
+                                <div className="text-xs text-muted-foreground">{p.city || 'Unknown Origin'} → {trip.destination}</div>
+                              </div>
+                              {p.id === activePassengerId && <CheckCircle2 size={16} className="text-primary" />}
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
 
+                {trip.passengers.filter(p => p.id === (activePassengerId || trip.passengers[0]?.id)).map((pax) => {
+                  const selectedTransportId = trip.selectedTransports.find(t => t.passengerId === pax.id)?.transportOptionId;
+
+                  return (
+                    <motion.section 
+                      variants={itemVariants}
+                      key={pax.id} 
+                      className="bg-card p-6 rounded-2xl border border-border shadow-lg transition-colors"
+                    >
                         {/* Accordion Sections for Transport Types */}
-                    <div className="space-y-4">
-                      {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
-                        const destination = trip.destination || 'Unknown';
-                        const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
-                        const isFetched = cachedData[key] !== undefined;
-                        const task = fetchQueue.tasks.find(t => t.id === key);
-                        const isLoading = task?.status === 'loading';
+                    <div className="space-y-6">
+                      {/* Horizontal Tabs */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
+                          const destination = trip.destination || 'Unknown';
+                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
+                          const isFetched = cachedData[key] !== undefined;
+                          const task = fetchQueue.tasks.find(t => t.id === key);
+                          const isLoading = task?.status === 'loading';
 
-                        const rawData = cachedData[key] || {};
-                        const rawOptions = rawData.options || (Array.isArray(rawData) ? rawData : []);
-                        const crossRoutes = rawData.cross_routes || [];
-                        const typeOptionsRaw = type === 'cross' ? crossRoutes : rawOptions.filter((o: any) => o.type === type || (type === 'cab' && o.type === 'car'));
-                        
-                        const currentSort = sortBy[key] || '';
-                        let typeOptions = [...typeOptionsRaw];
-                        if (currentSort === 'cheapest') {
-                          typeOptions.sort((a, b) => a.price - b.price);
-                        } else if (currentSort === 'fastest') {
-                          typeOptions.sort((a, b) => parseDuration(a.duration) - parseDuration(b.duration));
-                        } else if (currentSort === 'earliest') {
-                          typeOptions.sort((a, b) => parseTime(a.departure) - parseTime(b.departure));
-                        }
-                        
-                        const currentActive = activeTabs[pax.id] ?? '';
-                        const isActive = currentActive === type && (isFetched ? typeOptions.length > 0 : true);
-                        
-                        return (
-                          <div key={type} className={`border-2 border-border rounded-xl overflow-hidden bg-card transition-all ${isFetched && typeOptions.length === 0 ? 'opacity-60' : ''}`}>
-                            {/* Accordion Header */}
+                          const rawData = cachedData[key] || {};
+                          const rawOptions = rawData.options || (Array.isArray(rawData) ? rawData : []);
+                          const crossRoutes = rawData.cross_routes || [];
+                          const typeOptionsRaw = type === 'cross' ? crossRoutes : rawOptions.filter((o: any) => o.type === type || (type === 'cab' && o.type === 'car'));
+                          
+                          const currentActive = activeTabs[pax.id] ?? '';
+                          const isActive = currentActive === type && (isFetched ? typeOptionsRaw.length > 0 : true);
+                          const isDisabled = isFetched && typeOptionsRaw.length === 0;
+
+                          return (
                             <button
+                              key={type}
                               onClick={() => handleAccordionClick(pax, type)}
-                              disabled={isFetched && typeOptions.length === 0}
-                              className={`w-full px-6 py-4 flex items-center justify-between font-bold transition-colors ${
+                              disabled={isDisabled}
+                              className={`flex-1 min-w-[130px] px-4 py-3 flex flex-col items-center justify-center gap-2 font-bold rounded-xl border-2 transition-all ${
                                 isActive 
-                                  ? 'bg-primary/10 text-primary' 
-                                  : (isFetched && typeOptions.length === 0 ? 'bg-muted/30 text-muted-foreground cursor-not-allowed' : 'hover:bg-muted/50 text-foreground')
+                                  ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                                  : (isDisabled ? 'bg-muted/30 border-transparent text-muted-foreground/50 cursor-not-allowed' : 'bg-card border-border hover:border-primary/50 text-foreground')
                               }`}
                             >
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                 {getTransportIcon(type)}
-                                <span className="capitalize text-lg">{type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : `${type}s`}</span>
+                                <span className="capitalize text-sm whitespace-nowrap">{type === 'bus' ? 'Buses' : type === 'cross' ? 'Connecting' : `${type}s`}</span>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className={`text-sm px-3 py-1 rounded-full border ${isFetched && typeOptions.length === 0 ? 'bg-muted/50 border-transparent text-muted-foreground' : 'bg-background border-border'} ${isLoading ? 'animate-pulse text-primary' : ''}`}>
-                                  {isLoading ? 'Searching...' : (!isFetched ? 'Click to search' : (typeOptions.length === 0 ? `No ${type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : type + 's'} available` : `${typeOptions.length} Options`))}
-                                </span>
-                                {(!isFetched || typeOptions.length > 0) && (
-                                  <motion.div
-                                    animate={{ rotate: isActive ? 180 : 0 }}
-                                    className="text-muted-foreground"
-                                  >
-                                    ▼
-                                  </motion.div>
-                                )}
-                              </div>
+                              <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${isDisabled ? 'bg-transparent border-transparent text-muted-foreground/50' : 'bg-background border-border'} ${isLoading ? 'animate-pulse text-primary' : ''}`}>
+                                {isLoading ? 'Searching...' : (!isFetched ? 'Click to search' : (typeOptionsRaw.length === 0 ? 'None' : `${typeOptionsRaw.length} Options`))}
+                              </span>
                             </button>
-                            
-                            {/* Accordion Content */}
-                            <AnimatePresence initial={false}>
-                              {isActive && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.3 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="p-4 space-y-3 bg-muted/20 border-t-2 border-border">
-                                    {isLoading ? (
-                                      <div className="flex items-center justify-center p-8 text-muted-foreground font-medium">
-                                        <Loader2 className="animate-spin mr-3 shrink-0" size={20} /> Searching live {type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : type + 's'}...
-                                      </div>
-                                    ) : (
-                                      <>
-                                        {typeOptions.length > 0 && (
-                                          <div className="flex justify-end mb-2">
-                                            <select 
-                                              className="p-1.5 border border-border rounded-lg bg-background outline-none focus:border-primary text-xs font-medium text-foreground cursor-pointer shadow-sm transition-colors"
-                                              value={currentSort}
-                                              onChange={(e) => setSortBy({ ...sortBy, [key]: e.target.value as any })}
-                                            >
-                                              <option value="" disabled>Select here</option>
-                                              <option value="cheapest">Cheapest First</option>
-                                              <option value="fastest">Fastest First</option>
-                                              <option value="earliest">Earliest Departure</option>
-                                            </select>
-                                          </div>
-                                        )}
-                                        {typeOptions.map((opt, idx) => {
-                                          const isSelected = selectedTransportId === opt.id;
-                                          return (
-                                            <motion.div 
-                                              initial={{ opacity: 0, x: -10 }}
-                                              animate={{ opacity: 1, x: 0 }}
-                                              transition={{ delay: idx * 0.05 }}
-                                              key={opt.id}
-                                              onClick={() => handleSelectTransport(pax.id, opt)}
-                                              whileHover={{ scale: 1.01 }}
-                                              whileTap={{ scale: 0.99 }}
-                                              className={`
-                                                relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-colors bg-card
-                                                ${isSelected 
-                                                  ? 'border-primary bg-primary/10 shadow-sm' 
-                                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                                                }
-                                              `}
-                                            >
-                                  <div className="flex items-center gap-4">
-                                    {isSelected ? (
-                                      <CheckCircle2 className="text-primary shrink-0" size={24} />
-                                    ) : (
-                                      <Circle className="text-muted-foreground/50 shrink-0" size={24} />
-                                    )}
-                                    
-                                    {opt.type === 'flight' && getAirlineLogo(opt.provider) ? (
-                                      <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
-                                        <img 
-                                          src={getAirlineLogo(opt.provider)!} 
-                                          alt={opt.provider} 
-                                          className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
-                                          style={{ imageRendering: 'high-quality' }}
-                                        />
-                                      </div>
-                                    ) : (opt.type === 'cab' || opt.type === 'car') && getCabLogo(opt.provider) ? (
-                                      <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
-                                        <img 
-                                          src={getCabLogo(opt.provider)!} 
-                                          alt={opt.provider} 
-                                          className={`object-contain mix-blend-multiply ${getCabLogoStyles(opt.provider)}`}
-                                          style={{ imageRendering: 'high-quality' }}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0" style={{ width: '56px', height: '56px' }}>
-                                        {getTransportIcon(opt.type)}
-                                      </div>
-                                    )}
+                          );
+                        })}
+                      </div>
 
-                                    <div>
-                                      <div className="flex items-center gap-3">
-                                        <span className="font-bold uppercase tracking-wider text-sm">
-                                          {opt.type === 'flight' ? (opt.provider || '').split('*')[0].trim() : (opt.provider || opt.type)}
-                                        </span>
-                                        {opt.type !== 'cross' && isSelected && (
-                                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground ml-2 bg-muted/30 px-3 py-1 rounded-full border border-border/50">
-                                            <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{pax.city}</span>
-                                            <div className="relative w-16 h-3 flex items-center justify-center">
-                                              <div className="absolute inset-x-0 border-t border-dashed border-primary/40 top-1/2 -translate-y-1/2"></div>
-                                              <motion.div
-                                                initial={{ left: "0%", opacity: 0 }}
-                                                animate={{ left: ["0%", "20%", "80%", "100%"], opacity: [0, 1, 1, 0] }}
-                                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                                              >
-                                                {opt.type === 'flight' ? (
-                                                  <Plane size={12} className="text-primary rotate-45" fill="currentColor" />
-                                                ) : opt.type === 'train' ? (
-                                                  <Train size={12} className="text-primary" />
-                                                ) : opt.type === 'bus' ? (
-                                                  <Bus size={12} className="text-primary" />
-                                                ) : (
-                                                  <Car size={12} className="text-primary" />
-                                                )}
-                                              </motion.div>
-                                            </div>
-                                            <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{trip.destination}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      {(!(opt.type !== 'cross' && isSelected)) && opt.type !== 'cross' && (
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                          {String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure} <ArrowRight className="inline mx-1" size={14}/> {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival} ({opt.duration})
+                      {/* Active Tab Content Area */}
+                      <div className="relative">
+                        <AnimatePresence mode="wait">
+                          {['flight', 'train', 'cross', 'bus', 'cab'].map((type) => {
+                            const destination = trip.destination || 'Unknown';
+                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
+                            const isFetched = cachedData[key] !== undefined;
+                            const task = fetchQueue.tasks.find(t => t.id === key);
+                            const isLoading = task?.status === 'loading';
+
+                            const rawData = cachedData[key] || {};
+                            const rawOptions = rawData.options || (Array.isArray(rawData) ? rawData : []);
+                            const crossRoutes = rawData.cross_routes || [];
+                            const typeOptionsRaw = type === 'cross' ? crossRoutes : rawOptions.filter((o: any) => o.type === type || (type === 'cab' && o.type === 'car'));
+                            
+                            const currentSort = sortBy[key] || '';
+                            let typeOptions = [...typeOptionsRaw];
+                            if (currentSort === 'cheapest') {
+                              typeOptions.sort((a, b) => a.price - b.price);
+                            } else if (currentSort === 'fastest') {
+                              typeOptions.sort((a, b) => parseDuration(a.duration) - parseDuration(b.duration));
+                            } else if (currentSort === 'earliest') {
+                              typeOptions.sort((a, b) => parseTime(a.departure) - parseTime(b.departure));
+                            }
+                            
+                            const currentActive = activeTabs[pax.id] ?? '';
+                            const isActive = currentActive === type && (isFetched ? typeOptions.length > 0 : true);
+
+                            if (!isActive) return null;
+
+                            return (
+                              <motion.div
+                                key={type}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="w-full"
+                              >
+                                <div className="space-y-3">
+                                  {isLoading ? (
+                                    <div className="flex items-center justify-center p-8 bg-muted/20 border-2 border-border rounded-xl text-muted-foreground font-medium">
+                                      <Loader2 className="animate-spin mr-3 shrink-0" size={20} /> Searching live {type === 'bus' ? 'buses' : type === 'cross' ? 'connecting routes' : type + 's'}...
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {typeOptions.length > 0 && (
+                                        <div className="flex justify-end mb-2">
+                                          <select 
+                                            className="p-1.5 border border-border rounded-lg bg-background outline-none focus:border-primary text-xs font-medium text-foreground cursor-pointer shadow-sm transition-colors"
+                                            value={currentSort}
+                                            onChange={(e) => setSortBy({ ...sortBy, [key]: e.target.value as any })}
+                                          >
+                                            <option value="" disabled>Select here</option>
+                                            <option value="cheapest">Cheapest First</option>
+                                            <option value="fastest">Fastest First</option>
+                                            <option value="earliest">Earliest Departure</option>
+                                          </select>
                                         </div>
                                       )}
-                                        
-                                        {opt.type === 'train' && opt.id.startsWith('tr_') && (
-                                          <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                              onClick={() => {
-                                                setActiveTrainId(opt.id.split('_')[1]);
-                                                setRouteModalOpen(true);
-                                              }}
-                                              className="text-xs font-semibold px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-colors border border-border"
-                                            >
-                                              View Route
-                                            </button>
-                                            <button 
-                                              onClick={() => {
-                                                setActiveTrainId(opt.id.split('_')[1]);
-                                                setLiveModalOpen(true);
-                                              }}
-                                              className="text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20"
-                                            >
-                                              Live Status
-                                            </button>
-                                          </div>
-                                        )}
-                                        {opt.type === 'cross' && opt.legs && (
-                                          <div className="mt-3 space-y-2 border-t border-border pt-3 w-full" onClick={(e) => e.stopPropagation()}>
-                                            {opt.legs.map((leg: any, lIdx: number) => (
-                                              <div key={lIdx} className="flex justify-between items-center text-xs bg-background/50 p-2 rounded-lg border border-border">
-                                                <div className="flex items-center gap-2">
-                                                  <div className="scale-75 origin-left">{getTransportIcon(leg.mode)}</div>
-                                                  <span className="font-semibold text-foreground/80">{leg.source} → {leg.destination}</span>
+                                      {typeOptions.map((opt, idx) => {
+                                        const isSelected = selectedTransportId === opt.id;
+                                        return (
+                                          <motion.div 
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            key={opt.id}
+                                            onClick={() => handleSelectTransport(pax.id, opt)}
+                                            whileHover={{ scale: 1.01 }}
+                                            whileTap={{ scale: 0.99 }}
+                                            className={`
+                                              relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-colors bg-card
+                                              ${isSelected 
+                                                ? 'border-primary bg-primary/10 shadow-sm' 
+                                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                              }
+                                            `}
+                                          >
+                                            <div className="flex items-center gap-4">
+                                              {isSelected ? (
+                                                <CheckCircle2 className="text-primary shrink-0" size={24} />
+                                              ) : (
+                                                <Circle className="text-muted-foreground/50 shrink-0" size={24} />
+                                              )}
+                                              
+                                              {opt.type === 'flight' && getAirlineLogo(opt.provider) ? (
+                                                <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
+                                                  <img 
+                                                    src={getAirlineLogo(opt.provider)!} 
+                                                    alt={opt.provider} 
+                                                    className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
+                                                    style={{ imageRendering: 'high-quality' }}
+                                                  />
                                                 </div>
-                                                <div className="text-muted-foreground flex gap-3 text-right">
-                                                  <span>{leg.provider}</span>
-                                                  <span className="font-medium">₹{leg.price}</span>
+                                              ) : (opt.type === 'cab' || opt.type === 'car') && getCabLogo(opt.provider) ? (
+                                                <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
+                                                  <img 
+                                                    src={getCabLogo(opt.provider)!} 
+                                                    alt={opt.provider} 
+                                                    className={`object-contain mix-blend-multiply ${getCabLogoStyles(opt.provider)}`}
+                                                    style={{ imageRendering: 'high-quality' }}
+                                                  />
                                                 </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                  </div>
+                                              ) : (
+                                                <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0" style={{ width: '56px', height: '56px' }}>
+                                                  {getTransportIcon(opt.type)}
+                                                </div>
+                                              )}
 
-                                  <div className="text-right">
-                                    <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
-                                    {opt.type === 'flight' && (
-                                      <div className="text-[10px] text-muted-foreground mt-1 text-right">
-                                        * These prices are tentative.
-                                      </div>
-                                    )}
-                                  </div>
-                                            </motion.div>
-                                          );
-                                        })}
-                                      </>
-                                    )}
-                                  </div>
-                                    </motion.div>
+                                              <div>
+                                                <div className="flex items-center gap-3">
+                                                  <span className="font-bold uppercase tracking-wider text-sm">
+                                                    {opt.type === 'flight' ? (opt.provider || '').split('*')[0].trim() : (opt.provider || opt.type)}
+                                                  </span>
+                                                  {opt.type !== 'cross' && isSelected && (
+                                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground ml-2 bg-muted/30 px-3 py-1 rounded-full border border-border/50">
+                                                      <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{pax.city}</span>
+                                                      <div className="relative w-16 h-3 flex items-center justify-center">
+                                                        <div className="absolute inset-x-0 border-t border-dashed border-primary/40 top-1/2 -translate-y-1/2"></div>
+                                                        <motion.div
+                                                          initial={{ left: "0%", opacity: 0 }}
+                                                          animate={{ left: ["0%", "20%", "80%", "100%"], opacity: [0, 1, 1, 0] }}
+                                                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                                                        >
+                                                          {opt.type === 'flight' ? (
+                                                            <Plane size={12} className="text-primary rotate-45" fill="currentColor" />
+                                                          ) : opt.type === 'train' ? (
+                                                            <Train size={12} className="text-primary" />
+                                                          ) : opt.type === 'bus' ? (
+                                                            <Bus size={12} className="text-primary" />
+                                                          ) : (
+                                                            <Car size={12} className="text-primary" />
+                                                          )}
+                                                        </motion.div>
+                                                      </div>
+                                                      <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{trip.destination}</span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                {(!(opt.type !== 'cross' && isSelected)) && opt.type !== 'cross' && (
+                                                  <div className="text-sm text-muted-foreground mt-1">
+                                                    {String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure} <ArrowRight className="inline mx-1" size={14}/> {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival} ({opt.duration})
+                                                  </div>
+                                                )}
+                                                  
+                                                  {opt.type === 'train' && opt.id.startsWith('tr_') && (
+                                                    <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                                                      <button 
+                                                        onClick={() => {
+                                                          setActiveTrainId(opt.id.split('_')[1]);
+                                                          setRouteModalOpen(true);
+                                                        }}
+                                                        className="text-xs font-semibold px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-colors border border-border"
+                                                      >
+                                                        View Route
+                                                      </button>
+                                                      <button 
+                                                        onClick={() => {
+                                                          setActiveTrainId(opt.id.split('_')[1]);
+                                                          setLiveModalOpen(true);
+                                                        }}
+                                                        className="text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20"
+                                                      >
+                                                        Live Status
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                  {opt.type === 'cross' && opt.legs && (
+                                                    <div className="mt-3 space-y-2 border-t border-border pt-3 w-full" onClick={(e) => e.stopPropagation()}>
+                                                      {opt.legs.map((leg: any, lIdx: number) => (
+                                                        <div key={lIdx} className="flex justify-between items-center text-xs bg-background/50 p-2 rounded-lg border border-border">
+                                                          <div className="flex items-center gap-2">
+                                                            <div className="scale-75 origin-left">{getTransportIcon(leg.mode)}</div>
+                                                            <span className="font-semibold text-foreground/80">{leg.source} → {leg.destination}</span>
+                                                          </div>
+                                                          <div className="text-muted-foreground flex gap-3 text-right">
+                                                            <span>{leg.provider}</span>
+                                                            <span className="font-medium">₹{leg.price}</span>
+                                                          </div>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right">
+                                              <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
+                                              {opt.type === 'flight' && (
+                                                <div className="text-[10px] text-muted-foreground mt-1 text-right">
+                                                  * These prices are tentative.
+                                                </div>
+                                              )}
+                                            </div>
+                                          </motion.div>
+                                        );
+                                      })}
+                                    </>
                                   )}
-                                </AnimatePresence>
-                              </div>
+                                </div>
+                              </motion.div>
                             );
                           })}
-                        </div>
+                        </AnimatePresence>
+                      </div>
+                    </div>
                   </motion.section>
                 );
               })}
+              </div>
+
+              {/* Right Column: Selections Summary */}
+              <div className="w-full lg:w-[320px] xl:w-[360px] shrink-0 space-y-6">
+                <div className="sticky top-24 space-y-6">
+                  {/* Transport Selected Box */}
+                  <div className="bg-card p-6 rounded-2xl border border-border shadow-lg transition-colors">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <CheckCircle2 className="text-primary" />
+                      Transport Summary
+                    </h2>
+                    <div className="space-y-4">
+                      {trip.passengers.map(pax => {
+                        const selectedOption = trip.selectedTransports.find(t => t.passengerId === pax.id);
+                        return (
+                          <div key={pax.id} className="p-3 bg-muted/30 rounded-xl border border-border/50">
+                            <div className="font-bold text-sm mb-2 text-foreground">{pax.name}</div>
+                            {selectedOption ? (
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {selectedOption.transport.type === 'flight' && getAirlineLogo(selectedOption.transport.provider) ? (
+                                      <div className="bg-white rounded-md shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '48px', height: '32px' }}>
+                                        <img 
+                                          src={getAirlineLogo(selectedOption.transport.provider)!} 
+                                          alt={selectedOption.transport.provider} 
+                                          className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(selectedOption.transport.provider)}`}
+                                          style={{ imageRendering: 'high-quality' }}
+                                        />
+                                      </div>
+                                    ) : (selectedOption.transport.type === 'cab' || selectedOption.transport.type === 'car') && getCabLogo(selectedOption.transport.provider) ? (
+                                      <div className="bg-white rounded-md shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '48px', height: '32px' }}>
+                                        <img 
+                                          src={getCabLogo(selectedOption.transport.provider)!} 
+                                          alt={selectedOption.transport.provider} 
+                                          className={`object-contain mix-blend-multiply ${getCabLogoStyles(selectedOption.transport.provider)}`}
+                                          style={{ imageRendering: 'high-quality' }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      getTransportIcon(selectedOption.transport.type)
+                                    )}
+                                    <span className="text-xs font-semibold uppercase text-muted-foreground truncate max-w-[120px]">
+                                      {selectedOption.transport.type === 'flight' ? (selectedOption.transport.provider || '').split('*')[0].trim() : selectedOption.transport.provider || selectedOption.transport.type}
+                                    </span>
+                                  </div>
+                                  <span className="font-bold text-sm text-foreground shrink-0">₹{selectedOption.transport.price.toLocaleString('en-IN')}</span>
+                                </div>
+                                {selectedOption.transport.type !== 'cross' && (
+                                  <div className="text-[11px] text-muted-foreground flex items-center justify-between gap-2 bg-background p-2 rounded-md border border-border/30">
+                                    <span className="font-medium uppercase">{pax.city}</span>
+                                    <div className="flex-1 relative flex items-center justify-center mx-2">
+                                      <div className="absolute w-full border-t border-dashed border-primary/40"></div>
+                                      <div className="bg-background px-2 z-10">
+                                        {selectedOption.transport.type === 'flight' ? (
+                                          <Plane size={12} className="text-primary rotate-45" fill="currentColor" />
+                                        ) : selectedOption.transport.type === 'train' ? (
+                                          <Train size={12} className="text-primary" />
+                                        ) : selectedOption.transport.type === 'bus' ? (
+                                          <Bus size={12} className="text-primary" />
+                                        ) : (
+                                          <Car size={12} className="text-primary" />
+                                        )}
+                                      </div>
+                                    </div>
+                                    <span className="font-medium uppercase">{trip.destination}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                <AlertCircle size={14} className="text-amber-500" />
+                                No transport selected
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
             </motion.div>
           )}
         </AnimatePresence>

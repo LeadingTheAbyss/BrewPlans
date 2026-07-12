@@ -56,7 +56,7 @@
   --card-foreground: oklch(0.15 0.01 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.01 250);
-  --primary: oklch(0.48 0.12 175);
+  --primary: oklch(0.48 0.12 250);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.65 0.18 45);
   --secondary-foreground: oklch(1 0 0);
@@ -67,7 +67,7 @@
   --destructive: oklch(0.57 0.2 27);
   --border: oklch(0.9 0.01 90);
   --input: oklch(0.9 0.01 90);
-  --ring: oklch(0.48 0.12 175);
+  --ring: oklch(0.48 0.12 250);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -76,12 +76,12 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0.01 90);
   --sidebar-foreground: oklch(0.15 0.01 250);
-  --sidebar-primary: oklch(0.48 0.12 175);
+  --sidebar-primary: oklch(0.48 0.12 250);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.95 0.01 90);
   --sidebar-accent-foreground: oklch(0.15 0.01 250);
   --sidebar-border: oklch(0.9 0.01 90);
-  --sidebar-ring: oklch(0.48 0.12 175);
+  --sidebar-ring: oklch(0.48 0.12 250);
 }
 
 .dark {
@@ -91,7 +91,7 @@
   --card-foreground: oklch(0.95 0.005 90);
   --popover: oklch(0.22 0.01 100);
   --popover-foreground: oklch(0.95 0.005 90);
-  --primary: oklch(0.55 0.12 175);
+  --primary: oklch(0.55 0.12 250);
   --primary-foreground: oklch(0.18 0.01 100);
   --secondary: oklch(0.70 0.18 45);
   --secondary-foreground: oklch(0.18 0.01 100);
@@ -102,7 +102,7 @@
   --destructive: oklch(0.65 0.15 27);
   --border: oklch(0.3 0.01 100);
   --input: oklch(0.3 0.01 100);
-  --ring: oklch(0.55 0.12 175);
+  --ring: oklch(0.55 0.12 250);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -110,12 +110,12 @@
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.18 0.01 100);
   --sidebar-foreground: oklch(0.95 0.005 90);
-  --sidebar-primary: oklch(0.55 0.12 175);
+  --sidebar-primary: oklch(0.55 0.12 250);
   --sidebar-primary-foreground: oklch(0.18 0.01 100);
   --sidebar-accent: oklch(0.26 0.01 100);
   --sidebar-accent-foreground: oklch(0.95 0.005 90);
   --sidebar-border: oklch(0.3 0.01 100);
-  --sidebar-ring: oklch(0.55 0.12 175);
+  --sidebar-ring: oklch(0.55 0.12 250);
 }
 
 @layer base {

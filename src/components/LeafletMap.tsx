@@ -17,7 +17,10 @@ interface Route {
   id: string;
   start: Coordinate;
   end: Coordinate;
+  mode?: string;
 }
+
+import { Plane, Train, Bus, Car } from 'lucide-react';
 
 interface LeafletMapProps {
   coords: Coordinate[];
@@ -52,7 +55,7 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
 
         const d = `M ${start.x} ${start.y} Q ${pcx} ${pcy} ${end.x} ${end.y}`;
         
-        return { id: r.id, d, start, end, delay: i * 0.4 };
+        return { id: r.id, d, start, end, delay: i * 0.4, mode: r.mode };
       });
 
       setNodes(projectedNodes);
@@ -67,12 +70,11 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
       // Frame the camera gracefully around the cities
       if (coords.length > 1) {
         const bounds = L.latLngBounds(coords.map(c => [c.lat, c.lng]));
-        // Increased maxZoom to 8 so it can zoom in beautifully on close cities.
-        // Added more padding to the top so the camera points "more above", pushing the cities down slightly.
+        // Increased maxZoom to 12 so it can zoom in beautifully on close cities inside India.
+        // Added much smaller uniform padding so the map can zoom in closer.
         map.fitBounds(bounds, { 
-          paddingTopLeft: [50, 150], 
-          paddingBottomRight: [50, 50], 
-          maxZoom: 8, 
+          padding: [30, 30], 
+          maxZoom: 10, 
           animate: false 
         });
       } else {
@@ -137,37 +139,31 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
           />
         ))}
 
-        {/* Comet Aura */}
-        {paths.map(path => (
-          <path
-            key={`comet-aura-${path.id}`}
-            d={path.d}
-            fill="none"
-            stroke="url(#neonGradient)"
-            strokeWidth="6"
-            strokeLinecap="round"
-            filter="url(#hyperGlow)"
-            pathLength="100"
-            className="energy-flow"
-            style={{ animationDelay: `${path.delay}s` }}
-          />
-        ))}
+        {/* Animated Icons instead of Comet Aura/Core */}
+        {paths.map(path => {
+          // If no mode or cross route, fallback to original comet
+          if (!path.mode || path.mode === 'cross') {
+             return (
+               <g key={`comet-${path.id}`}>
+                 <path d={path.d} fill="none" stroke="url(#neonGradient)" strokeWidth="6" filter="url(#hyperGlow)" className="energy-flow" />
+                 <path d={path.d} fill="none" stroke="#ffffff" strokeWidth="2" filter="url(#subtleGlow)" className="energy-flow" />
+               </g>
+             );
+          }
 
-        {/* Comet Core */}
-        {paths.map(path => (
-          <path
-            key={`comet-core-${path.id}`}
-            d={path.d}
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth="2"
-            strokeLinecap="round"
-            filter="url(#subtleGlow)"
-            pathLength="100"
-            className="energy-flow"
-            style={{ animationDelay: `${path.delay}s` }}
-          />
-        ))}
+          return (
+            <g key={`icon-${path.id}`}>
+               {/* We wrap the React component in a <g> so we can apply the centering transform */}
+               <g transform="translate(-12, -12)">
+                 {path.mode === 'flight' && <Plane size={24} className="text-blue-500 fill-current" style={{ transform: 'rotate(45deg)' }} />}
+                 {path.mode === 'train' && <Train size={24} className="text-orange-500" />}
+                 {path.mode === 'bus' && <Bus size={24} className="text-green-500" />}
+                 {(path.mode === 'cab' || path.mode === 'car') && <Car size={24} className="text-purple-500" />}
+               </g>
+               <animateMotion dur="2.5s" repeatCount="indefinite" path={path.d} rotate={path.mode === 'flight' ? "auto" : 0} />
+            </g>
+          );
+        })}
 
         {/* Living Nodes */}
         {nodes.map(node => (
