@@ -6,6 +6,7 @@ import { useTripStore } from '@/store/tripStore';
 import { useAuthStore } from '@/store/authStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { useItineraryStore } from '@/store/itineraryStore';
+import { useCacheStore } from '@/store/cacheStore';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Sparkles, Map, IndianRupee, Plus, Trash2, CalendarDays, SlidersHorizontal, Filter, X, ChevronRight, Compass, Zap, ShieldCheck } from 'lucide-react';
 import CityAutocomplete from '@/components/CityAutocomplete';
