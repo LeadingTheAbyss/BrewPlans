@@ -7,7 +7,7 @@ import { TransportOption, Passenger } from '@/types/trip';
 import { api } from '@/lib/api';
 import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, ShieldCheck, Armchair, ChevronDown, ArrowRight, CheckCircle2, Circle, AlertCircle, Users, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { useCacheStore } from '@/store/cacheStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
 import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/components/ui/TrainModals';
@@ -330,7 +330,7 @@ export default function TransportPage() {
   };
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -338,7 +338,7 @@ export default function TransportPage() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };

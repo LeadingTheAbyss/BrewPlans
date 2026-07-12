@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { dbStorage } from '../lib/dbStorage';
-import { TripMode, Passenger } from '../types/trip';
+import { TripMode, Passenger, Hotel } from '../types/trip';
 
 interface TripState {
   mode: TripMode | null;

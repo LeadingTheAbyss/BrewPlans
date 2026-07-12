@@ -81,9 +81,9 @@ export function SortablePlaceCard({
       <div className={`flex-1 min-w-0 ${compact ? 'pl-3' : 'pl-4'}`}>
         <div className="flex justify-between items-start mb-1">
           <h4 className="font-bold text-sm text-zinc-100 truncate pr-2">{place.name}</h4>
-          {place.price && place.price > 0 ? (
+          {place.entryFee && place.entryFee > 0 ? (
             <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#222] shrink-0">
-              <Ticket size={10} /> ₹{place.price}
+              <Ticket size={10} /> ₹{place.entryFee}
             </div>
           ) : null}
         </div>
