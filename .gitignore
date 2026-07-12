@@ -75,6 +75,9 @@ test_*.py
 overpass_debug.log
 out.json
 *.log
+debug_err.txt
+debug_opt_error.txt
+parse_key_usage.json
 
 # API Keys and Secrets
 *.key
