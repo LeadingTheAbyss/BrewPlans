@@ -101,7 +101,7 @@ export default function ReviewPage() {
     if (selected.transport) return selected.transport;
     
     // Fallback for older stored states
-    const cachedOptions = cache.transportOptions?.[passengerId] ?? [];
+    const cachedOptions = cache.cache.transportOptions?.[passengerId] ?? [];
     return cachedOptions.find((opt: any) => opt.id === selected.transportOptionId) ?? null;
   };
 
