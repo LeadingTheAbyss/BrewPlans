@@ -74,10 +74,9 @@ async def calculate_cab_fare(
                 
             # OSRM calculates time at free-flow speeds. 
             # Implement dynamic time-of-day traffic multipliers for realistic Indian traffic
-            from datetime import datetime
-            import pytz
+            from datetime import datetime, timezone, timedelta
             
-            ist = pytz.timezone('Asia/Kolkata')
+            ist = timezone(timedelta(hours=5, minutes=30))
             current_time = datetime.now(ist).time()
             hour = current_time.hour
             

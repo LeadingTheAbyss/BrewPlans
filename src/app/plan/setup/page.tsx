@@ -82,29 +82,8 @@ export default function TripSetupPage() {
       }
     }
 
-    // FIRE BACKGROUND CACHE CHECKS
-    const dest = trip.destination;
-    api.getPlaces(dest, undefined, undefined, undefined, true).then((res: any) => {
-      if (res && !res.status) useCacheStore.getState().setCache('places', res);
-    }).catch(console.error);
-
-    api.getFood(dest, undefined, undefined, undefined, true).then((res: any) => {
-      if (res && !res.status) useCacheStore.getState().setCache('food', res);
-    }).catch(console.error);
-
-    api.getHotels(dest, undefined, undefined, undefined, undefined, true).then((res: any) => {
-      if (res && !res.status) useCacheStore.getState().setCache('hotels', res);
-    }).catch(console.error);
     
-    validPassengers.forEach(pax => {
-      if (!pax.city) return;
-      ['flight', 'train', 'bus', 'cab'].forEach(mode => {
-        const key = `${pax.id}-${pax.city}-${dest}-${mode}-v6`;
-        api.getTransportOptions(pax.city, dest, mode, true).then((res: any) => {
-          if (res && !res.status) useCacheStore.getState().setCache(key, res);
-        }).catch(console.error);
-      });
-    });
+    const dest = trip.destination;
 
     router.push('/plan/transport');
   };

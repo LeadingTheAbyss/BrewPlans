@@ -544,7 +544,7 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
         data = response.json()
         
         results = []
-        features = data.get("results", [])
+        features = data.get("results") or []
         
         # Sort features by population descending to ensure major cities appear first
         features.sort(key=lambda x: x.get("population") or 0, reverse=True)
@@ -574,7 +574,8 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
                 "display": display,
                 "state": state_name,
                 "lat": feature.get("latitude"),
-                "lng": feature.get("longitude")
+                "lng": feature.get("longitude"),
+                "osrm_coords": f"{feature.get('longitude')},{feature.get('latitude')}"
             })
             
         # Deduplicate by display name while preserving order
