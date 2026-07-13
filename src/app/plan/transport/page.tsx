@@ -475,7 +475,7 @@ export default function TransportPage() {
                         {/* Transport Section */}
                     <div className="space-y-5">
                       {/* Transport Type Pills */}
-                      <div className="flex flex-wrap items-center gap-2.5">
+                      <div className="flex overflow-x-auto no-scrollbar items-center gap-2.5 pb-2">
                         {['flight', 'train', 'bus', 'cab'].map((type) => {
                           const destination = trip.destination || 'Unknown';
                           const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
@@ -602,16 +602,16 @@ export default function TransportPage() {
                                             >
                                               <div className="flex flex-col gap-5">
                                                 {/* Top Row: Info, Timing, Price */}
-                                                <div className="flex justify-between items-center">
+                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
                                                   
                                                   {/* Provider */}
-                                                  <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                                                  <div className="flex items-center gap-2 flex-1 w-full md:w-auto">
                                                     <Bus size={16} className="text-muted-foreground shrink-0" />
                                                     <span className="font-bold text-foreground text-[16px] tracking-tight leading-snug">{opt.provider || 'Bus'}</span>
                                                   </div>
 
                                                   {/* Timing & Duration */}
-                                                  <div className="flex flex-col items-center flex-[1.5]">
+                                                  <div className="flex flex-col items-start md:items-center flex-[1.5] w-full md:w-auto">
                                                     <div className="flex items-center gap-3 text-[19px] font-bold text-foreground tracking-wide">
                                                       <span>{depTimeStr}</span>
                                                       <span className="text-muted-foreground/40 font-light text-sm">──</span>
@@ -623,7 +623,7 @@ export default function TransportPage() {
                                                   </div>
 
                                                   {/* Price & Button */}
-                                                  <div className="flex flex-col items-end gap-2 flex-1">
+                                                  <div className="flex flex-row md:flex-col items-center justify-between md:items-end gap-2 flex-1 w-full md:w-auto border-t md:border-t-0 border-border/50 pt-3 md:pt-0">
                                                     <span className="text-xl font-bold text-foreground tracking-tight">₹{opt.price.toLocaleString('en-IN')}</span>
                                                     <button className={`px-5 py-2 text-[13px] font-bold rounded-full transition-colors ${isSelected ? 'bg-orange-500 text-white shadow-md' : 'bg-[#d84e55] hover:bg-[#c64147] text-white shadow-sm hover:shadow-md'}`}>
                                                       {isSelected ? 'SELECTED' : 'Select'}
@@ -690,22 +690,22 @@ export default function TransportPage() {
                                               {/* Body */}
                                               <div className="p-4 flex flex-col gap-4">
                                                 {/* Times & Duration */}
-                                                <div className="flex justify-between items-start">
-                                                  <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2">
+                                                <div className="flex flex-col md:flex-row justify-between items-start">
+                                                  <div className="flex flex-col flex-1 min-w-0 md:pl-4 mt-2 md:mt-0 w-full md:w-auto border-t md:border-t-0 border-border/30 pt-3 md:pt-0">
+                                                    <div className="flex items-center gap-2 justify-between md:justify-start">
                                                       <span className="text-xl font-bold text-foreground">{depTimeStr}</span>
-                                                      <span className="text-[14px] text-foreground/80">| {pax.city.substring(0,4).toUpperCase()} | {depDateStr}</span>
+                                                      <span className="text-[14px] text-foreground/80 md:ml-2">| {pax.city.substring(0,4).toUpperCase()} | {depDateStr}</span>
                                                     </div>
                                                   </div>
-                                                  <div className="flex flex-row items-center justify-center flex-1 mx-6 mt-2 gap-3">
-                                                    <div className="h-[1px] bg-muted-foreground w-12"></div>
+                                                  <div className="hidden md:flex flex-col items-end gap-1 ml-4 shrink-0">
+                                                    <div className="h-[1px] bg-muted-foreground flex-1 md:w-12"></div>
                                                     <div className="text-[15px] font-medium text-foreground tracking-wide">{formattedDur}</div>
-                                                    <div className="h-[1px] bg-muted-foreground w-12"></div>
+                                                    <div className="h-[1px] bg-muted-foreground flex-1 md:w-12"></div>
                                                   </div>
-                                                  <div className="flex flex-col items-end">
-                                                    <div className="flex items-center gap-2">
+                                                  <div className="flex flex-col w-full md:w-auto items-end">
+                                                    <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto">
                                                       <span className="text-xl font-bold text-foreground">{arrTimeStr}</span>
-                                                      <span className="text-[14px] text-foreground/80">| {trip.destination?.substring(0,4).toUpperCase()} | {arrDateStr}</span>
+                                                      <span className="text-[14px] text-foreground/80 mr-auto md:mr-0 md:ml-2">| {trip.destination?.substring(0,4).toUpperCase()} | {arrDateStr}</span>
                                                     </div>
                                                   </div>
                                                 </div>
@@ -713,7 +713,7 @@ export default function TransportPage() {
 
                                                 
                                                 {/* Action Row */}
-                                                <div className="flex items-center gap-3 mt-1">
+                                                <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-1 pt-3 border-t md:border-t-0 border-border/50">
                                                   <button className={`px-4 py-1.5 text-[13px] font-bold rounded-sm border transition-colors ${isSelected ? 'bg-orange-500 text-white border-orange-600' : 'bg-[#fee3ce] text-[#d65e00] border-[#d65e00] hover:bg-orange-500 hover:text-white dark:bg-[#d65e00]/20 dark:hover:bg-[#d65e00]/40'}`}>
                                                     {isSelected ? 'SELECTED' : 'Select'}
                                                   </button>
@@ -751,12 +751,16 @@ export default function TransportPage() {
                                               }
                                             `}
                                           >
-                                            <div className="flex items-center gap-4">
-                                              {isSelected ? (
-                                                <CheckCircle2 className="text-primary shrink-0" size={24} />
-                                              ) : (
-                                                <Circle className="text-muted-foreground/50 shrink-0" size={24} />
-                                              )}
+                                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
+                                              <div className="flex justify-between items-center w-full md:w-auto">
+                                                {isSelected ? (
+                                                  <CheckCircle2 className="text-primary shrink-0" size={24} />
+                                                ) : (
+                                                  <Circle className="text-muted-foreground/50 shrink-0" size={24} />
+                                                )}
+                                                
+                                                <div className="md:hidden font-bold text-xl ml-auto">₹{opt.price.toLocaleString('en-IN')}</div>
+                                              </div>
                                               
                                               {opt.type === 'flight' && getAirlineLogo(opt.provider) ? (
                                                 <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>

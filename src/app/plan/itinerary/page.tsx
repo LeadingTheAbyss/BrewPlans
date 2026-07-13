@@ -574,9 +574,9 @@ export default function ItineraryPage() {
               <motion.div
                 layoutId={`place-${gamifiedPlace.id}`}
                 initial={{ scale: 0.8, y: 20 }}
-                animate={{ scale: 1.2, y: 0 }}
+                animate={{ scale: 1.05, y: 0 }}
                 exit={{ scale: 0.8, opacity: 0 }}
-                className="relative mb-16 pointer-events-none w-80 shadow-[0_0_80px_rgba(16,185,129,0.2)] rounded-xl"
+                className="relative mb-8 md:mb-16 pointer-events-none w-full max-w-xs md:max-w-sm shadow-[0_0_80px_rgba(16,185,129,0.2)] rounded-xl"
               >
                 <div className="absolute inset-0 rounded-xl border-2 border-emerald-500 animate-pulse"></div>
                 <SortablePlaceCard place={gamifiedPlace} />
@@ -594,15 +594,15 @@ export default function ItineraryPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleGamifiedSelect(day.dayNumber)}
                     className={`
-                      w-32 h-32 rounded-2xl flex flex-col items-center justify-center gap-2 border shadow-2xl transition-colors
+                      w-24 h-24 md:w-32 md:h-32 rounded-2xl flex flex-col items-center justify-center gap-1 md:gap-2 border shadow-2xl transition-colors
                       ${day.totalTimeHours > 8 ? 'bg-red-950/50 border-red-500/30' : 'bg-[#111] border-[#333] hover:bg-emerald-900/40 hover:border-emerald-500'}
                     `}
                   >
-                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Day</span>
-                    <span className={`text-4xl font-black ${day.totalTimeHours > 8 ? 'text-red-400' : 'text-white'}`}>
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500">Day</span>
+                    <span className={`text-2xl md:text-4xl font-black ${day.totalTimeHours > 8 ? 'text-red-400' : 'text-white'}`}>
                       {day.dayNumber}
                     </span>
-                    <div className="mt-2 w-16 h-1 bg-[#222] rounded-full overflow-hidden">
+                    <div className="mt-1 md:mt-2 w-12 md:w-16 h-1 bg-[#222] rounded-full overflow-hidden">
                       <div 
                         className={`h-full ${day.totalTimeHours > 8 ? 'bg-red-500' : 'bg-emerald-500'}`}
                         style={{ width: `${Math.min(100, (day.totalTimeHours / 8) * 100)}%` }}

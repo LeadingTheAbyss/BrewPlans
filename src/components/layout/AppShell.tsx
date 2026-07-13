@@ -17,6 +17,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, fetchUser } = useAuthStore();
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
   const [isBudgetDropdownOpen, setIsBudgetDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -66,9 +67,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {pathname !== '/profile' && (
         <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
-            <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-3">
-              <img src="/icon.png" alt="PlanBro Logo" className="w-10 h-10 object-contain" />
-              <h1 className="text-sm font-bold uppercase tracking-[0.2em] text-black dark:text-white">PlanBro</h1>
+            <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 md:gap-3 shrink-0">
+              <img src="/icon.png" alt="PlanBro Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+              <h1 className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-black dark:text-white hidden sm:block">PlanBro</h1>
             </Link>
             
             {pathname !== '/stats' && pathname !== '/recommend' && (
@@ -89,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0">
             
             {/* Budget Dropdown in Navbar */}
             {pathname.startsWith('/plan') && (
@@ -152,15 +153,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {isDark ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-            <Link href="/profile" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300">
+            <Link href="/profile" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
               {user ? (
                 <UserAvatar user={user} className="w-full h-full text-[10px]" />
               ) : (
                 <User size={14} />
               )}
             </Link>
+            
+            {/* Mobile Menu Toggle */}
+            {pathname !== '/stats' && pathname !== '/recommend' && (
+              <button 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="w-7 h-7 md:hidden rounded-md border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
+              >
+                {isMobileMenuOpen ? <X size={14} /> : <Menu size={14} />}
+              </button>
+            )}
           </div>
         </header>
+      )}
+
+      {/* Mobile Navigation Drawer */}
+      {mounted && isMobileMenuOpen && (
+        <div className="md:hidden fixed top-14 left-0 w-full bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800 z-[90] shadow-2xl animate-in slide-in-from-top-4">
+          <nav className="flex flex-col p-4 gap-2">
+            {navLinks.map((link, idx) => {
+              const isActive = pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`p-3 rounded-xl text-[12px] uppercase font-bold tracking-[0.1em] transition-all ${isActive ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
+                >
+                  {idx + 1}. {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       )}
 
       {/* Main Content Area */}

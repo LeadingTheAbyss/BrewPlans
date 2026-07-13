@@ -89,18 +89,18 @@ export default function TripSetupPage() {
   };
 
   return (
-    <div className="w-full min-h-full flex flex-col items-center justify-center p-4 md:p-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className="w-full min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-0 md:p-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl flex flex-col md:flex-row shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800"
+        className="w-full h-full md:h-auto md:max-w-4xl flex flex-col md:flex-row shadow-none md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] md:rounded-2xl overflow-x-hidden border-0 md:border border-neutral-200 dark:border-neutral-800"
       >
         
         {/* Main Configuration Body */}
         <div className="flex-[1.2] bg-white dark:bg-[#111111] text-black dark:text-white p-6 lg:p-12 relative border-b md:border-b-0 md:border-r border-neutral-200 dark:border-neutral-900 transition-colors">
           
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex justify-between items-center mb-6 md:mb-10">
             <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-white">Trip Details</h2>
           </div>
 
@@ -305,7 +305,7 @@ export default function TripSetupPage() {
         </div>
 
         {/* Right Map View (Globe) */}
-        <div className="w-full h-64 md:h-auto md:flex-1 bg-[#050505] relative overflow-hidden flex flex-col transition-colors">
+        <div className="w-full h-48 md:h-auto md:flex-1 bg-[#050505] relative overflow-hidden flex flex-col transition-colors shrink-0">
            <AnimatedGlobe passengers={trip.passengers} destination={trip.destination} />
         </div>
 
