@@ -275,7 +275,7 @@ export default function PlacesPage() {
   
   const places = (cache.cache['places'] || []) as Place[];
   const task = fetchQueue.tasks.find(t => t.id === 'places-main');
-  const loading = !places.length && task?.status === 'loading';
+  const loading = !places.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [selectedModalPlace, setSelectedModalPlace] = useState<Place | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'recommended' | 'cheapest' | 'shortest'>('recommended');

@@ -23,7 +23,7 @@ export default function HotelsPage() {
   
   const hotels = (cache.cache['hotels'] || []) as Hotel[];
   const task = fetchQueue.tasks.find(t => t.id === 'hotels-main');
-  const loading = !hotels.length && task?.status === 'loading';
+  const loading = !hotels.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [sortBy, setSortBy] = useState<'best' | 'closest' | 'budget'>('best');
   const [activeStreetWalk, setActiveStreetWalk] = useState<Hotel | null>(null);
 

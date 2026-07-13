@@ -299,7 +299,7 @@ export default function FoodPage() {
   
   const places = (cache.cache['food'] || []) as Place[];
   const task = fetchQueue.tasks.find(t => t.id === 'food-main');
-  const loading = !places.length && task?.status === 'loading';
+  const loading = !places.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [selectedModalPlace, setSelectedModalPlace] = useState<Place | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'recommended' | 'cheapest' | 'shortest'>('recommended');
