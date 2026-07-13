@@ -10,7 +10,6 @@ import { useTripStore } from '@/store/tripStore';
 import { Plane, Building, Landmark, Coffee, User, Menu, ChevronUp, Check, ListFilter, Sun, Moon, X, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
-import smallLogo from '@/app/icon.png';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -68,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-3">
-              <img src={smallLogo.src} alt="PlanBro Logo" className="w-10 h-10 object-contain" />
+              <img src="/icon.png" alt="PlanBro Logo" className="w-10 h-10 object-contain" />
               <h1 className="text-sm font-bold uppercase tracking-[0.2em] text-black dark:text-white">PlanBro</h1>
             </Link>
             

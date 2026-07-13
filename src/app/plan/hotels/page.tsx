@@ -209,7 +209,9 @@ export default function HotelsPage() {
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
                                   <MapPin size={14} className="text-foreground/50" />
-                                  {hotel.distanceToCluster} km from the places you wish to visit
+                                  {itinerary.selectedPlaces.length > 0 
+                                      ? `${hotel.distanceToCluster || 2.5} km from the places you wish to visit` 
+                                      : 'No food spots or places selected yet'}
                                 </div>
                                 <button
                                   onClick={(e) => {
