@@ -203,10 +203,16 @@ The real tiresome work for this project undoubtedly lied in the backend.
       Here is how a plan would look with random planning and one with DBSCAN's algo :
       
 <!-- end list -->
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/4e1e0d61-3f1c-4e99-920a-56bf0d635dc8" width="450">
-  <img src="https://github.com/user-attachments/assets/0e392a0e-d7f1-4b69-aa11-dc22d66afb96" width="450">
-</p>
+<table align="center">
+<tr>
+<td>
+<img src="https://github.com/user-attachments/assets/4e1e0d61-3f1c-4e99-920a-56bf0d635dc8" width="430">
+</td>
+<td>
+<img src="https://github.com/user-attachments/assets/0e392a0e-d7f1-4b69-aa11-dc22d66afb96" width="430">
+</td>
+</tr>
+</table>
 
   3. **Temporal Meal Planning :** It identifies food places and mathematically pins them into strict windows.
       * Breakfast : 7-10 am
