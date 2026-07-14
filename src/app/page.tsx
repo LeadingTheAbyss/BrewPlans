@@ -270,9 +270,9 @@ export default function LandingPage() {
       tl.to(plane.position, { z: -150, x: 0, y: 0, ease: 'power1.inOut' }, delay);
 
       delay += sectionDuration;
-      // 8. Sunset end -> Rotate outwards
+      // 8. Sunset end -> Rotate outwards and fly UP on mobile to clear the buttons
       tl.to(plane.rotation, { duration: sectionDuration * 3, x: -tau * 0.05, y: tau * m, z: -tau * 0.1 * m, ease: 'power1.inOut' }, delay);
-      tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 320, ease: 'power1.in' }, delay);
+      tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: isMobile ? 120 : 0, z: 320, ease: 'power1.in' }, delay);
       
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
     }
@@ -668,7 +668,7 @@ export default function LandingPage() {
           <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white" style={{ height: 'auto', minHeight: '100vh' }}>
             <h2 className="mb-8 md:mb-12">Let's go.</h2>
             
-            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-4xl mx-auto px-3 md:px-6 relative z-10">
+            <div className="grid grid-cols-2 gap-2 md:gap-6 w-full max-w-4xl mx-auto px-1 md:px-6 relative z-10">
               {/* Card 1: Recommend Mode */}
               <div 
                 onClick={() => handleNavigation('/recommend')}
