@@ -270,9 +270,9 @@ export default function LandingPage() {
       tl.to(plane.position, { z: -150, x: 0, y: 0, ease: 'power1.inOut' }, delay);
 
       delay += sectionDuration;
-      // 8. Sunset end -> Rotate outwards and fly UP on mobile to clear the buttons
+      // 8. Sunset end -> Rotate outwards and fly to a balanced Y position on mobile
       tl.to(plane.rotation, { duration: sectionDuration * 3, x: -tau * 0.05, y: tau * m, z: -tau * 0.1 * m, ease: 'power1.inOut' }, delay);
-      tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: isMobile ? 120 : 0, z: 320, ease: 'power1.in' }, delay);
+      tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: isMobile ? 40 : 0, z: 320, ease: 'power1.in' }, delay);
       
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
     }
@@ -672,7 +672,7 @@ export default function LandingPage() {
               {/* Card 1: Recommend Mode */}
               <div 
                 onClick={() => handleNavigation('/recommend')}
-                className="bg-white/10 backdrop-blur-md border border-white/20 p-4 md:p-10 min-h-[140px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all md:hover:scale-105 group flex flex-col justify-between h-full"
+                className="bg-white/10 backdrop-blur-md border border-white/20 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all md:hover:scale-105 group flex flex-col justify-between h-full"
               >
                 <div>
                   <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Discovery Engine</h3>
@@ -688,7 +688,7 @@ export default function LandingPage() {
               {/* Card 2: Direct Planning Mode */}
               <div 
                 onClick={() => handleNavigation('/plan/setup')}
-                className="bg-blue-600 border border-blue-500 p-4 md:p-10 min-h-[140px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 md:hover:scale-105 group shadow-[0_0_30px_-10px_rgba(37,99,235,0.5)] md:shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
+                className="bg-blue-600 border border-blue-500 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 md:hover:scale-105 group shadow-[0_0_30px_-10px_rgba(37,99,235,0.5)] md:shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
               >
                 <div>
                   <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Plan Itinerary</h3>
