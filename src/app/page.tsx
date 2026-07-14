@@ -507,8 +507,8 @@ export default function LandingPage() {
         {/* Left: Logos and Links */}
         <div className="flex items-center gap-6">
           {/* Main Logo */}
-          <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="relative w-28 h-10 flex-shrink-0">
+          <div className="flex items-center gap-2 md:gap-4 cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="hidden md:block relative w-28 h-10 flex-shrink-0">
               <img 
                 src="/large_logo.png" 
                 alt="PlanBro Logo" 
@@ -560,7 +560,7 @@ export default function LandingPage() {
           ) : (
             <button 
               onClick={() => router.push('/login')}
-              className="px-4 py-2 rounded bg-[#2A2A2E] hover:bg-[#3A3A3E] text-white text-[13px] font-bold transition-colors"
+              className="px-3 py-1.5 md:px-4 md:py-2 rounded bg-[#2A2A2E] hover:bg-[#3A3A3E] text-white text-[13px] font-bold transition-colors whitespace-nowrap"
             >
               Sign in
             </button>
