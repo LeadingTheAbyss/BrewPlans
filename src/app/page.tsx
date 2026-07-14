@@ -230,7 +230,7 @@ export default function LandingPage() {
       });
 
       let delay = 0;
-      const xOffset = isMobile ? 15 : 40;
+      const xOffset = isMobile ? 32 : 40;
 
       // 1. Intro (Left text) -> Plane Right
       tl.to('.scroll-cta', { duration: 0.25, opacity: 0 }, delay);
@@ -601,7 +601,6 @@ export default function LandingPage() {
           <div className="parallax ground" style={{ backgroundImage: 'url("https://assets.codepen.io/557388/background-reduced.jpg"), linear-gradient(to bottom, #b4afaa, #D0CBC7)', zIndex: 0 }}></div>
           
           <div className="section relative z-50">
-            <h1 className="!text-black" style={{ color: '#000000' }}>PlanBro.</h1>
             <h3 className="!text-black" style={{ color: '#000000' }}>We plan the trip. You pack your bags.</h3>
             <p className="!text-black" style={{ color: '#000000' }}>The trip you'd plan yourself, if you had the time.</p>
             <div className="scroll-cta !text-black" style={{ color: '#000000' }}>Scroll down</div>
@@ -652,41 +651,41 @@ export default function LandingPage() {
           {/* Padding sections to perfectly map the 3x duration final animation */}
           <div className="section"></div>
           <div className="section"></div>
-          <div className="section end flex flex-col items-center justify-center pt-32 text-white">
-            <h2 className="mb-12">Let's go.</h2>
+          <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white" style={{ height: 'auto', minHeight: '100vh' }}>
+            <h2 className="mb-8 md:mb-12">Let's go.</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto px-6 relative z-10">
+            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-4xl mx-auto px-2 md:px-6 relative z-10">
               {/* Card 1: Recommend Mode */}
               <div 
                 onClick={() => handleNavigation('/recommend')}
-                className="bg-white/10 backdrop-blur-md border border-white/20 p-10 min-h-[240px] rounded-3xl cursor-pointer hover:bg-white/20 transition-all hover:scale-105 group flex flex-col justify-between h-full"
+                className="bg-white/10 backdrop-blur-md border border-white/20 p-5 md:p-10 min-h-[180px] md:min-h-[240px] rounded-2xl md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all hover:scale-105 group flex flex-col justify-between h-full"
               >
                 <div>
 
-                  <h3 className="text-2xl font-bold text-white !mb-4">Discovery Engine</h3>
-                  <p className="text-zinc-300 text-lg mb-6 leading-snug">
-                    "Not sure where to go? Tell us your budget and vibe. We'll show you where."
+                  <h3 className="text-lg md:text-2xl font-bold text-white !mb-2 md:!mb-4 leading-tight">Discovery Engine</h3>
+                  <p className="text-zinc-300 text-xs md:text-lg mb-4 md:mb-6 leading-snug">
+                    "Not sure where to go? Tell us your budget and vibe."
                   </p>
                 </div>
-                <div className="flex items-center text-white font-bold group-hover:translate-x-2 transition-transform">
-                  Explore Destinations <ArrowRight className="ml-2 w-5 h-5" />
+                <div className="flex items-center text-white text-sm md:text-base font-bold group-hover:translate-x-2 transition-transform">
+                  Explore <ArrowRight className="ml-1 w-4 h-4 md:w-5 md:h-5" />
                 </div>
               </div>
 
               {/* Card 2: Direct Planning Mode */}
               <div 
                 onClick={() => handleNavigation('/plan/setup')}
-                className="bg-blue-600 border border-blue-500 p-10 min-h-[240px] rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 hover:scale-105 group shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
+                className="bg-blue-600 border border-blue-500 p-5 md:p-10 min-h-[180px] md:min-h-[240px] rounded-2xl md:rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 hover:scale-105 group shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
               >
                 <div>
 
-                  <h3 className="text-2xl font-bold text-white !mb-4">Generate Itinerary</h3>
-                  <p className="text-blue-100 text-lg mb-6 leading-snug">
-                    "Know your destination? Give us the details. We'll lock down the flights, stays, and logistics."
+                  <h3 className="text-lg md:text-2xl font-bold text-white !mb-2 md:!mb-4 leading-tight">Generate Itinerary</h3>
+                  <p className="text-blue-100 text-xs md:text-lg mb-4 md:mb-6 leading-snug">
+                    "Know your destination? We'll lock down the logistics."
                   </p>
                 </div>
-                <div className="flex items-center text-white font-bold group-hover:translate-x-2 transition-transform">
-                  Start Planning <ArrowRight className="ml-2 w-5 h-5" />
+                <div className="flex items-center text-white text-sm md:text-base font-bold group-hover:translate-x-2 transition-transform">
+                  Start <ArrowRight className="ml-1 w-4 h-4 md:w-5 md:h-5" />
                 </div>
               </div>
             </div>
