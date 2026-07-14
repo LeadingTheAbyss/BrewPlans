@@ -602,10 +602,21 @@ export default function LandingPage() {
         <div className="ground-container">
           <div className="parallax ground" style={{ backgroundImage: 'url("https://assets.codepen.io/557388/background-reduced.jpg"), linear-gradient(to bottom, #b4afaa, #D0CBC7)', zIndex: 0 }}></div>
           
-          <div className="section relative z-50 pt-16 md:pt-24 lg:pt-32">
-            <h3 className="!text-black" style={{ color: '#000000' }}>We plan the trip. You pack your bags.</h3>
-            <p className="!text-black" style={{ color: '#000000' }}>The trip you'd plan yourself, if you had the time.</p>
-            <div className="scroll-cta !text-black" style={{ color: '#000000' }}>Scroll down</div>
+          <div className="section relative z-50">
+            <div className="pt-[8vh] md:pt-[12vh] max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
+              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[1] text-[#151515] mb-6 drop-shadow-sm">
+                We plan the trip.<br/>
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">You pack your bags.</span>
+              </h1>
+              <p className="text-xl md:text-2xl lg:text-3xl text-[#3a3a3a] font-medium max-w-2xl leading-snug">
+                The trip you'd plan yourself, if you had the time.
+              </p>
+            </div>
+
+            <div className="scroll-cta absolute bottom-[10vh] left-0 md:left-auto flex flex-col items-start gap-3">
+              <span className="font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#151515]/60">Scroll to explore</span>
+              <div className="w-[2px] h-12 md:h-16 bg-gradient-to-b from-[#151515]/50 to-transparent ml-1"></div>
+            </div>
           </div>
           
           <div className="section right relative z-50">
@@ -617,28 +628,28 @@ export default function LandingPage() {
           <div className="section relative z-50">
             <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl text-left">
               <h2 className="!text-black" style={{ color: '#000000' }}>Leave the details to us.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-[#5a5bc8] to-[#c272a9] bg-clip-text text-transparent font-bold mt-2">No tabs. No spreadsheets. No back-and-forth over budgets.</p>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">No tabs. No spreadsheets. No back-and-forth over budgets.</p>
             </div>
           </div>
 
           <div className="section right relative z-50">
             <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl">
               <h2 className="!text-black" style={{ color: '#000000' }}>We find the way there.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-[#5a5bc8] to-[#c272a9] bg-clip-text text-transparent font-bold mt-2">Flights, trains, and buses, quietly compared until only the best remains.</p>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">Flights, trains, and buses, quietly compared until only the best remains.</p>
             </div>
           </div>
 
           <div className="section relative z-50">
             <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl text-left">
               <h2 className="!text-black" style={{ color: '#000000' }}>Your whole trip, stitched together.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-[#5a5bc8] to-[#c272a9] bg-clip-text text-transparent font-bold mt-2">Stays, experiences, and timing, all laid out in one clean plan.</p>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">Stays, experiences, and timing, all laid out in one clean plan.</p>
             </div>
           </div>
           
           <div className="section right relative z-50">
             <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl">
               <h2 className="!text-black" style={{ color: '#000000' }}>Less planning. More going.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-[#5a5bc8] to-[#c272a9] bg-clip-text text-transparent font-bold mt-2">Stop juggling logistics. Start the trip.</p>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">Stop juggling logistics. Start the trip.</p>
             </div>
           </div>
           <div className="parallax clouds"></div>
