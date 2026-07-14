@@ -164,9 +164,10 @@ export default function LandingPage() {
 
       const tau = Math.PI * 2;
       const isMobile = window.innerWidth < 768;
+      const m = isMobile ? -1 : 1;
 
-      gsap.set(plane.rotation, { y: tau * -.25 });
-      gsap.set(plane.position, { x: isMobile ? 40 : 80, y: -32, z: -60 });
+      gsap.set(plane.rotation, { y: tau * -.25 * m });
+      gsap.set(plane.position, { x: (isMobile ? 40 : 80) * m, y: -32, z: -60 });
 
       scene.render();
 
@@ -232,45 +233,45 @@ export default function LandingPage() {
       });
 
       let delay = 0;
-      const xOffset = isMobile ? 32 : 40;
+      const xOffset = (isMobile ? 32 : 40) * m;
 
-      // 1. Intro (Left text) -> Plane Right
+      // 1. Intro (Left text) -> Plane Right (or Left on mobile)
       tl.to('.scroll-cta', { duration: 0.25, opacity: 0 }, delay);
       tl.to(plane.position, { x: xOffset, ease: 'power1.in' }, delay);
 
       delay += sectionDuration;
       // 2. "Destination" (Right text) -> Plane Left
-      tl.to(plane.rotation, { x: tau * .25, y: 0, z: -tau * 0.05, ease: 'power1.inOut' }, delay);
+      tl.to(plane.rotation, { x: tau * .25, y: 0, z: -tau * 0.05 * m, ease: 'power1.inOut' }, delay);
       tl.to(plane.position, { x: -xOffset, y: 0, z: -60, ease: 'power1.inOut' }, delay);
 
       delay += sectionDuration;
       // 3. "Complex" (Left text) -> Plane Right
-      tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05, ease: 'power3.inOut' }, delay);
+      tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: xOffset, y: 0, z: -60, ease: 'power2.inOut' }, delay);
 
       delay += sectionDuration;
       // 4. "Tabs" (Right text) -> Plane Left
-      tl.to(plane.rotation, { x: tau * .2, y: 0, z: -tau * 0.1, ease: 'power3.inOut' }, delay);
+      tl.to(plane.rotation, { x: tau * .2, y: 0, z: -tau * 0.1 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: -xOffset, y: 0, z: -60, ease: 'power2.inOut' }, delay);
 
       delay += sectionDuration;
       // 5. "Logistics" (Left text) -> Plane Right
-      tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05, ease: 'power3.inOut' }, delay);
+      tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: xOffset, y: 0, z: -30, ease: 'power2.inOut' }, delay);
 
       delay += sectionDuration;
       // 6. "Defying" (Right text) -> Plane Left
-      tl.to(plane.rotation, { x: 0, z: 0, y: tau * .25 }, delay);
-      tl.to(plane.position, { x: isMobile ? -10 : -20, y: -10, z: 50 }, delay);
+      tl.to(plane.rotation, { x: 0, z: 0, y: tau * .25 * m }, delay);
+      tl.to(plane.position, { x: (isMobile ? -10 : -20) * m, y: -10, z: 50 }, delay);
 
       delay += sectionDuration;
       // 7. Sunset empty -> Fly away
-      tl.to(plane.rotation, { x: tau * 0.15, y: tau * .85, z: -tau * 0, ease: 'power1.in' }, delay);
+      tl.to(plane.rotation, { x: tau * 0.15, y: tau * .85 * m, z: -tau * 0, ease: 'power1.in' }, delay);
       tl.to(plane.position, { z: -150, x: 0, y: 0, ease: 'power1.inOut' }, delay);
 
       delay += sectionDuration;
       // 8. Sunset end -> Rotate outwards
-      tl.to(plane.rotation, { duration: sectionDuration * 3, x: -tau * 0.05, y: tau, z: -tau * 0.1, ease: 'power1.inOut' }, delay);
+      tl.to(plane.rotation, { duration: sectionDuration * 3, x: -tau * 0.05, y: tau * m, z: -tau * 0.1 * m, ease: 'power1.inOut' }, delay);
       tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 320, ease: 'power1.in' }, delay);
       
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
