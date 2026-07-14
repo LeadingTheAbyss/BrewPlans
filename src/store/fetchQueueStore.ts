@@ -13,6 +13,8 @@ export interface FetchTask {
   data?: any; // The fetched data
 }
 
+// fetching queue state
+
 interface FetchQueueState {
   tasks: FetchTask[];
   isProcessing: boolean;
@@ -26,7 +28,7 @@ interface FetchQueueState {
   
   // Bulk initializer for background checking
   initBackgroundChecks: (trip: any) => void;
-  clearQueue: () => void;
+  clearQueue: ()  => void;
 }
 
 export const useFetchQueue = create<FetchQueueState>((set, get) => ({
