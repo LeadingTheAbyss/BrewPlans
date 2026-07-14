@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -8,13 +8,14 @@ import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
   const { user, fetchUser } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavigation = (path: string) => {
     if (!user) {
@@ -160,9 +161,10 @@ export default function LandingPage() {
       gsap.set('svg', { autoAlpha: 1 });
 
       const tau = Math.PI * 2;
+      const isMobile = window.innerWidth < 768;
 
       gsap.set(plane.rotation, { y: tau * -.25 });
-      gsap.set(plane.position, { x: 80, y: -32, z: -60 });
+      gsap.set(plane.position, { x: isMobile ? 40 : 80, y: -32, z: -60 });
 
       scene.render();
 
@@ -228,8 +230,7 @@ export default function LandingPage() {
       });
 
       let delay = 0;
-      const isMobile = window.innerWidth < 768;
-      const xOffset = isMobile ? 18 : 40;
+      const xOffset = isMobile ? 15 : 40;
 
       // 1. Intro (Left text) -> Plane Right
       tl.to('.scroll-cta', { duration: 0.25, opacity: 0 }, delay);
@@ -541,7 +542,12 @@ export default function LandingPage() {
         </div>
 
         {/* Right Action */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="lg:hidden flex items-center">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white/80 hover:text-white p-1 transition-colors">
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
 
           {user ? (
             <button 
@@ -561,6 +567,30 @@ export default function LandingPage() {
           )}
         </div>
       </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden absolute top-[72px] left-0 w-full bg-[#282828] border-b border-[#3e3e3e] z-[99] flex flex-col px-6 py-6 gap-6 shadow-2xl animate-in slide-in-from-top-2">
+          <button 
+            onClick={() => { setMobileMenuOpen(false); handleNavigation('/recommend'); }} 
+            className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"
+          >
+            Recommend Trips
+          </button>
+          <button 
+            onClick={() => { setMobileMenuOpen(false); handleNavigation('/plan/setup'); }} 
+            className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"
+          >
+            Plan a Trip
+          </button>
+          <button 
+            onClick={() => { setMobileMenuOpen(false); handleNavigation('/quick-trip'); }} 
+            className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"
+          >
+            Quick Trip
+          </button>
+        </div>
+      )}
 
       <canvas ref={canvasRef} />
       
