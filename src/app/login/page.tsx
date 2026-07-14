@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plane, ArrowLeft } from 'lucide-react';
 import Script from 'next/script';
@@ -9,8 +9,12 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleCredentialResponse = async (response: any) => {
+    setIsLoading(true);
+    setErrorMsg(null);
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
@@ -19,14 +23,19 @@ export default function LoginPage() {
       });
       
       if (res.ok) {
-        // Use user-provided redirect URL if available, otherwise default to /profile
-        const redirect = new URLSearchParams(window.location.search).get('redirect') || '/profile';
+        // Use user-provided redirect URL if available, otherwise default to /
+        const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
         router.push(redirect);
       } else {
-        console.error('Login failed');
+        const errorText = await res.text();
+        console.error('Login failed:', res.status, errorText);
+        setErrorMsg(`Login failed (${res.status}): ${errorText}`);
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Login error:', error);
+      setErrorMsg(`Error: ${String(error)}`);
+      setIsLoading(false);
     }
   };
 
@@ -97,10 +106,25 @@ export default function LoginPage() {
         </p>
 
         {/* Google Auth Button Container */}
-        <div className="w-full flex justify-center h-[44px] mb-8">
-          <div ref={googleButtonRef}></div>
+        <div className="w-full flex justify-center h-[44px] mb-8 relative">
+          <div ref={googleButtonRef} className={isLoading ? 'hidden' : ''}></div>
+          {isLoading && (
+            <div className="flex items-center justify-center w-full h-full text-indigo-600 bg-white/50 backdrop-blur-sm rounded-full">
+              <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span className="font-medium text-sm">Signing you in...</span>
+            </div>
+          )}
         </div>
         
+        {errorMsg && (
+          <div className="w-full bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg mb-6 text-left break-words">
+            {errorMsg}
+          </div>
+        )}
+
         <p className="text-center text-slate-400 text-xs leading-relaxed">
           By signing in, you agree to our <br/>
           <Link href="/terms" className="text-indigo-500 hover:text-indigo-600 font-medium">Terms of Service</Link> and <Link href="/privacy" className="text-indigo-500 hover:text-indigo-600 font-medium">Privacy Policy</Link>

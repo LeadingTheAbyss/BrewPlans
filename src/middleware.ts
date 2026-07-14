@@ -4,8 +4,12 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   // Check if the user has an active session cookie
   const sessionCookie = request.cookies.get('planbro_session');
+  
+  console.log('[Middleware] Path:', request.nextUrl.pathname);
+  console.log('[Middleware] Cookies:', request.cookies.getAll());
 
   if (!sessionCookie) {
+    console.log('[Middleware] Redirecting to login, no session cookie found.');
     // Redirect to login if unauthenticated
     return NextResponse.redirect(new URL('/login', request.url));
   }
