@@ -140,8 +140,10 @@ export default function LandingPage() {
           const view = this.views[ii];
           const camera = view.camera;
           camera.aspect = this.w / this.h;
+          const isMobile = this.w < 768;
+          const minZ = isMobile ? 340 : 180;
           const camZ = (window.screen.width - (this.w * 1)) / 3;
-          camera.position.z = camZ < 180 ? 180 : camZ;
+          camera.position.z = camZ < minZ ? minZ : camZ;
           camera.updateProjectionMatrix();
         }
 
@@ -600,7 +602,7 @@ export default function LandingPage() {
         <div className="ground-container">
           <div className="parallax ground" style={{ backgroundImage: 'url("https://assets.codepen.io/557388/background-reduced.jpg"), linear-gradient(to bottom, #b4afaa, #D0CBC7)', zIndex: 0 }}></div>
           
-          <div className="section relative z-50">
+          <div className="section relative z-50 pt-16 md:pt-24 lg:pt-32">
             <h3 className="!text-black" style={{ color: '#000000' }}>We plan the trip. You pack your bags.</h3>
             <p className="!text-black" style={{ color: '#000000' }}>The trip you'd plan yourself, if you had the time.</p>
             <div className="scroll-cta !text-black" style={{ color: '#000000' }}>Scroll down</div>
