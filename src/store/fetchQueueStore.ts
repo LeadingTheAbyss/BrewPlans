@@ -26,6 +26,7 @@ interface FetchQueueState {
   
   // Bulk initializer for background checking
   initBackgroundChecks: (trip: any) => void;
+  clearQueue: () => void;
 }
 
 export const useFetchQueue = create<FetchQueueState>((set, get) => ({
@@ -74,5 +75,7 @@ export const useFetchQueue = create<FetchQueueState>((set, get) => ({
   initBackgroundChecks: (trip) => {
     // Disabled aggressive background pre-fetching.
     // We now enforce strict lazy loading: API calls are only made when a user explicitly clicks a tab or accordion.
-  }
+  },
+  
+  clearQueue: () => set({ tasks: [] })
 }));

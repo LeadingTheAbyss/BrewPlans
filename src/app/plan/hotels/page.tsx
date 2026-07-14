@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye, Calendar, Bed } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { StreetWalkModal } from '@/components/StreetWalkModal';
+import { CinematicLoader } from '@/components/CinematicLoader';
 
 export default function HotelsPage() {
   const router = useRouter();
@@ -101,11 +102,14 @@ export default function HotelsPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="p-12 text-center text-muted-foreground animate-pulse">
-            Clustering places and finding best hotels...
-          </div>
-        ) : hotels.length === 0 ? (
+        {/* Cinematic loader overlay — shown while hotels are being fetched */}
+        <CinematicLoader
+          isLoading={loading}
+          category="hotels"
+          destination={trip.destination}
+        />
+
+        {loading ? null : hotels.length === 0 ? (
           <div className="p-8 border-2 border-dashed border-border rounded-xl text-center text-muted-foreground">
             No hotels found. Go back to Setup and enter a destination.
           </div>

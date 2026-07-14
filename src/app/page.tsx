@@ -228,35 +228,37 @@ export default function LandingPage() {
       });
 
       let delay = 0;
+      const isMobile = window.innerWidth < 768;
+      const xOffset = isMobile ? 18 : 40;
 
       // 1. Intro (Left text) -> Plane Right
       tl.to('.scroll-cta', { duration: 0.25, opacity: 0 }, delay);
-      tl.to(plane.position, { x: 40, ease: 'power1.in' }, delay);
+      tl.to(plane.position, { x: xOffset, ease: 'power1.in' }, delay);
 
       delay += sectionDuration;
       // 2. "Destination" (Right text) -> Plane Left
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: -tau * 0.05, ease: 'power1.inOut' }, delay);
-      tl.to(plane.position, { x: -40, y: 0, z: -60, ease: 'power1.inOut' }, delay);
+      tl.to(plane.position, { x: -xOffset, y: 0, z: -60, ease: 'power1.inOut' }, delay);
 
       delay += sectionDuration;
       // 3. "Complex" (Left text) -> Plane Right
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05, ease: 'power3.inOut' }, delay);
-      tl.to(plane.position, { x: 40, y: 0, z: -60, ease: 'power2.inOut' }, delay);
+      tl.to(plane.position, { x: xOffset, y: 0, z: -60, ease: 'power2.inOut' }, delay);
 
       delay += sectionDuration;
       // 4. "Tabs" (Right text) -> Plane Left
       tl.to(plane.rotation, { x: tau * .2, y: 0, z: -tau * 0.1, ease: 'power3.inOut' }, delay);
-      tl.to(plane.position, { x: -40, y: 0, z: -60, ease: 'power2.inOut' }, delay);
+      tl.to(plane.position, { x: -xOffset, y: 0, z: -60, ease: 'power2.inOut' }, delay);
 
       delay += sectionDuration;
       // 5. "Logistics" (Left text) -> Plane Right
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05, ease: 'power3.inOut' }, delay);
-      tl.to(plane.position, { x: 40, y: 0, z: -30, ease: 'power2.inOut' }, delay);
+      tl.to(plane.position, { x: xOffset, y: 0, z: -30, ease: 'power2.inOut' }, delay);
 
       delay += sectionDuration;
       // 6. "Defying" (Right text) -> Plane Left
       tl.to(plane.rotation, { x: 0, z: 0, y: tau * .25 }, delay);
-      tl.to(plane.position, { x: -20, y: -10, z: 50 }, delay);
+      tl.to(plane.position, { x: isMobile ? -10 : -20, y: -10, z: 50 }, delay);
 
       delay += sectionDuration;
       // 7. Sunset empty -> Fly away

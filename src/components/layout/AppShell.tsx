@@ -61,10 +61,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#050505] text-neutral-900 dark:text-[#EDEDED] font-sans selection:bg-black/10 dark:selection:bg-white/30 transition-colors duration-300" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className={`flex flex-col ${pathname === '/' ? 'min-h-screen' : 'h-screen overflow-hidden'} bg-white dark:bg-[#050505] text-neutral-900 dark:text-[#EDEDED] font-sans selection:bg-black/10 dark:selection:bg-white/30 transition-colors duration-300`} style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       {/* Horizontal Progression Track */}
-      {pathname !== '/profile' && (
+      {pathname !== '/profile' && pathname !== '/' && (
         <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 md:gap-3 shrink-0">
@@ -196,8 +196,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto bg-transparent">
+      <main className={`flex-1 flex flex-col relative ${pathname === '/' ? '' : 'h-[calc(100vh-3.5rem)] overflow-hidden'}`}>
+        <div className={`flex-1 bg-transparent ${pathname === '/' ? '' : 'overflow-y-auto'}`}>
           {children}
         </div>
 

@@ -11,6 +11,7 @@ import ModernDateRangePicker from '@/components/ModernDateRangePicker';
 import { Plus, Trash2, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useCacheStore } from '@/store/cacheStore';
+import { useFetchQueue } from '@/store/fetchQueueStore';
 import { motion } from 'framer-motion';
 import AnimatedGlobe from '@/components/AnimatedGlobe';
 
@@ -118,6 +119,8 @@ export default function TripSetupPage() {
                       if (val !== trip.destination) {
                         budget.reset();
                         useItineraryStore.getState().reset();
+                        useCacheStore.getState().clearCache();
+                        useFetchQueue.getState().clearQueue();
                         trip.setTripDetails({ destination: val, selectedTransports: [], selectedHotel: null });
                       }
                     }} 

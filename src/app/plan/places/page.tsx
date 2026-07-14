@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
+import { CinematicLoader } from '@/components/CinematicLoader';
 
 function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected }: {
   place: Place;
@@ -358,21 +359,15 @@ export default function PlacesPage() {
 
         </div>
 
+        {/* Cinematic loader overlay — shown while data is fetching */}
+        <CinematicLoader
+          isLoading={loading}
+          category="places"
+          destination={trip.destination}
+        />
+
         {/* Places Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="animate-pulse bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
-                <div className="h-48 bg-zinc-800" />
-                <div className="p-4 space-y-3">
-                  <div className="h-5 bg-zinc-800 rounded w-3/4" />
-                  <div className="h-4 bg-zinc-800 rounded w-1/2" />
-                  <div className="h-10 bg-zinc-800 rounded w-full mt-4" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : displayedPlaces.length === 0 ? (
+        {loading ? null : displayedPlaces.length === 0 ? (
           <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500">
             <MapPin size={32} className="mx-auto mb-3 opacity-20" />
             <p className="font-medium">No places found</p>
