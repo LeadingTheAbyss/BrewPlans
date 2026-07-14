@@ -665,14 +665,14 @@ export default function LandingPage() {
           {/* Padding sections to perfectly map the 3x duration final animation */}
           <div className="section"></div>
           <div className="section"></div>
-          <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white" style={{ height: 'auto', minHeight: '100vh' }}>
+          <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white !w-full !px-3 md:!px-10" style={{ height: 'auto', minHeight: '100vh' }}>
             <h2 className="mb-8 md:mb-12">Let's go.</h2>
             
-            <div className="grid grid-cols-2 gap-2 md:gap-6 w-full max-w-4xl mx-auto px-1 md:px-6 relative z-10">
+            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-4xl mx-auto relative z-10">
               {/* Card 1: Recommend Mode */}
               <div 
                 onClick={() => handleNavigation('/recommend')}
-                className="bg-white/10 backdrop-blur-md border border-white/20 p-4 md:p-10 min-h-[140px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all hover:scale-105 group flex flex-col justify-between h-full"
+                className="bg-white/10 backdrop-blur-md border border-white/20 p-4 md:p-10 min-h-[140px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all md:hover:scale-105 group flex flex-col justify-between h-full"
               >
                 <div>
                   <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Discovery Engine</h3>
@@ -688,7 +688,7 @@ export default function LandingPage() {
               {/* Card 2: Direct Planning Mode */}
               <div 
                 onClick={() => handleNavigation('/plan/setup')}
-                className="bg-blue-600 border border-blue-500 p-4 md:p-10 min-h-[140px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 hover:scale-105 group shadow-[0_0_30px_-10px_rgba(37,99,235,0.5)] md:shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
+                className="bg-blue-600 border border-blue-500 p-4 md:p-10 min-h-[140px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 md:hover:scale-105 group shadow-[0_0_30px_-10px_rgba(37,99,235,0.5)] md:shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
               >
                 <div>
                   <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Plan Itinerary</h3>
