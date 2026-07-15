@@ -608,9 +608,7 @@ export default function LandingPage() {
                 We plan the trip.<br/>
                 <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">You pack your bags.</span>
               </h1>
-              <p className="text-xl md:text-2xl lg:text-3xl text-[#3a3a3a] font-medium max-w-2xl leading-snug">
-                The trip you'd plan yourself, if you had the time.
-              </p>
+
             </div>
 
             <div className="scroll-cta absolute bottom-[10vh] left-0 md:left-auto flex flex-col items-start gap-3">
