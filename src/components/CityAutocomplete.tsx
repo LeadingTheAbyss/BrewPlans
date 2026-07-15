@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle } from 'lucide-react';
 
 
 interface CityAutocompleteProps {
@@ -39,6 +39,10 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
     const val = e.target.value;
     setQuery(val);
 
+    if (val === '') {
+      onChange('');
+    }
+
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     if (val.length >= 1) {
@@ -74,6 +78,12 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
           onChange={handleInputChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
         />
+        {/\d/.test(query) && (
+          <div className="absolute top-full mt-1.5 left-0 text-red-500 text-[11px] font-medium flex items-center gap-1.5 bg-red-500/10 px-2 py-1.5 rounded-md backdrop-blur-sm border border-red-500/20 whitespace-nowrap z-50">
+            <AlertCircle size={12} className="shrink-0" />
+            <span>Invalid entry</span>
+          </div>
+        )}
         {loading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <Loader2 className="animate-spin text-muted-foreground" size={18} />
