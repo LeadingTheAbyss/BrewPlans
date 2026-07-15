@@ -310,7 +310,7 @@ export default function ItineraryPage() {
             <div className="mb-4">
               <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-zinc-100">
                 <MapPin size={18} className="text-emerald-500" />
-                Place Vault
+                Saved Places
               </h2>
               <p className="text-[11px] text-zinc-400 mt-1 font-medium leading-relaxed">
                 Drag places to a day, or <span className="text-zinc-200 font-bold">click on a place</span> to quickly assign it.
@@ -659,7 +659,7 @@ export default function ItineraryPage() {
                   onClick={() => handleGamifiedSelect(0)}
                   className="mt-12 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold transition-colors"
                 >
-                  Unassign and move to Vault
+                  Unassign & Remove from Day
                 </motion.button>
               )}
             </div>

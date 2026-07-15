@@ -70,8 +70,8 @@ export function SortablePlaceCard({
       <div 
         {...attributes} 
         {...listeners} 
-        className={`w-6 flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300
-          ${compact ? 'opacity-0 group-hover:opacity-100' : 'opacity-40 group-hover:opacity-100'}
+        className={`w-6 flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300 touch-none
+          ${compact ? 'opacity-40 lg:opacity-0 lg:group-hover:opacity-100' : 'opacity-40 group-hover:opacity-100'}
         `}
       >
         <GripVertical size={16} strokeWidth={2} />
