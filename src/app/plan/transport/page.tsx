@@ -412,7 +412,7 @@ export default function TransportPage() {
                       onClick={() => setIsPassengerDropdownOpen(!isPassengerDropdownOpen)}
                       className="bg-card p-5 rounded-2xl border border-border cursor-pointer flex justify-between items-center shadow-sm hover:border-primary/50 hover:shadow-md transition-all group"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
                         <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                           <Users size={18} className="text-primary" />
                         </div>
@@ -840,7 +840,7 @@ export default function TransportPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="text-right">
+                                            <div className="hidden md:block text-right">
                                               <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
                                             </div>
                                           </motion.div>
