@@ -19,7 +19,9 @@ interface AnimatedGlobeProps {
   destination: string;
   mode?: string; // fallback single mode
   routeModes?: Record<string, string>; // city -> mode mapping
+  isMaximized?: boolean;
 }
+
 
 interface Coordinate {
   id: string;
@@ -36,7 +38,7 @@ interface Route {
   mode?: string;
 }
 
-export default function AnimatedGlobe({ passengers, destination, mode, routeModes }: AnimatedGlobeProps) {
+export default function AnimatedGlobe({ passengers, destination, mode, routeModes, isMaximized }: AnimatedGlobeProps) {
   const [coords, setCoords] = useState<Coordinate[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -107,7 +109,7 @@ export default function AnimatedGlobe({ passengers, destination, mode, routeMode
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050505] overflow-hidden">
-      <LeafletMap coords={coords} routes={routes} />
+      <LeafletMap coords={coords} routes={routes} isMaximized={isMaximized} />
     </div>
   );
 }

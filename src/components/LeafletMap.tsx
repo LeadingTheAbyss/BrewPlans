@@ -25,6 +25,7 @@ import { Plane, Train, Bus, Car } from 'lucide-react';
 interface LeafletMapProps {
   coords: Coordinate[];
   routes: Route[];
+  isMaximized?: boolean;
 }
 
 function RouteOverlay({ coords, routes }: LeafletMapProps) {
@@ -77,7 +78,7 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
           maxZoom: 10, 
           animate: false 
         });
-      } else {
+      } else if (coords.length === 1) {
         map.setView([coords[0].lat, coords[0].lng], 6, { animate: false });
       }
 
@@ -87,16 +88,23 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
     // A tiny timeout allows the DOM/CSS to fully resolve before we calculate absolute pixels
     const timeout = setTimeout(applyUpdates, 100);
     
+    const handleResize = () => {
+      map.invalidateSize();
+      updateProjection();
+    };
+    
     // Keep SVG synced if the map moves, zooms, or resizes
     map.on('move', updateProjection);
     map.on('zoom', updateProjection);
     map.on('resize', updateProjection);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       clearTimeout(timeout);
       map.off('move', updateProjection);
       map.off('zoom', updateProjection);
       map.off('resize', updateProjection);
+      window.removeEventListener('resize', handleResize);
     };
   }, [map, coords, routes]);
 
@@ -264,7 +272,7 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
   );
 }
 
-export default function LeafletMap({ coords, routes }: LeafletMapProps) {
+export default function LeafletMap({ coords, routes, isMaximized = false }: LeafletMapProps) {
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050505]">
       {/* Explicitly load Leaflet CSS via CDN to prevent Next.js CSS import bugs from breaking tile layouts */}
@@ -272,16 +280,17 @@ export default function LeafletMap({ coords, routes }: LeafletMapProps) {
       
       {/* 
         We use the Esri World Imagery satellite provider for a stunning 4K photorealistic view.
-        We disable dragging, zooming, and scrolling to keep the UI feeling like a cinematic hero section, not an interactive widget.
+        When maximized, we allow zooming and dragging for exploration.
       */}
       <MapContainer 
+        key={isMaximized ? 'maximized' : 'minimized'}
         center={[20.5937, 78.9629]} 
         zoom={5} 
-        zoomControl={false}
-        dragging={false}
-        scrollWheelZoom={false}
-        doubleClickZoom={false}
-        touchZoom={false}
+        zoomControl={isMaximized}
+        dragging={isMaximized}
+        scrollWheelZoom={isMaximized}
+        doubleClickZoom={isMaximized}
+        touchZoom={isMaximized}
         attributionControl={false}
         className="w-full h-full"
       >

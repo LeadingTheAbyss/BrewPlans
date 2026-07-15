@@ -5,7 +5,7 @@ import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { TransportOption, Passenger } from '@/types/trip';
 import { api } from '@/lib/api';
-import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, ShieldCheck, Armchair, ChevronDown, ArrowRight, CheckCircle2, Circle, AlertCircle, Users, Star } from 'lucide-react';
+import { Train, Plane, MapPin, Building, Bus, Car, Loader2, IndianRupee, Clock, ShieldCheck, Armchair, ChevronDown, ArrowRight, CheckCircle2, Circle, AlertCircle, Users, Star, X, Maximize } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { useCacheStore } from '@/store/cacheStore';
@@ -236,6 +236,8 @@ export default function TransportPage() {
 
   const [activePassengerId, setActivePassengerId] = useState<string | null>(null);
   const [isPassengerDropdownOpen, setIsPassengerDropdownOpen] = useState(false);
+  const [isMapMaximized, setIsMapMaximized] = useState(false);
+
 
   useEffect(() => {
     if (trip.passengers.length > 0 && !activePassengerId) {
@@ -345,47 +347,66 @@ export default function TransportPage() {
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
-      <div className="max-w-6xl mx-auto pb-24 text-foreground">
-        
-        {/* Hero Header */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="relative overflow-hidden rounded-b-3xl mb-10"
-        >
-          {/* Full-width satellite map background */}
-          <div className="relative h-[260px] lg:h-[300px] w-full">
-            <AnimatedGlobe
-              passengers={trip.passengers.filter(p => p.city)}
-              destination={trip.destination || ''}
-              routeModes={Object.fromEntries(
-                trip.passengers
-                  .filter(p => p.city)
-                  .map(p => {
-                    const sel = trip.selectedTransports.find(t => t.passengerId === p.id);
-                    return [p.city!, sel?.transport?.type ?? ''];
-                  })
-                  .filter(([, mode]) => mode)
-              )}
-            />
-            {/* Gradient overlay: dark bottom so text is readable */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+      
+      {/* Hero Header (Full Width) */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative overflow-hidden mb-10 w-[100vw] -ml-[50vw] left-1/2"
+      >
+        {/* Full-width satellite map background */}
+        <div className={isMapMaximized ? "fixed inset-0 z-[100] w-screen h-screen bg-black" : "relative h-[260px] lg:h-[300px] w-full"}>
+          <AnimatedGlobe
+            passengers={trip.passengers.filter(p => p.city)}
+            destination={trip.destination || ''}
+            routeModes={Object.fromEntries(
+              trip.passengers
+                .filter(p => p.city)
+                .map(p => {
+                  const sel = trip.selectedTransports.find(t => t.passengerId === p.id);
+                  return [p.city!, sel?.transport?.type ?? ''];
+                })
+                .filter(([, mode]) => mode)
+            )}
+            isMaximized={isMapMaximized}
+          />
+          
+          {/* Maximize/Minimize Button - Using z-[2000] to overlay leaflet which uses up to 1000 */}
+          <button
+            onClick={() => setIsMapMaximized(!isMapMaximized)}
+            className="absolute top-4 right-4 z-[2000] p-2 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-all shadow-lg border border-white/10"
+            title={isMapMaximized ? "Minimize Map" : "Maximize Map"}
+          >
+            {isMapMaximized ? <X size={24} /> : <Maximize size={20} />}
+          </button>
 
-            {/* Text overlaid on map, left aligned */}
-            <div className="absolute inset-0 flex items-center px-8">
-              <div>
-                <h1 className="text-4xl font-black mb-2 tracking-tight text-white drop-shadow-lg">How's Everyone<br/><span className="text-primary">Getting There?</span></h1>
-                <p className="text-white/70 text-sm drop-shadow">
-                  Travelling to <span className="font-semibold text-white">{trip.destination || 'the destination'}</span>
-                  {' · '}{trip.passengers.length} {trip.passengers.length === 1 ? 'traveller' : 'travellers'}
-                  {' · '}{(trip.startDate && trip.endDate) ? Math.max(1, Math.ceil((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 3600 * 24))) : 0} days
-                </p>
+          {!isMapMaximized && (
+            <>
+              {/* Gradient overlay: dark bottom so text is readable */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+              {/* Text overlaid on map, left aligned within standard max width */}
+              <div className="absolute inset-0 flex items-center px-4 lg:px-8 pointer-events-none">
+                <div className="max-w-6xl mx-auto w-full">
+                  <div>
+                    <h1 className="text-4xl font-black mb-2 tracking-tight text-white drop-shadow-lg">How's Everyone<br/><span className="text-primary">Getting There?</span></h1>
+                    <p className="text-white/70 text-sm drop-shadow">
+                      Travelling to <span className="font-semibold text-white">{trip.destination || 'the destination'}</span>
+                      {' · '}{trip.passengers.length} {trip.passengers.length === 1 ? 'traveller' : 'travellers'}
+                      {' · '}{(trip.startDate && trip.endDate) ? Math.max(1, Math.ceil((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 3600 * 24))) : 0} days
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </motion.div>
+            </>
+          )}
 
+        </div>
+      </motion.div>
+
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 pb-24 text-foreground">
+        
         {/* Content */}
         <AnimatePresence mode="wait">
           {trip.passengers.length === 0 ? (
