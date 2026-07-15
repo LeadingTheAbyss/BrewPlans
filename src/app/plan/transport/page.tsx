@@ -416,20 +416,20 @@ export default function TransportPage() {
                         <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                           <Users size={18} className="text-primary" />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors truncate">
                             {trip.passengers.find(p => p.id === activePassengerId)?.name || trip.passengers[0].name}
                           </h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                            <span className="font-medium">{trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'}</span>
-                            <ArrowRight size={12} className="text-primary/60" />
-                            <span className="font-medium">{trip.destination}</span>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
+                            <span className="font-medium truncate">{trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'}</span>
+                            <ArrowRight size={12} className="text-primary/60 shrink-0" />
+                            <span className="font-medium truncate">{trip.destination}</span>
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
-                        <ChevronDown className={`transition-transform duration-300 text-muted-foreground ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full border border-border whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
+                        <ChevronDown className={`transition-transform duration-300 text-muted-foreground shrink-0 ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
                     

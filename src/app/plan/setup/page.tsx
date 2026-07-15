@@ -148,7 +148,7 @@ export default function TripSetupPage() {
               <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-2 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors">
                 <span className="text-xl font-medium text-neutral-500">₹</span>
                 <input 
-                  type="text" placeholder="100000"
+                  type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100000"
                   value={budget.totalBudget || ''}
                   onChange={(e) => {
                     const cleanStr = e.target.value.replace(/\D/g, '');

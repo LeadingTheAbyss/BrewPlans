@@ -352,7 +352,7 @@ export default function ItineraryPage() {
         {/* PANE 2: Center Canvas (Horizontal Board) */}
         <div className="flex-1 flex flex-col z-10 relative min-w-0 min-h-[60vh] lg:min-h-0">
           {/* Top Overview / Minimap Bar */}
-          <div className="h-16 shrink-0 border-b border-[#1a1a1a] bg-[#0a0a0a]/80 backdrop-blur flex items-center px-8 justify-between z-20">
+          <div className="h-auto min-h-[64px] shrink-0 border-b border-[#1a1a1a] bg-[#0a0a0a]/80 backdrop-blur flex flex-col sm:flex-row sm:items-center px-4 lg:px-8 py-4 sm:py-0 justify-between z-20 gap-3">
             <div>
               <h1 className="text-xl font-black tracking-tight drop-shadow-md">
                 Route <span className="text-emerald-500">Board</span>
@@ -361,11 +361,11 @@ export default function ItineraryPage() {
             </div>
             
             {/* Day Capacity Minimap */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar-on-mobile">
               {itinerary.days.map(d => (
                 <div 
                   key={d.dayNumber}
-                  className={`w-12 h-8 rounded border flex flex-col justify-end overflow-hidden
+                  className={`w-12 h-8 shrink-0 rounded border flex flex-col justify-end overflow-hidden
                     ${d.totalTimeHours > 8 ? 'bg-red-950/30 border-red-900/50' : 'bg-[#111] border-[#222]'}
                   `}
                   title={`Day ${d.dayNumber}: ${d.totalTimeHours}h scheduled`}
@@ -381,7 +381,7 @@ export default function ItineraryPage() {
 
           {/* Horizontal Day Rail */}
           <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar scroll-smooth overscroll-x-contain bg-[url('/grid.svg')] bg-center transform-gpu">
-            <div className="flex h-full p-8 gap-6 w-max">
+            <div className="flex h-full p-4 lg:p-8 gap-4 lg:gap-6 w-max">
               {itinerary.days.map((day) => {
                 const dayPlaces = day.placeIds.map(id => itinerary.selectedPlaces.find(p => p.id === id)).filter(Boolean) as Place[];
                 const isOverloaded = day.totalTimeHours > 8;
@@ -398,7 +398,7 @@ export default function ItineraryPage() {
                 } catch (e) {}
 
                 return (
-                  <div key={day.dayNumber} className="w-[340px] flex flex-col h-full bg-[#0c0c0c] rounded-2xl border border-[#1a1a1a] shadow-xl overflow-hidden shrink-0 transition-colors hover:border-[#222]">
+                  <div key={day.dayNumber} className="w-[300px] lg:w-[340px] flex flex-col h-full bg-[#0c0c0c] rounded-2xl border border-[#1a1a1a] shadow-xl overflow-hidden shrink-0 transition-colors hover:border-[#222]">
                     
                     {/* Day Column Header */}
                     <div className="p-4 border-b border-[#1a1a1a] bg-[#111] flex items-center justify-between shrink-0">

@@ -91,7 +91,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors"
+          className="absolute top-4 right-4 z-[100] bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors shadow-lg"
         >
           <X size={18} />
         </button>
