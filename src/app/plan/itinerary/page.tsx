@@ -12,6 +12,7 @@ import {
   closestCorners,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -83,10 +84,12 @@ export default function ItineraryPage() {
   }, [trip.startDate, trip.endDate, itinerary.days.length, itinerary.initializeDays]);
 
   const pointerSensorOptions = React.useMemo(() => ({ activationConstraint: { distance: 5 } }), []);
+  const touchSensorOptions = React.useMemo(() => ({ activationConstraint: { delay: 200, tolerance: 5 } }), []);
   const keyboardSensorOptions = React.useMemo(() => ({ coordinateGetter: sortableKeyboardCoordinates }), []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, pointerSensorOptions),
+    useSensor(TouchSensor, touchSensorOptions),
     useSensor(KeyboardSensor, keyboardSensorOptions)
   );
 
@@ -241,13 +244,37 @@ export default function ItineraryPage() {
 
   const handleGamifiedSelect = (dayNumber: number) => {
     if (!gamifiedPlace) return;
-    itinerary.assignPlaceToDay(gamifiedPlace.id, dayNumber);
-    itinerary.recalcDay(dayNumber);
-    
-    if (selectedVaultPlaces.has(gamifiedPlace.id)) {
-      const newSet = new Set(selectedVaultPlaces);
-      newSet.delete(gamifiedPlace.id);
-      setSelectedVaultPlaces(newSet);
+
+    if (dayNumber === 0) {
+      // Remove to vault
+      const oldDay = itinerary.days.find(d => d.placeIds.includes(gamifiedPlace.id));
+      if (oldDay) {
+        useItineraryStore.setState(state => {
+          const newDays = state.days.map(d => {
+            if (d.dayNumber === oldDay.dayNumber) {
+              return { ...d, placeIds: d.placeIds.filter(id => id !== gamifiedPlace.id) };
+            }
+            return d;
+          });
+          return { days: newDays };
+        });
+        itinerary.recalcDay(oldDay.dayNumber);
+      }
+    } else {
+      const oldDay = itinerary.days.find(d => d.placeIds.includes(gamifiedPlace.id));
+      if (oldDay && oldDay.dayNumber !== dayNumber) {
+        itinerary.movePlaceBetweenDays(gamifiedPlace.id, oldDay.dayNumber, dayNumber);
+        itinerary.recalcDay(oldDay.dayNumber);
+      } else if (!oldDay) {
+        itinerary.assignPlaceToDay(gamifiedPlace.id, dayNumber);
+      }
+      itinerary.recalcDay(dayNumber);
+      
+      if (selectedVaultPlaces.has(gamifiedPlace.id)) {
+        const newSet = new Set(selectedVaultPlaces);
+        newSet.delete(gamifiedPlace.id);
+        setSelectedVaultPlaces(newSet);
+      }
     }
     
     setGamifiedPlace(null);
@@ -429,7 +456,13 @@ export default function ItineraryPage() {
 
                       <DroppableList id={day.dayNumber.toString()} items={day.placeIds} className="p-3 space-y-3 min-h-full relative z-10">
                         {dayPlaces.map(place => (
-                          <SortablePlaceCard key={place.id} place={place} />
+                          <SortablePlaceCard 
+                            key={place.id} 
+                            place={place} 
+                            onClickContainer={() => {
+                              setGamifiedPlace(place);
+                            }}
+                          />
                         ))}
                         
                         {dayPlaces.length === 0 && (
@@ -616,6 +649,19 @@ export default function ItineraryPage() {
                   </motion.button>
                 ))}
               </div>
+
+              {/* Remove to Vault Option */}
+              {gamifiedPlace && assignedPlaceIds.has(gamifiedPlace.id) && (
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  onClick={() => handleGamifiedSelect(0)}
+                  className="mt-12 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold transition-colors"
+                >
+                  Unassign and move to Vault
+                </motion.button>
+              )}
             </div>
           </motion.div>
         )}
