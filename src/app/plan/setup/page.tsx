@@ -308,7 +308,7 @@ export default function TripSetupPage() {
         </div>
 
         {/* Right Map View (Globe) */}
-        <div className="w-full h-48 md:h-auto md:flex-1 bg-[#050505] relative overflow-hidden flex flex-col transition-colors shrink-0">
+        <div className="w-full h-[35vh] min-h-[200px] md:h-auto md:flex-1 bg-[#050505] relative overflow-hidden flex flex-col transition-colors shrink-0 order-first md:order-last">
            <AnimatedGlobe passengers={trip.passengers} destination={trip.destination} />
         </div>
 

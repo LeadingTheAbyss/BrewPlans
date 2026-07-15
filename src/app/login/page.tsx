@@ -74,7 +74,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4">
+      <div className="absolute inset-0 z-10 flex flex-col p-4 pt-24 md:pt-4 overflow-y-auto">
       <Script 
         src="https://accounts.google.com/gsi/client" 
         strategy="lazyOnload"
@@ -86,14 +86,14 @@ export default function LoginPage() {
       {/* Back Button */}
       <button 
         onClick={() => router.push('/')}
-        className="absolute top-8 left-8 flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors z-20 group font-semibold"
+        className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors z-20 group font-semibold"
       >
         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
         Back to Home
       </button>
 
       {/* The White Box */}
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-xl shadow-2xl rounded-3xl p-10 flex flex-col items-center text-center relative z-10 border border-white/50">
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-xl shadow-2xl rounded-3xl p-6 md:p-10 flex flex-col items-center text-center relative z-10 border border-white/50 mx-auto my-auto shrink-0">
         
         {/* Logo area */}
         <div className="mb-6 flex items-center justify-center">

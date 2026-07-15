@@ -569,11 +569,9 @@ export default function LandingPage() {
             </button>
           )}
         </div>
-      </nav>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-[72px] left-0 w-full bg-[#282828] border-b border-[#3e3e3e] z-[99] flex flex-col px-6 py-6 gap-6 shadow-2xl animate-in slide-in-from-top-2">
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 w-full bg-[#282828] border-b border-[#3e3e3e] z-[99] flex flex-col px-6 py-6 gap-6 shadow-2xl animate-in slide-in-from-top-2">
           <button 
             onClick={() => { setMobileMenuOpen(false); handleNavigation('/recommend'); }} 
             className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"
@@ -594,6 +592,7 @@ export default function LandingPage() {
           </button>
         </div>
       )}
+      </nav>
 
       <canvas ref={canvasRef} />
       
