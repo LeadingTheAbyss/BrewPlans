@@ -30,69 +30,74 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized: You must be logged in to search for transport' }, { status: 401 });
     }
 
-    const session = await prisma.session.findUnique({
-      where: { token },
-      include: { user: true }
-    });
-
-    if (!session || session.expiresAt < new Date()) {
-      return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
-    }
-
-    const user = session.user;
-
-    // 2. Check & Update Rate Limit
-    const now = new Date();
-    const lastCallDate = new Date(user.lastApiCallDate);
-    
-    let currentCalls = user.apiCalls;
-    let flightsCalls = user.apiCallsFlights || 0;
-    let trainsCalls = user.apiCallsTrains || 0;
-    let bussesCalls = user.apiCallsBusses || 0;
-    
-    // Reset counter if it's a new day
-    if (
-      now.getFullYear() !== lastCallDate.getFullYear() ||
-      now.getMonth() !== lastCallDate.getMonth() ||
-      now.getDate() !== lastCallDate.getDate()
-    ) {
-      currentCalls = 0;
-    }
-
-    const isAdmin = ADMIN_EMAILS.includes(user.email);
-
-    if (!isAdmin && currentCalls >= 45) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded: You have reached your 45 API calls limit for today.' }, 
-        { status: 429 }
-      );
-    }
-
-    if (mode === 'flight' || mode === 'all') flightsCalls++;
-    if (mode === 'train' || mode === 'all') trainsCalls++;
-    if (mode === 'bus' || mode === 'all') bussesCalls++;
-
-    // Update user call count
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        apiCalls: currentCalls + 1,
-        apiCallsFlights: flightsCalls,
-        apiCallsTrains: trainsCalls,
-        apiCallsBusses: bussesCalls,
-        lastApiCallDate: now
-      }
-    });
-
-    const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-    const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
-    if (prisma.dailyUserStat) {
-      await prisma.dailyUserStat.upsert({
-        where: { userId_date: { userId: user.id, date: todayString } },
-        update: { apiCalls: { increment: 1 } },
-        create: { userId: user.id, date: todayString, apiCalls: 1 }
+    try {
+      const session = await prisma.session.findUnique({
+        where: { token },
+        include: { user: true }
       });
+
+      if (!session || session.expiresAt < new Date()) {
+        return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+      }
+
+      const user = session.user;
+
+      // 2. Check & Update Rate Limit
+      const now = new Date();
+      const lastCallDate = new Date(user.lastApiCallDate);
+      
+      let currentCalls = user.apiCalls;
+      let flightsCalls = user.apiCallsFlights || 0;
+      let trainsCalls = user.apiCallsTrains || 0;
+      let bussesCalls = user.apiCallsBusses || 0;
+      
+      // Reset counter if it's a new day
+      if (
+        now.getFullYear() !== lastCallDate.getFullYear() ||
+        now.getMonth() !== lastCallDate.getMonth() ||
+        now.getDate() !== lastCallDate.getDate()
+      ) {
+        currentCalls = 0;
+      }
+
+      const isAdmin = ADMIN_EMAILS.includes(user.email);
+
+      if (!isAdmin && currentCalls >= 45) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded: You have reached your 45 API calls limit for today.' }, 
+          { status: 429 }
+        );
+      }
+
+      if (mode === 'flight' || mode === 'all') flightsCalls++;
+      if (mode === 'train' || mode === 'all') trainsCalls++;
+      if (mode === 'bus' || mode === 'all') bussesCalls++;
+
+      // Update user call count
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          apiCalls: currentCalls + 1,
+          apiCallsFlights: flightsCalls,
+          apiCallsTrains: trainsCalls,
+          apiCallsBusses: bussesCalls,
+          lastApiCallDate: now
+        }
+      });
+
+      const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+      const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
+      if (prisma.dailyUserStat) {
+        await prisma.dailyUserStat.upsert({
+          where: { userId_date: { userId: user.id, date: todayString } },
+          update: { apiCalls: { increment: 1 } },
+          create: { userId: user.id, date: todayString, apiCalls: 1 }
+        });
+      }
+    } catch (dbError) {
+      console.warn('Database unreachable, skipping auth and rate limit checks for transport API.', dbError);
     }
+
 
     // 3. Proxy to Python Backend
     const response = await fetch(`${PYTHON_API_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}`, {

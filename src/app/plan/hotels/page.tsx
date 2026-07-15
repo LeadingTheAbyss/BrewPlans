@@ -10,7 +10,6 @@ import { Hotel, Place } from '@/types/trip';
 import { api } from '@/lib/api';
 import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye, Calendar, Bed } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { StreetWalkModal } from '@/components/StreetWalkModal';
 import { CinematicLoader } from '@/components/CinematicLoader';
 
 export default function HotelsPage() {
@@ -26,7 +25,6 @@ export default function HotelsPage() {
   const task = fetchQueue.tasks.find(t => t.id === 'hotels-main');
   const loading = !hotels.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [sortBy, setSortBy] = useState<'best' | 'closest' | 'budget'>('best');
-  const [activeStreetWalk, setActiveStreetWalk] = useState<Hotel | null>(null);
 
   // Haversine formula to calculate distance in km
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -217,16 +215,7 @@ export default function HotelsPage() {
                                       ? `${hotel.distanceToCluster || 2.5} km from the places you wish to visit` 
                                       : 'No food spots or places selected yet'}
                                 </div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveStreetWalk(hotel);
-                                  }}
-                                  className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
-                                >
-                                  <Eye size={14} /> Use Street Walk
-                                </button>
-                              </div>
+                                </div>
                             </div>
 
                             <div className="text-right shrink-0">
@@ -299,16 +288,6 @@ export default function HotelsPage() {
           </button>
         </div>
       </div>
-
-      {activeStreetWalk && (
-        <StreetWalkModal
-          isOpen={!!activeStreetWalk}
-          onClose={() => setActiveStreetWalk(null)}
-          lat={activeStreetWalk.coordinates?.[0] ?? 26.8467}
-          lng={activeStreetWalk.coordinates?.[1] ?? 80.9462}
-          mode="dynamic"
-        />
-      )}
     </div>
   );
 }

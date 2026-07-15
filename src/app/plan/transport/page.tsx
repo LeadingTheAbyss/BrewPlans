@@ -836,9 +836,24 @@ export default function TransportPage() {
                                                     </div>
                                                   )}
                                                 </div>
-                                                {(!(opt.type !== 'cross' && isSelected)) && opt.type !== 'cross' && (
-                                                  <div className="text-sm text-muted-foreground mt-1">
-                                                    {String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure} <ArrowRight className="inline mx-1" size={14}/> {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival} ({opt.duration})
+                                                {opt.type !== 'cross' && (
+                                                  <div className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                                                    <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
+                                                    <ArrowRight className="inline mx-1" size={14}/>
+                                                    <span className="flex items-center">
+                                                      {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival}
+                                                      {String(opt.departure).includes('T') && String(opt.arrival).includes('T') && (
+                                                        (() => {
+                                                          const d1 = new Date(String(opt.departure).split('T')[0]);
+                                                          const d2 = new Date(String(opt.arrival).split('T')[0]);
+                                                          const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
+                                                          return diffDays > 0 ? (
+                                                            <span className="text-[9px] font-bold text-red-500 ml-1 mb-2">+{diffDays} DAY</span>
+                                                          ) : null;
+                                                        })()
+                                                      )}
+                                                    </span>
+                                                    <span className="ml-1">({opt.duration})</span>
                                                   </div>
                                                 )}
                                                   
