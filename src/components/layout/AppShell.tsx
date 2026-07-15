@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Navigation Drawer */}
       {mounted && isMobileMenuOpen && (
-        <div className="md:hidden fixed top-14 left-0 w-full bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800 z-[90] shadow-2xl animate-in slide-in-from-top-4">
+        <div className="md:hidden fixed top-14 left-0 w-full bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800 z-[999] shadow-2xl animate-in slide-in-from-top-4">
           <nav className="flex flex-col p-4 gap-2">
             {navLinks.map((link, idx) => {
               const isActive = pathname.startsWith(link.href);
