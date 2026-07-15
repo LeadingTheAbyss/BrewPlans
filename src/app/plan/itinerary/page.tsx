@@ -280,10 +280,15 @@ export default function ItineraryPage() {
         {/* PANE 1: Left Vault (Unassigned) */}
         <div className="w-full lg:w-[320px] flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto">
           <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d]">
-            <h2 className="text-xl font-bold tracking-tight mb-4 flex items-center gap-2 text-zinc-100">
-              <MapPin size={18} className="text-emerald-500" />
-              Place Vault
-            </h2>
+            <div className="mb-4">
+              <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-zinc-100">
+                <MapPin size={18} className="text-emerald-500" />
+                Place Vault
+              </h2>
+              <p className="text-[11px] text-zinc-400 mt-1 font-medium leading-relaxed">
+                Drag places to a day, or <span className="text-zinc-200 font-bold">click on a place</span> to quickly assign it.
+              </p>
+            </div>
             
             <div className="relative mb-4">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
