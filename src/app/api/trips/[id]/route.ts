@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { trackApiCall } from '@/lib/metrics';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
 
     const { id } = await params;
