@@ -10,7 +10,7 @@ import { Place } from '@/types/trip';
 // html-to-image completely fails to parse Leaflet's translate3d() math, causing
 // all map tiles and markers to squish into the top-left corner in the PDF!
 if (typeof window !== 'undefined') {
-  L.Browser.any3d = false;
+  (L.Browser as any).any3d = false;
   (L.Browser as any).webkit3d = false;
   (L.Browser as any).gecko3d = false;
 }
