@@ -156,11 +156,18 @@
   }
 }
 
+@media only screen and (max-width: 768px) {
+  :root {
+    --landing-padding: 12px;
+  }
+}
+
 @media only screen and (max-width: 500px) {
   :root {
     --font-size-large: 36px;
     --font-size-medium: 18px;
     --font-size-normal: 14px;
+    --landing-padding: 12px;
   }
 }
 
