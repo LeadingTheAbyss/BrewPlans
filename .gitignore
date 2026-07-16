@@ -91,3 +91,13 @@ service-account.json
 firebase-adminsdk.json
 google-credentials.json
 aws-credentials.json
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+
+!.env.example
