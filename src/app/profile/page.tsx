@@ -43,6 +43,12 @@ export default function ProfilePage() {
   const handleTripClick = (trip: any) => {
     const snap = trip.snapshot as any;
     
+    if (snap.type === 'quick-trip') {
+       localStorage.setItem('quickTripData', JSON.stringify(snap));
+       router.push('/quick-trip');
+       return;
+    }
+
     // Load into global stores
     useTripStore.getState().loadSnapshot(snap, trip.destination);
     useItineraryStore.getState().loadSnapshot(snap);

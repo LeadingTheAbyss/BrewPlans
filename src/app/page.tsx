@@ -602,7 +602,7 @@ export default function LandingPage() {
         <div className="ground-container">
           <div className="parallax ground" style={{ backgroundImage: 'url("https://assets.codepen.io/557388/background-reduced.jpg"), linear-gradient(to bottom, #b4afaa, #D0CBC7)', zIndex: 0 }}></div>
           
-          <div className="section relative z-50">
+          <div className="section relative z-50 max-md:!px-6 max-md:!w-full max-md:!mx-0">
             <div className="pt-[8vh] md:pt-[12vh] max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
               <h1 className="font-black text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[1] text-[#151515] mb-6 drop-shadow-sm">
                 We plan the trip.<br/>

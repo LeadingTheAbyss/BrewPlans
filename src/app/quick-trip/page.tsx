@@ -35,6 +35,7 @@ interface Member {
   location: string; // city / neighbourhood they're starting from
   lat?: number;
   lng?: number;
+  remember?: boolean;
 }
 
 interface PlaceResult {
@@ -301,11 +302,25 @@ export default function QuickTripPage() {
   const [cityResults, setCityResults] = useState<{ name: string; state: string }[]>([]);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const cityWrapperRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [members, setMembers] = useState<Member[]>([
-    { id: 'member-1', name: '', location: '' },
-    { id: 'member-2', name: '', location: '' },
+    { id: 'member-1', name: '', location: '' }
   ]);
+  const [savedPassengers, setSavedPassengers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetch('/api/passengers', {
+        headers: { 'x-user-id': user.id }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.passengers) setSavedPassengers(data.passengers);
+        })
+        .catch(console.error);
+    }
+  }, [user]);
 
   const [meetAtSomeone, setMeetAtSomeone] = useState(false);
   const [meetingMemberId, setMeetingMemberId] = useState<string>('member-1');
@@ -313,6 +328,26 @@ export default function QuickTripPage() {
 
   const [stops, setStops] = useState<ActiveStop[]>([]);
   const [autoSorted, setAutoSorted] = useState(false);
+
+  // Load from localStorage if editing a saved quick trip
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('quickTripData');
+      if (saved) {
+        const data = JSON.parse(saved);
+        setCity(data.city || '');
+        setCityQuery(data.city || '');
+        if (data.members) setMembers(data.members);
+        if (data.meetAtSomeone !== undefined) setMeetAtSomeone(data.meetAtSomeone);
+        if (data.meetingMemberId) setMeetingMemberId(data.meetingMemberId);
+        if (data.transportMode) setTransportMode(data.transportMode);
+        if (data.stops) setStops(data.stops);
+        localStorage.removeItem('quickTripData');
+      }
+    } catch (err) {
+      console.error('Failed to parse saved quick trip', err);
+    }
+  }, []);
 
   // ── City Autocomplete ──
   useEffect(() => {
@@ -508,6 +543,58 @@ export default function QuickTripPage() {
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
+  // ── Save Trip ──
+  const handleSaveTrip = async () => {
+    setIsSaving(true);
+    try {
+      if (user) {
+        const passengersToSave = members.filter(p => p.remember && p.name.trim() !== '');
+        if (passengersToSave.length > 0) {
+          await Promise.all(passengersToSave.map(p => 
+            fetch('/api/passengers', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
+              body: JSON.stringify({ name: p.name, city: p.location || city || 'Unknown City' })
+            }).catch(console.error)
+          ));
+        }
+      }
+
+      const snapshot = {
+        type: 'quick-trip',
+        city,
+        members,
+        meetAtSomeone,
+        meetingMemberId,
+        transportMode,
+        stops,
+        budget: { spent: totalCost }
+      };
+
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination: city || 'Quick Trip',
+          snapshot
+        })
+      });
+
+      if (res.ok) {
+        alert('Quick Trip saved successfully! You can view it in your profile.');
+        router.push('/profile');
+      } else {
+        const error = await res.json();
+        alert(`Failed to save trip: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Save trip error:', error);
+      alert('An error occurred while saving the trip.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // ── Share ──
   const handleShare = () => {
     const allPoints = [
@@ -558,10 +645,10 @@ export default function QuickTripPage() {
       </div>
 
       {/* ── Body: two-column layout ── */}
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-60px)]">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden h-[calc(100vh-60px)]">
 
         {/* ════ LEFT: Wizard ════ */}
-        <div className="w-full lg:w-[420px] flex flex-col overflow-y-auto border-r border-zinc-800 shrink-0">
+        <div className="w-full lg:w-[420px] flex flex-col lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-zinc-800 shrink-0">
           <div className="p-5 space-y-6">
 
             {/* Section 1: City */}
@@ -609,7 +696,7 @@ export default function QuickTripPage() {
                     index={i}
                     city={city}
                     onUpdate={updateMember}
-                    onRemove={members.length > 2 ? () => removeMember(m.id) : undefined}
+                    onRemove={members.length > 1 ? () => removeMember(m.id) : undefined}
                   />
                 ))}
                 <button
@@ -662,7 +749,7 @@ export default function QuickTripPage() {
                     {[
                       { id: 'cab', label: 'Cab/Auto' },
                       { id: 'personal_car', label: 'Car' },
-                      { id: 'personal_bike', label: 'Bike' },
+                      { id: 'personal_bike', label: 'Bike / Scooty' },
                       { id: 'walk', label: 'Walk' },
                     ].map(t => (
                       <button 
@@ -719,9 +806,9 @@ export default function QuickTripPage() {
         </div>
 
         {/* ════ RIGHT: Live Preview ════ */}
-        <div className="hidden lg:flex flex-col flex-1 bg-[#0a0a0a] overflow-hidden">
+        <div className="flex flex-col flex-1 bg-[#0a0a0a] lg:overflow-hidden">
           {/* Map */}
-          <div className="h-[42%] w-full border-b border-zinc-800 relative shrink-0">
+          <div className="h-[350px] lg:h-[42%] w-full border-b border-zinc-800 relative shrink-0">
             {memberPins.length === 0 && stopPins.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 gap-3">
                 <MapPin size={32} className="opacity-30" />
@@ -738,7 +825,7 @@ export default function QuickTripPage() {
           </div>
 
           {/* Timeline */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 lg:overflow-y-auto">
             {/* Stats bar */}
             {hasEnoughData && (
               <div className="flex items-center gap-6 px-6 py-3 border-b border-zinc-800 bg-zinc-900/60 text-xs font-medium text-zinc-400">
@@ -849,6 +936,18 @@ export default function QuickTripPage() {
                       )}
                     </div>
                   ))}
+                  
+                  {hasEnoughData && stops.length > 0 && (
+                    <div className="mt-8 pt-6 border-t border-zinc-800 flex justify-center">
+                      <button
+                        onClick={handleSaveTrip}
+                        disabled={isSaving}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 w-full sm:w-auto"
+                      >
+                        {isSaving ? 'Saving...' : 'Save Quick Trip'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -876,13 +975,15 @@ function SectionHeader({ icon, label, number }: { icon: React.ReactNode; label: 
 }
 
 function MemberRow({
-  member, index, city, onUpdate, onRemove,
+  member, index, city, onUpdate, onRemove, savedPassengers = [], allMembers = []
 }: {
   member: Member;
   index: number;
   city?: string;
-  onUpdate: (id: string, field: keyof Member, value: string | number) => void;
+  onUpdate: (id: string, field: keyof Member, value: string | number | boolean) => void;
   onRemove?: () => void;
+  savedPassengers?: any[];
+  allMembers?: Member[];
 }) {
   const color = member.name ? getAvatarHex(member.name) : '#52525b';
   const initials = member.name ? (member.name.trim().split(/\s+/).length === 1
@@ -890,28 +991,50 @@ function MemberRow({
     : (member.name.split(' ')[0][0] + member.name.split(' ').slice(-1)[0][0]).toUpperCase()) : '?';
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
-      <div className="flex items-center gap-3">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 relative overflow-visible">
+      <div className="flex items-center gap-3 relative">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
           style={{ backgroundColor: color }}
         >
           {initials}
         </div>
-        <input
-          type="text"
-          placeholder={`Person ${index + 1}'s name`}
-          value={member.name}
-          onChange={e => onUpdate(member.id, 'name', e.target.value)}
-          className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 focus:outline-none"
-        />
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder={`Person ${index + 1}'s name`}
+            value={member.name}
+            onChange={e => onUpdate(member.id, 'name', e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
+            className="w-full bg-transparent text-sm text-white placeholder:text-zinc-600 focus:outline-none"
+          />
+          {member.name && [...savedPassengers, ...allMembers.filter(p => p.remember && p.id !== member.id && p.name)]
+            .filter((sp, index, self) => index === self.findIndex((t) => t.name === sp.name))
+            .filter(sp => sp.name.toLowerCase().startsWith(member.name.toLowerCase()) && sp.name !== member.name).length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+              {[...savedPassengers, ...allMembers.filter(p => p.remember && p.id !== member.id && p.name)]
+                .filter((sp, index, self) => index === self.findIndex((t) => t.name === sp.name))
+                .filter(sp => sp.name.toLowerCase().startsWith(member.name.toLowerCase()) && sp.name !== member.name)
+                .map((sp, idx) => (
+                  <button
+                    key={idx}
+                    className="w-full text-left px-4 py-3 text-sm text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800/50 last:border-0"
+                    onClick={() => {
+                      onUpdate(member.id, 'name', sp.name);
+                    }}
+                  >
+                    <div className="font-medium text-white">{sp.name}</div>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
         {onRemove && (
-          <button onClick={onRemove} className="text-zinc-700 hover:text-red-500 transition-colors">
+          <button onClick={onRemove} className="text-zinc-700 hover:text-red-500 transition-colors shrink-0">
             <X size={14} />
           </button>
         )}
       </div>
-      <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+      <div className="flex flex-col gap-2 pt-2 border-t border-zinc-800">
         <LocationAutocomplete
           memberId={member.id}
           value={member.location}
@@ -919,6 +1042,15 @@ function MemberRow({
           city={city}
           onUpdate={onUpdate as any}
         />
+        <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors mt-2">
+          <input 
+            type="checkbox" 
+            checked={member.remember || false}
+            onChange={(e) => onUpdate(member.id, 'remember', e.target.checked)}
+            className="accent-emerald-500 w-3 h-3 rounded-md border-zinc-700 bg-zinc-800 cursor-pointer"
+          />
+          Remember this passenger
+        </label>
       </div>
     </div>
   );

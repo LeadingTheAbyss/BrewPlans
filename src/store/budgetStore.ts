@@ -4,7 +4,7 @@ import { dbStorage } from '../lib/dbStorage';
 import { BudgetState } from '../types/budget';
 
 interface BudgetStoreState extends BudgetState {
-  // Actions added
+  // Actions adde
   setTotalBudget: (amount: number) => void;
   setExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;
   addExpense: (category: 'transport' | 'places' | 'hotel' | 'commute' | 'food', amount: number) => void;

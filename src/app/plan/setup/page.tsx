@@ -104,14 +104,14 @@ export default function TripSetupPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full h-full md:h-auto md:max-w-4xl flex flex-col md:flex-row shadow-none md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] md:rounded-2xl overflow-x-hidden border-0 md:border border-border"
+        className="w-full h-full md:h-auto md:max-w-4xl flex flex-row shadow-none md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] md:rounded-2xl overflow-x-hidden border-0 md:border border-border"
       >
         
         {/* Main Configuration Body */}
-        <div className="flex-[1.2] bg-card text-foreground p-6 lg:p-12 relative border-b md:border-b-0 md:border-r border-border transition-colors">
+        <div className="flex-[1.2] lg:flex-[1.2] bg-card text-foreground p-4 md:p-6 lg:p-12 relative border-r border-border transition-colors">
           
           <div className="flex justify-between items-center mb-6 md:mb-10">
-            <h2 className="text-3xl font-light tracking-tight text-foreground">Trip Details</h2>
+            <h2 className="text-xl md:text-3xl font-light tracking-tight text-foreground">Trip Details</h2>
           </div>
 
           <div className="space-y-10">
@@ -323,7 +323,7 @@ export default function TripSetupPage() {
         </div>
 
         {/* Right Map View (Globe) */}
-        <div className="w-full h-[35vh] min-h-[200px] md:h-auto md:flex-1 bg-background relative overflow-hidden flex flex-col transition-colors shrink-0 order-first md:order-last">
+        <div className="flex-[0.8] md:flex-1 bg-background relative overflow-hidden flex flex-col transition-colors shrink-0">
            <AnimatedGlobe passengers={trip.passengers} destination={trip.destination} />
         </div>
 

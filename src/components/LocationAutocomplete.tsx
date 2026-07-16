@@ -156,12 +156,7 @@ export default function LocationAutocomplete({ memberId, value, lat, city, onUpd
           placeholder={placeholder}
           className="w-full bg-transparent text-xs text-zinc-400 placeholder:text-zinc-700 focus:outline-none pr-12"
         />
-        {/\d/.test(query) && (
-          <div className="absolute top-full mt-1.5 left-0 text-red-500 text-[11px] font-medium flex items-center gap-1.5 bg-red-500/10 px-2 py-1.5 rounded-md backdrop-blur-sm border border-red-500/20 whitespace-nowrap z-50">
-            <AlertCircle size={12} className="shrink-0" />
-            <span>Invalid entry</span>
-          </div>
-        )}
+
         {(loading || (value && !lat && !locating && value !== 'Current Location')) && (
           <Loader2 size={12} className="text-zinc-500 animate-spin absolute right-6" />
         )}
