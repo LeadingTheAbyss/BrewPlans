@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
   Plus, Trash2, MapPin, Users, ArrowRight, Sparkles,
-  Clock, Car, Bike, Map, ChevronDown, ChevronUp, X, Loader2,
+  Clock, Car, Bike, Map, ChevronDown, ChevronUp, X, Loader2, Check,
   Search, GripVertical, Share2, RotateCcw, Footprints, LocateFixed
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -300,9 +300,11 @@ export default function QuickTripPage() {
   const [city, setCity] = useState('');
   const [cityQuery, setCityQuery] = useState('');
   const [cityResults, setCityResults] = useState<{ name: string; state: string }[]>([]);
+  const [isCityLoading, setIsCityLoading] = useState(false);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const cityWrapperRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const [members, setMembers] = useState<Member[]>([
     { id: 'member-1', name: '', location: '' }
@@ -361,11 +363,13 @@ export default function QuickTripPage() {
   }, []);
 
   useEffect(() => {
-    if (cityQuery.length < 2) { setCityResults([]); return; }
+    if (cityQuery.length < 2) { setCityResults([]); setIsCityLoading(false); return; }
+    setIsCityLoading(true);
     const t = setTimeout(async () => {
       const results = await api.searchCity(cityQuery);
       setCityResults(results.slice(0, 6));
       setCityDropdownOpen(true);
+      setIsCityLoading(false);
     }, 400);
     return () => clearTimeout(t);
   }, [cityQuery]);
@@ -429,7 +433,7 @@ export default function QuickTripPage() {
   };
 
   const handleSmartSort = () => {
-    setStops(prev => smartSortStops(prev) as ActiveStop[]);
+    setStops(prev => smartSortStops(prev, meetingPin?.lat, meetingPin?.lng) as ActiveStop[]);
     setAutoSorted(true);
   };
 
@@ -489,7 +493,7 @@ export default function QuickTripPage() {
   const { timelineItems, totalCost } = useMemo(() => {
     // Build journey: (meeting point if chosen) → stops
     const journeyPoints = [
-      ...(meetingPin ? [{ lat: meetingPin.lat, lng: meetingPin.lng, name: meetingPin.name, durationMins: 15 }] : []),
+      ...(meetingPin ? [{ lat: meetingPin.lat, lng: meetingPin.lng, name: meetingPin.name, durationMins: 0, isMeetingPoint: true }] : []),
       ...stops.filter(s => s.lat && s.lng),
     ];
 
@@ -537,6 +541,7 @@ export default function QuickTripPage() {
   }, [stops, meetingPin, paxCount, transportMode]);
 
   const formatDuration = (mins: number) => {
+    if (!mins || mins === 0) return '';
     if (mins < 60) return `${mins} min`;
     const h = Math.floor(mins / 60);
     const m = mins % 60;
@@ -581,8 +586,10 @@ export default function QuickTripPage() {
       });
 
       if (res.ok) {
-        alert('Quick Trip saved successfully! You can view it in your profile.');
-        router.push('/profile');
+        setIsSaved(true);
+        setTimeout(() => {
+          router.push('/profile');
+        }, 1500);
       } else {
         const error = await res.json();
         alert(`Failed to save trip: ${error.error}`);
@@ -656,7 +663,11 @@ export default function QuickTripPage() {
               <SectionHeader icon={<MapPin size={14} />} label="City" number={1} />
               <div className="mt-3 relative" ref={cityWrapperRef}>
                 <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus-within:border-emerald-500/60 transition-colors">
-                  <Search size={15} className="text-zinc-500 shrink-0" />
+                  {isCityLoading ? (
+                    <Loader2 size={15} className="animate-spin text-emerald-500 shrink-0" />
+                  ) : (
+                    <Search size={15} className="text-zinc-500 shrink-0" />
+                  )}
                   <input
                     type="text"
                     value={cityQuery}
@@ -899,8 +910,12 @@ export default function QuickTripPage() {
                           <div className="flex justify-between items-start">
                             <div>
                               <h4 className="font-medium text-zinc-200 text-sm">{item.stop.name}</h4>
-                              <div className={`inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${CATEGORY_COLORS[(item.stop as ActiveStop).category || 'OTHER']}`}>
-                                {CATEGORY_LABELS[(item.stop as ActiveStop).category || 'OTHER']}
+                              <div className={`inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                (item.stop as any).isMeetingPoint 
+                                  ? 'border-blue-500/30 text-blue-400 bg-blue-500/10' 
+                                  : CATEGORY_COLORS[(item.stop as ActiveStop).category || 'OTHER']
+                              }`}>
+                                {(item.stop as any).isMeetingPoint ? 'DEPARTURE POINT' : CATEGORY_LABELS[(item.stop as ActiveStop).category || 'OTHER']}
                               </div>
                             </div>
                             <span className="text-xs text-zinc-600 ml-2 shrink-0">{formatDuration(item.stop.durationMins)}</span>
@@ -941,10 +956,13 @@ export default function QuickTripPage() {
                     <div className="mt-8 pt-6 border-t border-zinc-800 flex justify-center">
                       <button
                         onClick={handleSaveTrip}
-                        disabled={isSaving}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 w-full sm:w-auto"
+                        disabled={isSaving || isSaved}
+                        className={`px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg w-full sm:w-auto text-white ${
+                          isSaved ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20 disabled:opacity-50'
+                        }`}
                       >
-                        {isSaving ? 'Saving...' : 'Save Quick Trip'}
+                        {isSaving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 
+                         isSaved ? <><Check size={16} /> Trip Saved!</> : 'Save Quick Trip'}
                       </button>
                     </div>
                   )}

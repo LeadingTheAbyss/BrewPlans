@@ -47,12 +47,9 @@ export function detectCategory(rawCategory: string): StopCategory {
   return 'OTHER';
 }
 
-/**
- * Greedy sort: fixed-timeslot stops anchor the schedule;
- * remaining stops sorted by category preference hour.
- * Ties broken by distance from previous stop (nearest-neighbour).
- */
-export function smartSortStops(stops: QuickStop[]): QuickStop[] {
+import { getDistanceInKm } from './travelCost';
+
+export function smartSortStops(stops: QuickStop[], startLat?: number, startLng?: number): QuickStop[] {
   if (stops.length <= 1) return stops;
 
   // Separate fixed (timeslot) vs. flexible
@@ -62,38 +59,82 @@ export function smartSortStops(stops: QuickStop[]): QuickStop[] {
 
   const flexible = stops.filter(s => !s.timeslot);
 
-  // Sort flexible by category preference
-  const sortedFlexible = [...flexible].sort((a, b) =>
-    CATEGORY_PREFERENCE[a.category] - CATEGORY_PREFERENCE[b.category]
-  );
+  // We want to minimize travel time (nearest neighbor), but we also have category preferences.
+  // Let's do a greedy approach: from current location, pick the "best" next stop.
+  // Best = lowest score. Score = distance (km) + time penalty.
+  // Time penalty = (IdealHour - CurrentHour)^2. We estimate CurrentHour by adding ~2 hours per stop.
 
-  // Merge: insert fixed stops at the right position
   const result: QuickStop[] = [];
+  let currentLat = startLat;
+  let currentLng = startLng;
+  let currentHour = 9; // assume start at 9 AM
+  
+  const remainingFlexible = [...flexible];
   let fixedIdx = 0;
 
-  for (const stop of sortedFlexible) {
-    // Insert any fixed stops that should come before this flexible stop
-    while (
-      fixedIdx < fixed.length &&
-      TIMESLOT_HOUR[fixed[fixedIdx].timeslot!] <= CATEGORY_PREFERENCE[stop.category]
-    ) {
-      result.push(fixed[fixedIdx++]);
+  // How many total stops we have to place
+  const totalStops = stops.length;
+
+  for (let step = 0; step < totalStops; step++) {
+    // Should we place a fixed stop now?
+    if (fixedIdx < fixed.length) {
+      const nextFixed = fixed[fixedIdx];
+      // If the fixed stop's timeslot is due, or if we have no flexible stops left
+      if (remainingFlexible.length === 0 || TIMESLOT_HOUR[nextFixed.timeslot!] <= currentHour + 1) {
+        result.push(nextFixed);
+        currentLat = nextFixed.lat;
+        currentLng = nextFixed.lng;
+        currentHour += (nextFixed.durationMins / 60) + 0.5; // +30 mins travel
+        fixedIdx++;
+        continue;
+      }
     }
-    result.push(stop);
-  }
 
-  // Append remaining fixed stops
-  while (fixedIdx < fixed.length) {
-    result.push(fixed[fixedIdx++]);
-  }
+    // Otherwise, pick the best flexible stop
+    if (remainingFlexible.length > 0) {
+      if (!currentLat || !currentLng) {
+        // If no start location, just pick the one with earliest category preference
+        remainingFlexible.sort((a, b) => CATEGORY_PREFERENCE[a.category] - CATEGORY_PREFERENCE[b.category]);
+        const next = remainingFlexible.shift()!;
+        result.push(next);
+        currentLat = next.lat;
+        currentLng = next.lng;
+        currentHour += (next.durationMins / 60) + 0.5;
+        continue;
+      }
 
-  // Adjust FOOD: if there are multiple food stops, spread them across lunch (13:00) and dinner (20:00) windows
-  const foodStops = result.filter(s => s.category === 'FOOD');
-  if (foodStops.length >= 2) {
-    // Move the last food stop to end of order (dinner)
-    const lastFood = result.lastIndexOf(foodStops[foodStops.length - 1]);
-    const dinner = result.splice(lastFood, 1)[0];
-    result.push(dinner);
+      // Nearest neighbor with category penalty
+      let bestIdx = 0;
+      let minScore = Infinity;
+
+      for (let i = 0; i < remainingFlexible.length; i++) {
+        const candidate = remainingFlexible[i];
+        let distance = 0;
+        if (candidate.lat && candidate.lng) {
+           distance = getDistanceInKm(currentLat, currentLng, candidate.lat, candidate.lng);
+        }
+        
+        // Category penalty: if we visit a dinner place at 10 AM, penalty is high.
+        // We give distance more weight (e.g. 5km = 5 points).
+        // 1 hour difference = 2 points.
+        const idealHour = CATEGORY_PREFERENCE[candidate.category];
+        const hourDiff = Math.abs(idealHour - currentHour);
+        const penalty = hourDiff * 2;
+        
+        const score = distance + penalty;
+
+        if (score < minScore) {
+          minScore = score;
+          bestIdx = i;
+        }
+      }
+
+      const next = remainingFlexible.splice(bestIdx, 1)[0];
+      result.push(next);
+      currentLat = next.lat;
+      currentLng = next.lng;
+      currentHour += (next.durationMins / 60) + 0.5;
+    }
   }
 
   return result;

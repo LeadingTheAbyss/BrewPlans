@@ -8,7 +8,7 @@ import { useBudgetStore } from '@/store/budgetStore';
 import { useItineraryStore } from '@/store/itineraryStore';
 import { useCacheStore } from '@/store/cacheStore';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Sparkles, Map, IndianRupee, Plus, Trash2, CalendarDays, SlidersHorizontal, Filter, X, ChevronRight, Compass, Zap, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Sparkles, Map, IndianRupee, Plus, Trash2, CalendarDays, SlidersHorizontal, Filter, X, ChevronRight, Compass, Zap, ShieldCheck, Maximize } from 'lucide-react';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -41,10 +41,10 @@ export default function RecommendPage() {
   
   const [form, setForm] = useState({
     passengers: [{ city: '' }],
-    budget: 100000,
-    days: 4,
-    groupSize: 1,
-    preference: ['mountains'] as string[]
+    budget: '' as any as number,
+    days: '' as any as number,
+    groupSize: '' as any as number,
+    preference: [] as string[]
   });
   const [showCustomVibe, setShowCustomVibe] = useState(false);
   const [customVibe, setCustomVibe] = useState('');
@@ -208,7 +208,7 @@ export default function RecommendPage() {
   return (
     <div className="w-full h-full pb-24">
 
-      <main className="max-w-[1400px] mx-auto px-12 pt-20 flex flex-col gap-24">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-12 pt-20 flex flex-col gap-24">
         
         {/* Intent Configuration */}
         <AnimatePresence initial={false}>
@@ -227,9 +227,9 @@ export default function RecommendPage() {
             <p className="text-neutral-500 dark:text-neutral-400 text-xl font-light transition-colors">Tell us your vibe, and our AI will handle the rest.</p>
           </div>
           
-          <div className="flex-[2] flex flex-wrap gap-10 items-end justify-end">
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between items-center w-64">
+          <div className="flex-[2] flex flex-col md:flex-row flex-wrap gap-10 items-start md:items-end justify-start xl:justify-end w-full">
+            <div className="flex flex-col gap-4 w-full md:w-auto">
+              <div className="flex justify-between items-center w-full md:w-64">
                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Current Cities</label>
                 {form.passengers.length < 10 && (
                   <button onClick={handleAddPassenger} className="text-[10px] font-bold text-blue-500 hover:text-blue-600 uppercase tracking-widest flex items-center gap-1">
@@ -237,7 +237,7 @@ export default function RecommendPage() {
                   </button>
                 )}
               </div>
-              <div className="flex flex-col gap-3 w-64 text-black">
+              <div className="flex flex-col gap-3 w-full md:w-64 text-black">
                 {form.passengers.map((pax, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <div className="flex-1">
@@ -264,12 +264,12 @@ export default function RecommendPage() {
               </div>
             </div>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full md:w-auto">
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Budget limit (Optional)</label>
               <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
                 <span className="text-neutral-400 dark:text-neutral-600 font-light text-xl">₹</span>
                 <input 
-                  type="number" min="1" className="w-32 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light"
+                  type="number" min="1" placeholder="100000" className="w-32 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.budget || ''} onChange={e => {
                     const val = parseInt(e.target.value);
                     setForm({...form, budget: isNaN(val) ? '' as any : Math.max(1, val)});
@@ -278,11 +278,11 @@ export default function RecommendPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full md:w-auto">
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Travelers</label>
               <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
                 <input 
-                  type="number" min={form.passengers.length} max="20" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center"
+                  type="number" min={form.passengers.length} max="20" placeholder="1" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.groupSize || ''} onChange={e => {
                     const val = parseInt(e.target.value);
                     const minCount = form.passengers.length;
@@ -293,11 +293,11 @@ export default function RecommendPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full md:w-auto">
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Duration</label>
               <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
                 <input 
-                  type="number" min="1" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center"
+                  type="number" min="1" placeholder="4" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.days || ''} onChange={e => {
                     const val = parseInt(e.target.value);
                     setForm({...form, days: isNaN(val) ? '' as any : Math.max(1, val)});
@@ -307,7 +307,7 @@ export default function RecommendPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 w-full md:w-auto">
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Vibe Filter</label>
               <div className="flex flex-wrap gap-3 max-w-[600px]">
                 {PREFERENCES.map(pref => (
@@ -450,18 +450,48 @@ export default function RecommendPage() {
                 {/* Hero Block (First Result) */}
                 {filteredResults.length > 0 && (
                   <div className="w-full flex flex-col lg:flex-row gap-20 group">
-                    <div className="flex-1 space-y-10">
-                      <div className="flex items-center gap-6">
-                        <span className="px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em]">
+                    <div className="flex-1 space-y-8 lg:space-y-10">
+                      <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+                        <span className="px-3 py-1.5 lg:px-4 lg:py-2 bg-white text-black text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] whitespace-normal">
                           Primary Recommendation
                         </span>
-                        <span className="text-neutral-500 text-xs font-bold tracking-[0.2em]">
+                        <span className="text-neutral-500 text-xs font-bold tracking-[0.1em] lg:tracking-[0.2em]">
                           {filteredResults[0].matchScore}% Match
                         </span>
                       </div>
 
+                      {/* Mobile Hero Image */}
+                      <div className="block lg:hidden w-full h-56 sm:h-72 relative bg-[#0A0A0A] overflow-hidden my-6">
+                         {destPhotos[filteredResults[0].name] ? (
+                           <div 
+                             className="w-full h-full cursor-zoom-in relative group/img"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setExpandedDest(filteredResults[0]);
+                             }}
+                           >
+                             <img
+                               src={destPhotos[filteredResults[0].name]!}
+                               alt={filteredResults[0].name}
+                               className="w-full h-full object-cover object-center opacity-90"
+                             />
+                             <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2 pointer-events-none">
+                               <Maximize size={12} className="text-white" />
+                               <span className="text-[10px] text-white font-bold uppercase tracking-widest">Tap to expand</span>
+                             </div>
+                           </div>
+                         ) : (
+                           <>
+                             <div className="absolute inset-0 bg-gradient-to-br from-[#111111] to-[#000000]" />
+                             <div className="absolute inset-0 flex items-center justify-center opacity-[0.03]">
+                               <Map size={150} />
+                             </div>
+                           </>
+                         )}
+                      </div>
+
                       <div>
-                        <h3 className="text-5xl lg:text-7xl font-light tracking-tighter text-white leading-none mb-4">
+                        <h3 className="text-4xl sm:text-5xl lg:text-7xl font-light tracking-tighter text-white leading-none mb-4 break-words">
                           {filteredResults[0].name}
                         </h3>
                         <p className="text-xl font-light text-neutral-500">{filteredResults[0].state}</p>
@@ -471,22 +501,22 @@ export default function RecommendPage() {
                         {filteredResults[0].why}
                       </p>
 
-                      <div className="flex gap-16 pt-12 mt-12 border-t border-neutral-900">
+                      <div className="flex flex-wrap gap-8 lg:gap-16 pt-8 lg:pt-12 mt-8 lg:mt-12 border-t border-neutral-900">
                         <div>
-                          <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-3">Total Est. Budget (Travel Included)</p>
-                          <p className="text-4xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString('en-IN')}</p>
+                          <p className="text-[10px] lg:text-xs text-neutral-600 font-bold uppercase tracking-[0.1em] lg:tracking-[0.2em] mb-2 lg:mb-3">Total Est. Budget (Travel Included)</p>
+                          <p className="text-3xl lg:text-4xl font-light text-white">₹{filteredResults[0].budgetEstimate?.toLocaleString('en-IN')}</p>
                         </div>
                       </div>
 
-                      <button onClick={() => handleSelectDestination(filteredResults[0].name)} className="mt-8 px-10 py-5 bg-white text-black hover:bg-neutral-200 transition-colors font-bold uppercase tracking-widest text-sm flex items-center gap-4">
+                      <button onClick={() => handleSelectDestination(filteredResults[0].name)} className="mt-8 px-6 py-4 lg:px-10 lg:py-5 bg-white text-black hover:bg-neutral-200 transition-colors font-bold uppercase tracking-widest text-xs lg:text-sm flex items-center justify-center lg:justify-start gap-4 w-full lg:w-max">
                         Initiate Plan <ArrowRight size={18}/>
                       </button>
                     </div>
 
-                    <div className="flex-[0.8] aspect-square lg:aspect-auto bg-[#0A0A0A] overflow-hidden relative min-h-[400px]">
+                    <div className="hidden lg:block flex-[0.8] aspect-square lg:aspect-auto bg-[#0A0A0A] overflow-hidden relative min-h-[400px]">
                        {destPhotos[filteredResults[0].name] ? (
                          <div 
-                           className="w-full h-full cursor-zoom-in group-hover:scale-105 transition-transform duration-700"
+                           className="w-full h-full cursor-zoom-in relative group/img"
                            onClick={(e) => {
                              e.stopPropagation();
                              setExpandedDest(filteredResults[0]);
@@ -495,8 +525,12 @@ export default function RecommendPage() {
                            <img
                              src={destPhotos[filteredResults[0].name]!}
                              alt={filteredResults[0].name}
-                             className="w-full h-full object-cover object-center opacity-90"
+                             className="w-full h-full object-cover object-center opacity-90 group-hover/img:scale-105 transition-transform duration-700"
                            />
+                           <div className="absolute bottom-6 right-6 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 pointer-events-none">
+                             <Maximize size={14} className="text-white" />
+                             <span className="text-xs text-white font-bold uppercase tracking-widest">Click to expand</span>
+                           </div>
                          </div>
                        ) : (
                          <>
@@ -513,25 +547,30 @@ export default function RecommendPage() {
                 {/* Alternative Rows (List Layout) */}
                 <div className="flex flex-col gap-12 pt-20 border-t border-neutral-900">
                   {filteredResults.slice(1).map((dest, i) => (
-                    <div key={`${dest.id}-${i}`} className="flex flex-col md:flex-row items-start md:items-center justify-between py-12 group hover:px-8 transition-all duration-500 cursor-zoom-in -mx-8 bg-transparent hover:bg-[#0A0A0A]" onClick={() => setExpandedDest(dest)}>
+                    <div key={`${dest.id}-${i}`} className="flex flex-col md:flex-row items-start md:items-center justify-between py-8 md:py-12 group hover:px-4 md:hover:px-8 transition-all duration-500 cursor-zoom-in -mx-4 md:-mx-8 px-4 md:px-0 bg-transparent hover:bg-[#0A0A0A]" onClick={() => setExpandedDest(dest)}>
                       
-                      <div className="flex-1 flex items-center gap-12">
-                        <div className="w-16 text-center">
-                          <span className="text-neutral-800 font-bold text-3xl group-hover:text-neutral-600 transition-colors">
+                      <div className="flex-1 flex items-center gap-4 md:gap-12 w-full">
+                        <div className="w-12 md:w-16 text-center shrink-0">
+                          <span className="text-neutral-800 font-bold text-2xl md:text-3xl group-hover:text-neutral-600 transition-colors">
                             {String(i + 2).padStart(2, '0')}
                           </span>
                         </div>
                         {/* Thumbnail */}
                         {destPhotos[dest.name] && (
                           <div 
-                            className="w-20 h-14 overflow-hidden shrink-0 opacity-60 group-hover:opacity-100 transition-all z-10"
+                            className="w-16 h-12 md:w-20 md:h-14 overflow-hidden shrink-0 opacity-60 group-hover:opacity-100 transition-all z-10"
                           >
                             <img src={destPhotos[dest.name]!} alt={dest.name} className="w-full h-full object-cover" />
                           </div>
                         )}
-                        <div>
-                          <h3 className="text-3xl font-light text-white">{dest.name}</h3>
-                          <p className="text-base font-light text-neutral-500 mt-2">{dest.state}</p>
+                        <div className="min-w-0">
+                          <h3 className="text-2xl md:text-3xl font-light text-white truncate">{dest.name}</h3>
+                          <div className="flex items-center gap-2 mt-1 md:mt-2">
+                            <p className="text-sm md:text-base font-light text-neutral-500">{dest.state}</p>
+                            <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] text-neutral-600 font-bold tracking-widest uppercase md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                              &bull; <Maximize size={10} className="ml-1" /> Tap to expand
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -541,23 +580,23 @@ export default function RecommendPage() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-16 text-right pl-8">
-                        <div>
-                          <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-2">Score</p>
-                          <p className="text-2xl font-light text-white">{dest.matchScore}%</p>
+                      <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 md:gap-16 text-right pl-0 md:pl-8 mt-6 md:mt-0">
+                        <div className="text-left md:text-right">
+                          <p className="text-[10px] md:text-xs text-neutral-600 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] mb-1 md:mb-2">Score</p>
+                          <p className="text-xl md:text-2xl font-light text-white">{dest.matchScore}%</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-neutral-600 font-bold uppercase tracking-[0.2em] mb-2">Budget</p>
-                          <p className="text-2xl font-light text-white">₹{dest.budgetEstimate?.toLocaleString('en-IN')}</p>
+                        <div className="text-left md:text-right">
+                          <p className="text-[10px] md:text-xs text-neutral-600 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] mb-1 md:mb-2">Budget</p>
+                          <p className="text-xl md:text-2xl font-light text-white">₹{dest.budgetEstimate?.toLocaleString('en-IN')}</p>
                         </div>
                         <div 
-                          className="w-16 h-16 flex items-center justify-center rounded-full border border-neutral-800 group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-500 cursor-pointer hover:scale-110"
+                          className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border border-neutral-800 group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-500 cursor-pointer hover:scale-110 shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSelectDestination(dest.name);
                           }}
                         >
-                          <ArrowRight size={24} className="opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500"/>
+                          <ArrowRight size={20} className="opacity-100 md:opacity-0 md:-translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500"/>
                         </div>
                       </div>
 
@@ -615,27 +654,27 @@ export default function RecommendPage() {
               />
               
               {/* Elegant Text Overlay */}
-              <div className={`relative z-10 p-12 md:p-20 bg-gradient-to-t from-black via-black/80 to-transparent transition-opacity duration-300 ${hideOverlay ? 'opacity-0' : 'opacity-100'}`}>
+              <div className={`relative z-10 p-6 sm:p-10 md:p-20 bg-gradient-to-t from-black via-black/90 to-transparent transition-opacity duration-300 ${hideOverlay ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="max-w-4xl">
-                  <div className="flex items-center gap-6 mb-6">
-                    <span className="px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em]">
+                  <div className="flex flex-wrap items-center gap-3 md:gap-6 mb-4 md:mb-6">
+                    <span className="px-3 py-1.5 md:px-4 md:py-2 bg-white text-black text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em]">
                       {expandedDest.matchScore}% Match
                     </span>
-                    <span className="text-neutral-300 text-sm font-bold tracking-[0.2em] uppercase">
+                    <span className="text-neutral-300 text-xs md:text-sm font-bold tracking-[0.2em] uppercase">
                       {expandedDest.state}
                     </span>
                   </div>
-                  <h2 className="text-6xl md:text-8xl font-light tracking-tighter text-white mb-8">
+                  <h2 className="text-4xl sm:text-5xl md:text-8xl font-light tracking-tighter text-white mb-4 md:mb-8 break-words">
                     {expandedDest.name}
                   </h2>
-                  <p className="text-xl md:text-3xl font-light leading-relaxed text-neutral-300">
+                  <p className="text-sm sm:text-base md:text-3xl font-light leading-relaxed text-neutral-300 line-clamp-4 md:line-clamp-none">
                     {expandedDest.why}
                   </p>
                   
-                  <div className="flex gap-16 mt-12 pt-12 border-t border-white/20">
+                  <div className="flex flex-col md:flex-row gap-6 md:gap-16 mt-6 md:mt-12 pt-6 md:pt-12 border-t border-white/20">
                     <div>
-                      <p className="text-xs text-neutral-400 font-bold uppercase tracking-[0.2em] mb-3">Total Est. Budget (Travel Included)</p>
-                      <p className="text-4xl font-light text-white">₹{expandedDest.budgetEstimate?.toLocaleString()}</p>
+                      <p className="text-[10px] md:text-xs text-neutral-400 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] mb-2 md:mb-3">Total Est. Budget (Travel Included)</p>
+                      <p className="text-3xl md:text-4xl font-light text-white">₹{expandedDest.budgetEstimate?.toLocaleString()}</p>
                     </div>
                     <div className="flex flex-col gap-3">
                       <button 
@@ -643,13 +682,16 @@ export default function RecommendPage() {
                           setExpandedDest(null);
                           handleSelectDestination(expandedDest.name);
                         }} 
-                        className="mt-2 px-10 py-4 bg-white text-black hover:bg-neutral-200 transition-colors font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-4 w-max"
+                        className="mt-2 px-6 py-4 md:px-10 bg-white text-black hover:bg-neutral-200 transition-colors font-bold uppercase tracking-widest text-xs md:text-sm flex items-center justify-center gap-4 w-full md:w-max"
                       >
                         Initiate Plan <ArrowRight size={18}/>
                       </button>
-                      <p className="text-base text-white font-medium tracking-wide mt-1">
-                        * You can find more images and street views when you plan a trip!
-                      </p>
+                      <div className="flex items-start gap-2 mt-1">
+                        <span className="text-white text-sm md:text-base font-medium mt-[2px] md:mt-[3px]">&bull;</span>
+                        <p className="text-sm md:text-base text-white font-medium tracking-wide leading-relaxed">
+                          You can find more images and street views when you plan a trip!
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -11,8 +11,9 @@ import { api } from '@/lib/api';
 import {
   ArrowRight, Clock, IndianRupee, MapPin, Star, X,
   Bookmark, Navigation, Smartphone, Share2, Ticket, ExternalLink,
-  Filter, SlidersHorizontal, Maximize
+  Filter, SlidersHorizontal, Maximize, CheckCircle2
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
 import { CinematicLoader } from '@/components/CinematicLoader';
@@ -30,6 +31,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'Reviews' && reviews.length === 0) {
@@ -68,15 +70,21 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
       case 'View More':
         window.open(placeUrl, '_blank');
         break;
-      case 'Share':
+      case 'Share': {
+        const showSuccess = () => {
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 2500);
+        };
+        
         if (navigator.share) {
           navigator.share({ title: place.name, text: `Check out ${place.name}${destination ? ` in ${destination}` : ''}!`, url: placeUrl })
-            .catch(() => alert('Link copied!'));
+            .catch(() => showSuccess());
         } else {
           navigator.clipboard.writeText(placeUrl);
-          alert('Google Maps link copied to clipboard!');
+          showSuccess();
         }
         break;
+      }
     }
   };
 
@@ -102,11 +110,11 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
         </div>
       )}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[150] flex items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       >
         <div
-        className="bg-zinc-900 rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl relative flex flex-col max-h-[90vh]"
+        className="bg-zinc-900 sm:rounded-3xl overflow-hidden w-full h-full sm:h-auto max-w-lg shadow-2xl relative flex flex-col sm:max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -121,10 +129,15 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
         <div className="relative h-64 w-full shrink-0 bg-zinc-800 group">
           {place.imageUrl ? (
             <>
-              <img src={place.imageUrl} alt={place.name} className="w-full h-full object-cover" />
+              <img 
+                src={place.imageUrl} 
+                alt={place.name} 
+                className="w-full h-full object-cover cursor-pointer" 
+                onClick={() => setIsFullscreen(true)}
+              />
               <button 
                 onClick={() => setIsFullscreen(true)}
-                className="absolute top-4 left-4 z-[100] bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors shadow-lg opacity-0 group-hover:opacity-100"
+                className="absolute top-4 left-4 z-[100] bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 pointer-events-none sm:pointer-events-auto"
               >
                 <Maximize size={18} />
               </button>
@@ -291,6 +304,23 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
         </div>
       </div>
     </div>
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[250] bg-[#1c1c1e] text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3"
+          >
+            <div className="bg-green-500 rounded-full p-0.5">
+              <CheckCircle2 size={16} className="text-[#1c1c1e]" />
+            </div>
+            <span className="text-[14px] font-medium tracking-wide">Link copied to clipboard</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -306,7 +336,7 @@ export default function PlacesPage() {
   
   const places = (cache.cache['places'] || []) as Place[];
   const task = fetchQueue.tasks.find(t => t.id === 'places-main');
-  const loading = !places.length && (!task || task.status === 'idle' || task.status === 'loading');
+  const loading = !!trip.destination && !places.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [selectedModalPlace, setSelectedModalPlace] = useState<Place | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'recommended' | 'cheapest' | 'shortest'>('recommended');

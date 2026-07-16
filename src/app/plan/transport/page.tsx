@@ -423,7 +423,7 @@ export default function TransportPage() {
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="flex flex-col lg:flex-row gap-8"
+              className="flex flex-col lg:flex-row gap-4 lg:gap-8"
             >
               <div className="flex-1 space-y-6 px-4 lg:px-0">
                 {/* Passenger Switcher */}
@@ -434,22 +434,22 @@ export default function TransportPage() {
                       className="bg-card p-5 rounded-2xl border border-border cursor-pointer flex justify-between items-center shadow-sm hover:border-primary/50 hover:shadow-md transition-all group"
                     >
                       <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                        <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                        <div className="hidden sm:flex w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 items-center justify-center shrink-0">
                           <Users size={18} className="text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                          <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors truncate">
                             {trip.passengers.find(p => p.id === activePassengerId)?.name || trip.passengers[0].name}
                           </h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
-                            <span className="font-medium truncate">{trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'}</span>
+                          <p className="text-[11px] sm:text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5 whitespace-normal">
+                            <span className="font-medium">{trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'}</span>
                             <ArrowRight size={12} className="text-primary/60 shrink-0" />
-                            <span className="font-medium truncate">{trip.destination}</span>
+                            <span className="font-medium">{trip.destination}</span>
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full border border-border whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted/50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-border whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
                         <ChevronDown className={`transition-transform duration-300 text-muted-foreground shrink-0 ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
@@ -524,7 +524,7 @@ export default function TransportPage() {
                               data-active={isActive}
                               onClick={() => handleAccordionClick(pax, type)}
                               disabled={isDisabled}
-                              className={`flex-1 min-w-[120px] px-4 py-3.5 flex flex-col items-center justify-center gap-1.5 font-bold rounded-2xl border transition-all ${
+                              className={`w-[135px] shrink-0 px-2 py-3.5 flex flex-col items-center justify-center gap-1.5 font-bold rounded-2xl border transition-all ${
                                 isDisabled
                                   ? 'bg-muted/20 border-border/40 text-muted-foreground/40 cursor-not-allowed'
                                   : isActive
@@ -536,7 +536,7 @@ export default function TransportPage() {
                                 {getTransportIcon(type)}
                                 <span className="text-sm whitespace-nowrap font-bold">{type === 'bus' ? 'Buses' : type === 'cab' ? 'Cabs' : type.charAt(0).toUpperCase() + type.slice(1) + 's'}</span>
                               </div>
-                              <span className={`text-[10px] font-semibold uppercase tracking-wider ${
+                              <span className={`text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap truncate w-full text-center ${
                                 isLoading ? 'text-primary animate-pulse' : isDisabled ? 'text-muted-foreground/40' : isActive ? 'opacity-80' : 'text-muted-foreground'
                               }`}>
                                 {isLoading ? '⟳ Loading...' : (!isFetched ? 'Tap to search' : (typeOptionsRaw.length === 0 ? 'Not available' : `${typeOptionsRaw.length} options`))}
@@ -593,16 +593,21 @@ export default function TransportPage() {
                                     <>
                                       {typeOptions.length > 0 && (
                                         <div className="flex justify-end mb-2">
-                                          <select 
-                                            className="p-1.5 border border-border rounded-lg bg-background outline-none focus:border-primary text-xs font-medium text-foreground cursor-pointer shadow-sm transition-colors"
-                                            value={currentSort}
-                                            onChange={(e) => setSortBy({ ...sortBy, [key]: e.target.value as any })}
-                                          >
-                                            <option value="" disabled>Select here</option>
-                                            <option value="cheapest">Cheapest First</option>
-                                            <option value="fastest">Fastest First</option>
-                                            <option value="earliest">Earliest Departure</option>
-                                          </select>
+                                          <div className="relative">
+                                            <select 
+                                              className="pl-3 pr-8 py-1.5 border border-border rounded-lg bg-background outline-none focus:border-primary text-xs font-medium text-foreground cursor-pointer shadow-sm transition-colors appearance-none"
+                                              value={currentSort}
+                                              onChange={(e) => setSortBy({ ...sortBy, [key]: e.target.value as any })}
+                                            >
+                                              <option value="" disabled>Select Sort</option>
+                                              <option value="cheapest">Cheapest First</option>
+                                              <option value="fastest">Fastest First</option>
+                                              <option value="earliest">Earliest Departure</option>
+                                            </select>
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                              <ChevronDown size={14} />
+                                            </div>
+                                          </div>
                                         </div>
                                       )}
                                       {typeOptions.map((opt, idx) => {
@@ -696,57 +701,48 @@ export default function TransportPage() {
                                               className={`relative mb-4 bg-card border cursor-pointer overflow-hidden rounded-sm transition-shadow ${isSelected ? 'border-primary ring-1 ring-primary shadow-md' : 'border-border shadow-sm hover:shadow-md'}`}
                                             >
                                               {/* Header */}
-                                              <div className="flex justify-between items-center px-4 py-2 bg-muted/30 border-b border-border">
-                                                <div className="font-bold text-foreground text-[15px] uppercase">
+                                              <div className="px-5 pt-4 pb-2">
+                                                <div className="font-bold text-foreground text-[15px] sm:text-[16px] uppercase tracking-wide">
                                                   {opt.provider} ({trainNum})
                                                 </div>
-                                                <div 
-                                                  className="text-blue-600 dark:text-blue-400 text-[13px] font-semibold cursor-pointer hover:underline" 
-                                                  onClick={(e) => { e.stopPropagation(); setActiveTrainId(trainNum); setRouteModalOpen(true); }}
-                                                >
-                                                  Train Schedule
+                                              </div>
+
+                                              {/* Body */}
+                                              <div className="px-4 sm:px-5 pb-4 pl-7 sm:pl-9">
+                                                {/* Times & Duration */}
+                                                <div className="flex justify-between items-center mt-3">
+                                                  {/* Departure */}
+                                                  <div className="flex flex-col items-start w-[32%]">
+                                                    <span className="text-2xl sm:text-3xl font-light text-foreground tracking-tight">{depTimeStr}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-foreground mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={pax.city}>{pax.city}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-foreground/70 mt-0.5">{depDateStr}</span>
+                                                  </div>
+                                                  
+                                                  {/* Duration Line */}
+                                                  <div className="flex flex-col items-center justify-start flex-1 px-1 relative -mt-8 sm:-mt-10">
+                                                    <div className="flex items-center w-full">
+                                                      <div className="h-[1px] bg-border flex-1"></div>
+                                                      <span className="text-[13px] sm:text-[15px] text-foreground mx-2 sm:mx-3 tracking-wider">{formattedDur}</span>
+                                                      <div className="h-[1px] bg-border flex-1"></div>
+                                                    </div>
+                                                  </div>
+                                                  
+                                                  {/* Arrival */}
+                                                  <div className="flex flex-col items-end w-[32%]">
+                                                    <span className="text-2xl sm:text-3xl font-light text-foreground tracking-tight">{arrTimeStr}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-foreground mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={trip.destination}>{trip.destination}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-foreground/70 mt-0.5">{arrDateStr}</span>
+                                                  </div>
                                                 </div>
                                               </div>
                                               
-                                              {/* Body */}
-                                              <div className="p-4 flex flex-col gap-4">
-                                                {/* Times & Duration */}
-                                                <div className="flex flex-col md:flex-row justify-between items-start">
-                                                  <div className="flex flex-col flex-1 min-w-0 md:pl-4 mt-2 md:mt-0 w-full md:w-auto border-t md:border-t-0 border-border/30 pt-3 md:pt-0">
-                                                    <div className="flex items-center gap-2 justify-between md:justify-start">
-                                                      <span className="text-xl font-bold text-foreground">{depTimeStr}</span>
-                                                      <span className="text-[14px] text-foreground/80 md:ml-2">| {pax.city.substring(0,4).toUpperCase()} | {depDateStr}</span>
-                                                    </div>
-                                                  </div>
-                                                  <div className="hidden md:flex flex-col items-end gap-1 ml-4 shrink-0">
-                                                    <div className="h-[1px] bg-muted-foreground flex-1 md:w-12"></div>
-                                                    <div className="text-[15px] font-medium text-foreground tracking-wide">{formattedDur}</div>
-                                                    <div className="h-[1px] bg-muted-foreground flex-1 md:w-12"></div>
-                                                  </div>
-                                                  <div className="flex flex-col w-full md:w-auto items-end">
-                                                    <div className="flex items-center gap-2 justify-between md:justify-end w-full md:w-auto">
-                                                      <span className="text-xl font-bold text-foreground">{arrTimeStr}</span>
-                                                      <span className="text-[14px] text-foreground/80 mr-auto md:mr-0 md:ml-2">| {trip.destination?.substring(0,4).toUpperCase()} | {arrDateStr}</span>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                
-
-                                                
-                                                {/* Action Row */}
-                                                <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-1 pt-3 border-t md:border-t-0 border-border/50">
-                                                  <button className={`px-4 py-1.5 text-[13px] font-bold rounded-sm border transition-colors ${isSelected ? 'bg-orange-500 text-white border-orange-600' : 'bg-[#fee3ce] text-[#d65e00] border-[#d65e00] hover:bg-orange-500 hover:text-white dark:bg-[#d65e00]/20 dark:hover:bg-[#d65e00]/40'}`}>
+                                              {/* Bottom Section */}
+                                              <div className="px-4 sm:px-5 py-3 bg-muted/10 border-t border-border">
+                                                <div className="flex items-center gap-2 sm:gap-3">
+                                                  <button className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm transition-colors ${isSelected ? 'bg-[#f4a261] text-white border border-[#f4a261] dark:bg-[#f4a261]/80' : 'bg-[#facca9] text-white border border-[#facca9] hover:bg-[#f4a261] dark:bg-[#facca9]/50 dark:hover:bg-[#f4a261]/80'}`}>
                                                     {isSelected ? 'SELECTED' : 'Select'}
                                                   </button>
-                                                  
-                                                  <button 
-                                                    onClick={(e) => { e.stopPropagation(); setActiveTrainId(trainNum); setLiveModalOpen(true); }}
-                                                    className="px-4 py-1.5 text-[13px] font-bold rounded-sm bg-muted text-foreground border border-border hover:bg-muted/80 uppercase transition-colors"
-                                                  >
-                                                    Live Status
-                                                  </button>
-                                                  
-                                                  <div className="ml-auto text-xl font-bold text-foreground">
+                                                  <div className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm border border-border/70 bg-transparent text-foreground uppercase flex items-center justify-center">
                                                     ₹{opt.price.toLocaleString('en-IN')}
                                                   </div>
                                                 </div>
@@ -772,112 +768,134 @@ export default function TransportPage() {
                                               }
                                             `}
                                           >
-                                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
-                                              <div className="flex justify-between items-center w-full md:w-auto">
-                                                {isSelected ? (
-                                                  <CheckCircle2 className="text-primary shrink-0" size={24} />
-                                                ) : (
-                                                  <Circle className="text-muted-foreground/50 shrink-0" size={24} />
-                                                )}
-                                                
-                                                <div className="md:hidden font-bold text-xl ml-auto">₹{opt.price.toLocaleString('en-IN')}</div>
-                                              </div>
-                                              
-                                              {opt.type === 'flight' && getAirlineLogo(opt.provider) ? (
-                                                <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
-                                                  <img 
-                                                    src={getAirlineLogo(opt.provider)!} 
-                                                    alt={opt.provider} 
-                                                    className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
-                                                    style={{ imageRendering: 'high-quality' as any }}
-                                                  />
-                                                </div>
-                                              ) : (opt.type === 'cab' || opt.type === 'car') && getCabLogo(opt.provider) ? (
-                                                <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '100px', height: '60px' }}>
-                                                  <img 
-                                                    src={getCabLogo(opt.provider)!} 
-                                                    alt={opt.provider} 
-                                                    className={`object-contain mix-blend-multiply ${getCabLogoStyles(opt.provider)}`}
-                                                    style={{ imageRendering: 'high-quality' as any }}
-                                                  />
-                                                </div>
-                                              ) : (
-                                                <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0" style={{ width: '56px', height: '56px' }}>
-                                                  {getTransportIcon(opt.type)}
-                                                </div>
-                                              )}
-
-                                              <div>
-                                                <div className="flex items-center gap-3">
-                                                  <span className="font-bold uppercase tracking-wider text-sm">
-                                                    {opt.type === 'flight' ? (opt.provider || '').split('*')[0].trim() : (opt.provider || opt.type)}
-                                                  </span>
-                                                  {opt.type !== 'cross' && isSelected && (
-                                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground ml-2 bg-muted/30 px-3 py-1 rounded-full border border-border/50">
-                                                      <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{pax.city}</span>
-                                                      <div className="relative w-16 h-3 flex items-center justify-center">
-                                                        <div className="absolute inset-x-0 border-t border-dashed border-primary/40 top-1/2 -translate-y-1/2"></div>
-                                                        <motion.div
-                                                          initial={{ left: "0%", opacity: 0 }}
-                                                          animate={{ left: ["0%", "20%", "80%", "100%"], opacity: [0, 1, 1, 0] }}
-                                                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                                                        >
-                                                          {opt.type === 'flight' ? (
-                                                            <Plane size={12} className="text-primary rotate-45" fill="currentColor" />
-                                                          ) : opt.type === 'bus' ? (
-                                                            <Bus size={12} className="text-primary" />
-                                                          ) : (
-                                                            <Car size={12} className="text-primary" />
-                                                          )}
-                                                        </motion.div>
-                                                      </div>
-                                                      <span className="font-bold uppercase truncate max-w-[50px] text-foreground/80">{trip.destination}</span>
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
+                                                {/* Top Row on Mobile / Left Section on Desktop */}
+                                                <div className="flex items-center gap-3 w-full sm:flex-1 min-w-0">
+                                                  <div className="shrink-0">
+                                                    {isSelected ? (
+                                                      <CheckCircle2 className="text-primary" size={20} />
+                                                    ) : (
+                                                      <Circle className="text-muted-foreground/50" size={20} />
+                                                    )}
+                                                  </div>
+                                                  
+                                                  {opt.type === 'flight' && getAirlineLogo(opt.provider) ? (
+                                                    <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0 w-[64px] h-[40px] sm:w-[100px] sm:h-[60px]">
+                                                      <img 
+                                                        src={getAirlineLogo(opt.provider)!} 
+                                                        alt={opt.provider} 
+                                                        className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
+                                                        style={{ imageRendering: 'high-quality' as any }}
+                                                      />
+                                                    </div>
+                                                  ) : (opt.type === 'cab' || opt.type === 'car') && getCabLogo(opt.provider) ? (
+                                                    <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0 w-[64px] h-[40px] sm:w-[100px] sm:h-[60px]">
+                                                      <img 
+                                                        src={getCabLogo(opt.provider)!} 
+                                                        alt={opt.provider} 
+                                                        className={`object-contain mix-blend-multiply ${getCabLogoStyles(opt.provider)}`}
+                                                        style={{ imageRendering: 'high-quality' as any }}
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="bg-background rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0 w-[32px] h-[32px] sm:w-[56px] sm:h-[56px]">
+                                                      <div className="scale-75 sm:scale-100">{getTransportIcon(opt.type)}</div>
                                                     </div>
                                                   )}
-                                                </div>
-                                                {opt.type !== 'cross' && (
-                                                  <div className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                                                    <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
-                                                    <ArrowRight className="inline mx-1" size={14}/>
-                                                    <span className="flex items-center">
-                                                      {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival}
-                                                      {String(opt.departure).includes('T') && String(opt.arrival).includes('T') && (
-                                                        (() => {
-                                                          const d1 = new Date(String(opt.departure).split('T')[0]);
-                                                          const d2 = new Date(String(opt.arrival).split('T')[0]);
-                                                          const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
-                                                          return diffDays > 0 ? (
-                                                            <span className="text-[9px] font-bold text-red-500 ml-1 mb-2">+{diffDays} DAY</span>
-                                                          ) : null;
-                                                        })()
+                                                  
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                                      <span className="font-bold uppercase tracking-wider text-[11px] sm:text-sm leading-tight break-words">
+                                                        {opt.type === 'flight' ? (opt.provider || '').split('*')[0].trim() : (opt.provider || opt.type)}
+                                                      </span>
+                                                      {/* Desktop Badge */}
+                                                      {opt.type !== 'cross' && isSelected && (
+                                                        <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50 w-fit shrink-0">
+                                                          <span className="font-bold uppercase truncate max-w-[120px] text-foreground/80">{pax.city}</span>
+                                                          <ArrowRight size={10} className="text-primary/60 shrink-0"/>
+                                                          <span className="font-bold uppercase truncate max-w-[120px] text-foreground/80">{trip.destination}</span>
+                                                        </div>
                                                       )}
-                                                    </span>
-                                                    <span className="ml-1">({opt.duration})</span>
+                                                    </div>
+                                                    
+                                                    {opt.type !== 'cross' && (
+                                                      <div className="hidden sm:flex text-sm text-muted-foreground mt-1 items-center gap-1 flex-wrap">
+                                                        <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
+                                                        <ArrowRight className="inline mx-1" size={12}/>
+                                                        <span className="flex items-center">
+                                                          {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival}
+                                                          {String(opt.departure).includes('T') && String(opt.arrival).includes('T') && (
+                                                            (() => {
+                                                              const d1 = new Date(String(opt.departure).split('T')[0]);
+                                                              const d2 = new Date(String(opt.arrival).split('T')[0]);
+                                                              const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
+                                                              return diffDays > 0 ? (
+                                                                <span className="text-[9px] font-bold text-red-500 ml-1 mb-2">+{diffDays} DAY</span>
+                                                              ) : null;
+                                                            })()
+                                                          )}
+                                                        </span>
+                                                        <span className="ml-1">({opt.duration})</span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+
+                                                {/* Bottom Row on Mobile / Right Section on Desktop */}
+                                                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 mt-1 sm:mt-0 border-t sm:border-t-0 border-border/40 sm:shrink-0">
+                                                  {/* Mobile Time/Duration + Badge */}
+                                                  <div className="flex sm:hidden flex-col gap-1.5 min-w-0 flex-1">
+                                                    {opt.type !== 'cross' && (
+                                                      <div className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                                                        <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
+                                                        <ArrowRight className="inline mx-0.5" size={10}/>
+                                                        <span className="flex items-center">
+                                                          {String(opt.arrival).includes('T') ? String(opt.arrival).split('T')[1].slice(0,5) : opt.arrival}
+                                                          {String(opt.departure).includes('T') && String(opt.arrival).includes('T') && (
+                                                            (() => {
+                                                              const d1 = new Date(String(opt.departure).split('T')[0]);
+                                                              const d2 = new Date(String(opt.arrival).split('T')[0]);
+                                                              const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24));
+                                                              return diffDays > 0 ? (
+                                                                <span className="text-[8px] font-bold text-red-500 ml-1 mb-1">+{diffDays} DAY</span>
+                                                              ) : null;
+                                                            })()
+                                                          )}
+                                                        </span>
+                                                        <span className="ml-0.5 text-[9px]">({opt.duration})</span>
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {opt.type !== 'cross' && isSelected && (
+                                                      <div className="flex items-center gap-1 text-[8px] text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded-sm border border-border/50 w-fit shrink-0">
+                                                        <span className="font-bold uppercase truncate max-w-[90px] text-foreground/80">{pax.city}</span>
+                                                        <ArrowRight size={8} className="text-primary/60 shrink-0"/>
+                                                        <span className="font-bold uppercase truncate max-w-[90px] text-foreground/80">{trip.destination}</span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+
+                                                  <div className="text-right shrink-0 ml-auto">
+                                                    <div className="text-sm sm:text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
+                                                  </div>
+                                                </div>
+                                              
+                                                {opt.type === 'cross' && opt.legs && (
+                                                  <div className="mt-3 space-y-2 border-t border-border pt-3 w-full sm:w-auto col-span-full" onClick={(e) => e.stopPropagation()}>
+                                                    {opt.legs.map((leg: any, lIdx: number) => (
+                                                      <div key={lIdx} className="flex justify-between items-center text-[10px] sm:text-xs bg-background/50 p-2 rounded-lg border border-border">
+                                                        <div className="flex items-center gap-2">
+                                                          <div className="scale-75 origin-left">{getTransportIcon(leg.mode)}</div>
+                                                          <span className="font-semibold text-foreground/80">{leg.source} → {leg.destination}</span>
+                                                        </div>
+                                                        <div className="text-muted-foreground flex gap-3 text-right">
+                                                          <span className="truncate max-w-[60px] sm:max-w-none">{leg.provider}</span>
+                                                          <span className="font-medium">₹{leg.price}</span>
+                                                        </div>
+                                                      </div>
+                                                    ))}
                                                   </div>
                                                 )}
-                                                  
-                                                  {opt.type === 'cross' && opt.legs && (
-                                                    <div className="mt-3 space-y-2 border-t border-border pt-3 w-full" onClick={(e) => e.stopPropagation()}>
-                                                      {opt.legs.map((leg: any, lIdx: number) => (
-                                                        <div key={lIdx} className="flex justify-between items-center text-xs bg-background/50 p-2 rounded-lg border border-border">
-                                                          <div className="flex items-center gap-2">
-                                                            <div className="scale-75 origin-left">{getTransportIcon(leg.mode)}</div>
-                                                            <span className="font-semibold text-foreground/80">{leg.source} → {leg.destination}</span>
-                                                          </div>
-                                                          <div className="text-muted-foreground flex gap-3 text-right">
-                                                            <span>{leg.provider}</span>
-                                                            <span className="font-medium">₹{leg.price}</span>
-                                                          </div>
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                            </div>
-
-                                            <div className="hidden md:block text-right">
-                                              <div className="text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
                                             </div>
                                           </motion.div>
                                         );
@@ -1044,7 +1062,7 @@ export default function TransportPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="flex justify-between items-center pt-8 border-t border-border"
+          className="flex justify-between items-center mt-8 pt-8 border-t border-border px-4 lg:px-0"
         >
           <button 
             onClick={() => router.push('/plan/setup')}

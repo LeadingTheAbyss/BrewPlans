@@ -76,21 +76,29 @@ export default function ProfilePage() {
       <div className="w-full min-h-[calc(100vh-2rem)] bg-[#0A0A0A] text-[#EDEDED] p-8 lg:p-16 rounded-3xl font-sans">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-16 border-b border-white/10 pb-8">
-          <div className="flex items-center gap-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-0 mb-10 sm:mb-16 border-b border-white/10 pb-6 sm:pb-8">
+          <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-8 w-full sm:w-auto">
             <button 
               onClick={() => router.push('/')} 
-              className="text-white/40 hover:text-white transition-colors flex items-center gap-2 font-bold text-xs uppercase tracking-widest group"
+              className="text-white/40 hover:text-white transition-colors flex items-center gap-2 font-bold text-[10px] sm:text-xs uppercase tracking-widest group shrink-0"
             >
               <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              Back to Dashboard
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
             </button>
-            <h1 className="text-4xl lg:text-5xl font-light tracking-tighter text-white">Profile</h1>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter text-white shrink-0">Profile</h1>
+            <button 
+              onClick={handleLogout} 
+              className="sm:hidden text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest shrink-0"
+            >
+              <LogOut size={14} /> Sign Out
+            </button>
           </div>
 
           <button 
             onClick={handleLogout} 
-            className="text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+            className="hidden sm:flex text-red-500/60 hover:text-red-500 transition-colors items-center gap-2 text-xs font-bold uppercase tracking-widest shrink-0"
           >
             <LogOut size={16} /> Sign Out
           </button>

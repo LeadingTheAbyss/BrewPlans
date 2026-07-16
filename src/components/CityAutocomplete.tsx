@@ -73,7 +73,7 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
         <input
           type="text"
           placeholder={placeholder}
-          className="w-full p-3 bg-background border border-input text-foreground rounded-lg focus:ring-2 focus:ring-primary outline-none placeholder:text-muted-foreground/50 pr-10 transition-colors"
+          className="w-full p-3 bg-background border border-input text-foreground rounded-lg focus:ring-2 focus:ring-primary outline-none placeholder:text-muted-foreground/50 pr-10 transition-colors text-[11px] sm:text-[13px] truncate"
           value={query}
           onChange={handleInputChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}

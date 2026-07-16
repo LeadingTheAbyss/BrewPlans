@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import {
   ArrowRight, Clock, IndianRupee, MapPin, Star, X,
   Bookmark, Navigation, Smartphone, Share2, Ticket, ExternalLink,
-  Filter, SlidersHorizontal
+  Filter, SlidersHorizontal, Maximize
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
@@ -26,7 +26,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
   isSelected: boolean;
 }) {
   const [activeTab, setActiveTab] = useState('Overview');
-  const [viewMode, setViewMode] = useState<'photo' | 'streetview'>('photo');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
 
@@ -80,14 +80,34 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={onClose}
-    >
+    <>
+      {isFullscreen && place.imageUrl && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center animate-in fade-in duration-200"
+          onClick={() => setIsFullscreen(false)}
+        >
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-6 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors backdrop-blur-md"
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={place.imageUrl} 
+            alt={place.name} 
+            className="w-full h-full object-contain p-4" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
       <div
-        className="bg-zinc-900 rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl relative flex flex-col max-h-[90vh]"
-        onClick={e => e.stopPropagation()}
+        className="fixed inset-0 z-[150] flex items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={onClose}
       >
+        <div
+          className="bg-zinc-900 sm:rounded-3xl overflow-hidden w-full h-full sm:h-auto max-w-lg shadow-2xl relative flex flex-col sm:max-h-[90vh]"
+          onClick={e => e.stopPropagation()}
+        >
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -97,33 +117,22 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
         </button>
 
         {/* Hero Image */}
-        <div className="relative h-64 w-full shrink-0 bg-zinc-800">
-          {/* Toggle Button */}
-          {place.lat && place.lng && (
-            <div className="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md rounded-full flex overflow-hidden p-1 border border-white/10">
+        <div className="relative h-64 w-full shrink-0 bg-zinc-800 group">
+          {place.imageUrl ? (
+            <>
+              <img 
+                src={place.imageUrl} 
+                alt={place.name} 
+                className="w-full h-full object-cover cursor-pointer" 
+                onClick={() => setIsFullscreen(true)}
+              />
               <button 
-                onClick={(e) => { e.stopPropagation(); setViewMode('photo'); }} 
-                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${viewMode === 'photo' ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-white'}`}
-              >Photo</button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setViewMode('streetview'); }} 
-                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold transition-colors ${viewMode === 'streetview' ? 'bg-emerald-600 text-white' : 'text-zinc-400 hover:text-white'}`}
-              >Street Walk</button>
-            </div>
-          )}
-
-          {viewMode === 'streetview' && place.lat && place.lng ? (
-            <iframe 
-              width="100%" 
-              height="100%" 
-              style={{ border: 0 }}
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY}&location=${place.lat},${place.lng}&radius=50&pitch=0&fov=90`}
-            ></iframe>
-          ) : place.imageUrl ? (
-            <img src={place.imageUrl} alt={place.name} className="w-full h-full object-cover" />
+                onClick={() => setIsFullscreen(true)}
+                className="absolute top-4 left-4 z-[100] bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 pointer-events-none sm:pointer-events-auto"
+              >
+                <Maximize size={18} />
+              </button>
+            </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 gap-2">
               <ImageOff size={32} />
@@ -286,6 +295,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -300,7 +310,7 @@ export default function FoodPage() {
   
   const places = (cache.cache['food'] || []) as Place[];
   const task = fetchQueue.tasks.find(t => t.id === 'food-main');
-  const loading = !places.length && (!task || task.status === 'idle' || task.status === 'loading');
+  const loading = !!trip.destination && !places.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [selectedModalPlace, setSelectedModalPlace] = useState<Place | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'recommended' | 'cheapest' | 'shortest'>('recommended');

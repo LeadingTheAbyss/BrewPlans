@@ -611,7 +611,7 @@ export default function LandingPage() {
 
             </div>
 
-            <div className="scroll-cta absolute bottom-[10vh] left-0 md:left-auto flex flex-col items-start gap-3">
+            <div className="scroll-cta absolute bottom-[10vh] left-6 md:left-0 flex flex-col items-start gap-3">
               <span className="font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#151515]/60">Scroll to explore</span>
               <div className="w-[2px] h-12 md:h-16 bg-gradient-to-b from-[#151515]/50 to-transparent ml-1"></div>
             </div>

@@ -131,7 +131,7 @@ export default function ModernDateRangePicker({ label, startDate, endDate, onCha
         className="w-full p-3 bg-background border border-input rounded-lg flex items-center justify-between cursor-pointer hover:border-primary transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={startDate ? 'text-foreground font-medium' : 'text-muted-foreground/50'}>{displayValue}</span>
+        <span className={`${startDate ? 'text-foreground font-medium' : 'text-muted-foreground/50'} truncate text-[11px] sm:text-[13px] leading-tight`}>{displayValue}</span>
         <CalendarIcon size={18} className="text-muted-foreground" />
       </div>
 

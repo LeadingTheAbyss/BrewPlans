@@ -99,26 +99,26 @@ export default function TripSetupPage() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-0 md:p-8 bg-background transition-colors duration-300" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className="w-full min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 bg-background transition-colors duration-300" style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full h-full md:h-auto md:max-w-4xl flex flex-row shadow-none md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] md:rounded-2xl overflow-x-hidden border-0 md:border border-border"
+        className="w-full h-[calc(100vh-4.5rem)] md:h-[min(800px,85vh)] md:max-w-4xl relative flex flex-row shadow-2xl md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-border"
       >
         
         {/* Main Configuration Body */}
-        <div className="flex-[1.2] lg:flex-[1.2] bg-card text-foreground p-4 md:p-6 lg:p-12 relative border-r border-border transition-colors">
+        <div className="w-[60%] sm:w-[50%] md:w-auto md:flex-1 lg:flex-[1.2] shrink-0 bg-card text-foreground p-3 sm:p-4 md:p-6 lg:p-12 relative border-r border-border transition-colors overflow-y-auto overflow-x-hidden">
           
-          <div className="flex justify-between items-center mb-6 md:mb-10">
-            <h2 className="text-xl md:text-3xl font-light tracking-tight text-foreground">Trip Details</h2>
+          <div className="flex justify-between items-center mb-4 md:mb-10">
+            <h2 className="text-lg md:text-3xl font-light tracking-tight text-foreground">Trip Details</h2>
           </div>
 
-          <div className="space-y-10">
+          <div className="space-y-6 md:space-y-10">
             {/* Row 1: Destination & Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Destination</label>
+            <div className="grid grid-cols-2 gap-2 md:gap-8">
+              <div className="space-y-1.5 sm:space-y-3 min-w-0">
+                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Destination</label>
                 <div className="relative text-white z-50">
                   <CityAutocomplete 
                     label="" 
@@ -143,8 +143,8 @@ export default function TripSetupPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Dates</label>
+              <div className="space-y-1.5 sm:space-y-3 min-w-0">
+                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Dates</label>
                 <div className="relative text-white z-40">
                   <ModernDateRangePicker 
                     label=""
@@ -158,8 +158,8 @@ export default function TripSetupPage() {
             </div>
 
             {/* Row 2: Budget */}
-            <div className="space-y-3">
-              <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Total Budget (INR)</label>
+            <div className="space-y-1.5 sm:space-y-3">
+              <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Total Budget (INR)</label>
               <div className="flex items-center gap-3 border-b border-border pb-2 hover:border-primary/50 transition-colors">
                 <span className="text-xl font-medium text-muted-foreground">₹</span>
                 <input 
@@ -181,9 +181,9 @@ export default function TripSetupPage() {
 
             {/* Row 3: Passengers */}
             <div className="pt-8 border-t border-neutral-800">
-               <div className="flex justify-between items-end mb-5">
-                 <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Passengers</label>
-                 <button onClick={handleAddPassenger} className="text-muted-foreground hover:text-foreground text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+               <div className="flex flex-row justify-between items-center mb-5 gap-2">
+                 <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Passengers</label>
+                 <button onClick={handleAddPassenger} className="text-muted-foreground hover:text-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 transition-colors whitespace-nowrap shrink-0">
                    <Plus size={12}/> Add Passenger
                  </button>
                </div>
@@ -204,7 +204,7 @@ export default function TripSetupPage() {
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         {/* Name Input with Autocomplete */}
                         <div className="md:col-span-5 relative">
-                          <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Full Name</label>
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Full Name</label>
                           <input 
                             type="text" placeholder="e.g. John Doe"
                             className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
@@ -241,7 +241,7 @@ export default function TripSetupPage() {
 
                         {/* Age Input */}
                         <div className="md:col-span-3">
-                          <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Age</label>
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Age</label>
                           <input 
                             type="number" placeholder="Years" min="1" max="120"
                             className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
@@ -256,10 +256,10 @@ export default function TripSetupPage() {
 
                         {/* Gender Select */}
                         <div className="md:col-span-4">
-                          <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Gender</label>
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Gender</label>
                           <div className="relative">
                             <select 
-                              className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all appearance-none"
+                              className="w-full h-10 bg-muted/30 border border-border rounded-lg px-2 sm:px-3 text-xs sm:text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all appearance-none"
                               value={pax.gender || ''} 
                               onChange={(e) => trip.updatePassenger(pax.id, { gender: e.target.value as any })}
                             >
@@ -278,7 +278,7 @@ export default function TripSetupPage() {
 
                         {/* City Input */}
                         <div className="md:col-span-6 relative z-10">
-                          <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Current City</label>
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Current City</label>
                           <CityAutocomplete 
                             label="" placeholder="Where is this person currently" 
                             value={pax.city || ''} 
@@ -287,8 +287,8 @@ export default function TripSetupPage() {
                         </div>
 
                         {/* Remember Checkbox */}
-                        <div className="md:col-span-6 flex items-end pb-2 pl-2">
-                           <label className="flex items-center gap-2.5 cursor-pointer text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors">
+                        <div className="md:col-span-6 flex items-end pb-2 sm:pl-2">
+                           <label className="flex items-center gap-2 cursor-pointer text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors">
                              <input 
                                type="checkbox" 
                                checked={pax.remember || false}
@@ -313,9 +313,9 @@ export default function TripSetupPage() {
               )}
               <button 
                 onClick={handleContinue}
-                className="w-full py-4 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-2.5 rounded-xl shadow-lg"
+                className="w-full py-3 sm:py-4 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-[9px] sm:text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 sm:gap-2.5 rounded-xl shadow-lg whitespace-nowrap overflow-hidden px-2"
               >
-                Continue to Transport <ArrowRight size={14}/>
+                <span>Continue to Transport</span> <ArrowRight size={14} className="shrink-0"/>
               </button>
             </div>
 
@@ -323,7 +323,7 @@ export default function TripSetupPage() {
         </div>
 
         {/* Right Map View (Globe) */}
-        <div className="flex-[0.8] md:flex-1 bg-background relative overflow-hidden flex flex-col transition-colors shrink-0">
+        <div className="w-[40%] sm:w-[50%] md:w-auto md:flex-1 shrink-0 bg-background relative overflow-hidden flex flex-col transition-colors border-0">
            <AnimatedGlobe passengers={trip.passengers} destination={trip.destination} />
         </div>
 

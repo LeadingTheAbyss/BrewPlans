@@ -7,8 +7,9 @@ import { useItineraryStore } from '@/store/itineraryStore';
 import { useCacheStore } from '@/store/cacheStore';
 import { Place } from '@/types/trip';
 import { 
-  CheckCircle, ArrowRight, ArrowLeft, Users
+  CheckCircle, CheckCircle2, ArrowRight, ArrowLeft, Users
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import MemberTravelCard from '@/components/review/MemberTravelCard';
 import StayDetailsCard from '@/components/review/StayDetailsCard';
@@ -23,6 +24,7 @@ export default function ReviewPage() {
   const cache = useCacheStore();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [selectedDayForJourney, setSelectedDayForJourney] = useState<number | null>(null);
   
   const [panelWidth, setPanelWidth] = useState(380);
@@ -81,8 +83,11 @@ export default function ReviewPage() {
       });
 
       if (res.ok) {
-        alert('Trip saved successfully! You can view it in your profile.');
-        router.push('/profile');
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          router.push('/profile');
+        }, 2000);
       } else {
         const error = await res.json();
         alert(`Failed to save trip: ${error.error}`);
@@ -302,6 +307,23 @@ export default function ReviewPage() {
           background: #444;
         }
       `}</style>
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[250] bg-[#1c1c1e] text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3"
+          >
+            <div className="bg-green-500 rounded-full p-0.5">
+              <CheckCircle2 size={16} className="text-[#1c1c1e]" />
+            </div>
+            <span className="text-[14px] font-medium tracking-wide">Trip saved successfully!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

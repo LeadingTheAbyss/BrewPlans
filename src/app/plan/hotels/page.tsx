@@ -8,7 +8,7 @@ import { useItineraryStore } from '@/store/itineraryStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
 import { Hotel, Place } from '@/types/trip';
 import { api } from '@/lib/api';
-import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye, Calendar, Bed } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye, Calendar, Bed, Maximize, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CinematicLoader } from '@/components/CinematicLoader';
 
@@ -23,8 +23,9 @@ export default function HotelsPage() {
   
   const hotels = (cache.cache['hotels'] || []) as Hotel[];
   const task = fetchQueue.tasks.find(t => t.id === 'hotels-main');
-  const loading = !hotels.length && (!task || task.status === 'idle' || task.status === 'loading');
+  const loading = !!trip.destination && !hotels.length && (!task || task.status === 'idle' || task.status === 'loading');
   const [sortBy, setSortBy] = useState<'best' | 'closest' | 'budget'>('best');
+  const [maximizedImage, setMaximizedImage] = useState<{url: string, name: string} | null>(null);
 
   // Haversine formula to calculate distance in km
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -89,7 +90,27 @@ export default function HotelsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-10 px-4 text-foreground transition-colors duration-300">
+    <>
+      {maximizedImage && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center animate-in fade-in duration-200"
+          onClick={() => setMaximizedImage(null)}
+        >
+          <button
+            onClick={() => setMaximizedImage(null)}
+            className="absolute top-6 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors backdrop-blur-md"
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={maximizedImage.url} 
+            alt={maximizedImage.name} 
+            className="w-full h-full object-contain p-4" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
+      <div className="min-h-screen bg-background pt-10 px-4 text-foreground transition-colors duration-300">
       <div className="max-w-4xl mx-auto space-y-12 pb-24">
         <div className="flex justify-between items-end">
           <div>
@@ -180,18 +201,27 @@ export default function HotelsPage() {
                       )}
 
                       {/* Hotel Image */}
-                      <div className="md:w-72 h-48 md:h-auto relative shrink-0 bg-muted flex items-center justify-center overflow-hidden">
+                      <div className="md:w-72 h-48 md:h-auto relative shrink-0 bg-muted flex items-center justify-center overflow-hidden group">
                         {hotel.imageUrl && (
-                          <img 
-                            src={hotel.imageUrl} 
-                            alt={hotel.name} 
-                            className="w-full h-full object-cover absolute inset-0 z-10" 
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                          <>
+                            <img 
+                              src={hotel.imageUrl} 
+                              alt={hotel.name} 
+                              className="w-full h-full object-cover absolute inset-0 z-10 cursor-pointer" 
+                              onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl, name: hotel.name }); }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl, name: hotel.name }); }}
+                              className="absolute top-4 left-4 z-[100] bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 pointer-events-none sm:pointer-events-auto"
+                            >
+                              <Maximize size={18} />
+                            </button>
+                          </>
                         )}
-                        <div className="text-muted-foreground/30 font-bold text-xl uppercase tracking-widest rotate-[-15deg] absolute z-0">
+                        <div className="text-muted-foreground/30 font-bold text-xl uppercase tracking-widest rotate-[-15deg] absolute z-0 pointer-events-none">
                           Hotel
                         </div>
                       </div>
@@ -289,5 +319,6 @@ export default function HotelsPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
