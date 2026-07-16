@@ -386,7 +386,7 @@ export default function QuickTripPage() {
     if (meetingMemberId === id) setMeetingMemberId(members[0]?.id || '');
   };
 
-  const updateMember = (id: string, field: keyof Member, value: string | number) => {
+  const updateMember = (id: string, field: keyof Member, value: string | number | boolean) => {
     setMembers(prev => prev.map(m => {
       if (m.id === id) {
         const updated: any = { ...m, [field]: value };
