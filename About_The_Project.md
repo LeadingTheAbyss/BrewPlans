@@ -128,3 +128,28 @@ During development, several complex issues typically arise that require specific
 ### 13. Component Uniformity & Legal Obfuscation
 **The UI Push:** We iteratively unified the design language across the application. For instance, the Hotel cards on the `/plan/hotels` route were completely overhauled to match the premium, responsive row-column layout of the `/plan/review` cards, exposing critical data like `SafetyScore` and `ComfortScore` immediately. 
 **The Legal Push:** To maintain a highly premium and somewhat white-labeled feel, the Privacy Policy and Terms of Service documents dynamically describe data flow without explicitly naming raw infrastructure providers (like Google, SerpApi, Ola, Open-Meteo, and IRCTC), instead referring to them as "third-party data partners, transport operators, and booking aggregators."
+
+### 14. Quick Trip Architecture & Smart Timelines
+**The Feature:** We introduced "Quick Trip", a single-page, hyper-fast itinerary generator strictly designed for 1-day city visits and group meetups.
+**The Architecture:** 
+- It bypasses the multi-step wizard and instead uses a localized state to instantly calculate commuting logic. 
+- It features an **Intelligent Timeline Builder** that takes a base arrival time and sequentially loops through an array of custom `Stops`. For each stop, it calculates the exact travel time (using Ola Maps distance + average city speeds) and adds it to the user's selected stop duration (e.g., 60 mins for a park), chaining them chronologically.
+- A dynamic Leaflet map (`QuickTripMapInner`) plots all members, a central meeting point, and the ordered stops using customized SVG markers.
+
+### 15. Universal Share Links & State Hydration
+**The Problem:** Users wanted to share their exact trip itinerary with friends who don't have an account, but the entire app's logic lived inside the local browser memory (Zustand).
+**The Fix:** 
+- We refactored `/api/trips/[id]/route.ts` to allow public `GET` access for shared trip IDs.
+- Whenever a user clicks "Share Plan", the frontend packages the entire `tripStore`, `itineraryStore`, and `budgetStore` (or local Quick Trip state) into a massive JSON `snapshot` and saves it to the PostgreSQL database.
+- It generates a Universal Link (e.g., `?id=xyz`). When a guest opens this link, the page detects the query parameter, fetches the snapshot from the backend, and perfectly **hydrates** the Zustand stores, instantly recreating the exact UI state for the guest without requiring authentication.
+
+### 16. High-Performance PDF Generation Pipeline
+**The Problem:** The client-side PDF export (using `html-to-image` and `jspdf`) was generating colossal 350MB+ PDF files that crashed browsers, and the embedded Leaflet maps were rendering completely distorted.
+**The Fix:**
+- **Map Distortion Fix:** Leaflet uses hardware-accelerated 3D CSS transforms (`translate3d`) by default, which the HTML canvas renderer cannot parse. We bypassed this by setting `L.Browser.any3d = false` right before map initialization, forcing Leaflet to use standard 2D `top/left` positioning, which snapshots perfectly.
+- **Size Bottleneck Fix:** Capturing the DOM as raw 3x scale PNGs caused the massive file sizes. We switched the pipeline to `.toJpeg()` with an 80% quality factor, reduced the pixel ratio to 2x, and used jsPDF's `FAST` compression algorithm. This reduced the 350MB files to just ~3MB with zero noticeable loss in visual clarity.
+- **Hidden Render Container:** To ensure the map tiles and external images are fully loaded before capture, we render a pristine, print-ready version of the itinerary in an absolute hidden `#pdf-content` container off-screen.
+
+### 17. UI Polish & API Resilience
+- **Toast Notifications:** Replaced jarring browser `alert()` popups with sleek, Framer Motion animated Toast notifications (green tickboxes) globally for actions like copying links.
+- **RailRadar API Fallbacks:** Fixed live train failures (e.g., `LKO-JP`) by expanding the `STATION_CLUSTERS` dictionary (mapping Jaipur to both `JP` and `JAI`) and dynamically increasing the fallback loop limit. If the RailRadar API rejects a specific station code combination, the backend aggressively retries alternate station codes until it successfully returns live trains.

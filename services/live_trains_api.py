@@ -88,7 +88,8 @@ CITY_TO_STATION = {
 STATION_CLUSTERS = {
     "Delhi": ["NDLS", "ANVT", "DLI"],
     "New Delhi": ["NDLS", "ANVT", "DLI"],
-    "Lucknow": ["LKO", "LJN"]
+    "Lucknow": ["LKO", "LJN"],
+    "Jaipur": ["JP", "JAI"]
 }
 
 async def get_station_code(city_name: str) -> str:
@@ -453,7 +454,7 @@ async def search_live_trains(origin: str, destination: str, date: str, check_onl
                 for o in origins:
                     for d in dests:
                         combinations.append((o, d))
-                combinations = combinations[:3]
+                combinations = combinations[:6]
                 
                 for (curr_o, curr_d) in combinations:
                     current_time = time.time()

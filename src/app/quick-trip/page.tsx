@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, MapPin, Users, ArrowRight, Sparkles,
   Clock, Car, Bike, Map, ChevronDown, ChevronUp, X, Loader2, Check,
-  Search, GripVertical, Share2, RotateCcw, Footprints, LocateFixed
+  Search, GripVertical, Share2, RotateCcw, Footprints, LocateFixed, Download, Link as LinkIcon, CheckCircle2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { getDistanceInKm, calculateCost, estimateTravelTime, TransportModeEnum } from '@/lib/travelCost';
@@ -305,6 +307,17 @@ export default function QuickTripPage() {
   const cityWrapperRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const displayToast = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
 
   const [members, setMembers] = useState<Member[]>([
     { id: 'member-1', name: '', location: '' }
@@ -331,24 +344,54 @@ export default function QuickTripPage() {
   const [stops, setStops] = useState<ActiveStop[]>([]);
   const [autoSorted, setAutoSorted] = useState(false);
 
-  // Load from localStorage if editing a saved quick trip
+  // Load from localStorage if editing a saved quick trip, or load from API if universal link
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('quickTripData');
-      if (saved) {
-        const data = JSON.parse(saved);
-        setCity(data.city || '');
-        setCityQuery(data.city || '');
-        if (data.members) setMembers(data.members);
-        if (data.meetAtSomeone !== undefined) setMeetAtSomeone(data.meetAtSomeone);
-        if (data.meetingMemberId) setMeetingMemberId(data.meetingMemberId);
-        if (data.transportMode) setTransportMode(data.transportMode);
-        if (data.stops) setStops(data.stops);
-        localStorage.removeItem('quickTripData');
+    const fetchSharedTrip = async () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const tripId = searchParams.get('id');
+        
+        if (tripId) {
+          const res = await fetch(`/api/trips/${tripId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.trip && data.trip.snapshot) {
+              const snap = data.trip.snapshot;
+              setCity(snap.city || '');
+              setCityQuery(snap.city || '');
+              if (snap.members) setMembers(snap.members);
+              if (snap.meetAtSomeone !== undefined) setMeetAtSomeone(snap.meetAtSomeone);
+              if (snap.meetingMemberId) setMeetingMemberId(snap.meetingMemberId);
+              if (snap.transportMode) setTransportMode(snap.transportMode);
+              if (snap.stops) setStops(snap.stops);
+              setIsSaved(true);
+              setShareLink(`${window.location.origin}/quick-trip?id=${tripId}`);
+              return; // skip localStorage if loaded from API
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse URL quick trip', err);
       }
-    } catch (err) {
-      console.error('Failed to parse saved quick trip', err);
-    }
+      
+      try {
+        const saved = localStorage.getItem('quickTripData');
+        if (saved) {
+          const data = JSON.parse(saved);
+          setCity(data.city || '');
+          setCityQuery(data.city || '');
+          if (data.members) setMembers(data.members);
+          if (data.meetAtSomeone !== undefined) setMeetAtSomeone(data.meetAtSomeone);
+          if (data.meetingMemberId) setMeetingMemberId(data.meetingMemberId);
+          if (data.transportMode) setTransportMode(data.transportMode);
+          if (data.stops) setStops(data.stops);
+          localStorage.removeItem('quickTripData');
+        }
+      } catch (err) {
+        console.error('Failed to parse saved quick trip', err);
+      }
+    };
+    fetchSharedTrip();
   }, []);
 
   // ── City Autocomplete ──
@@ -602,8 +645,99 @@ export default function QuickTripPage() {
     }
   };
 
-  // ── Share ──
-  const handleShare = () => {
+  // ── Share & Download ──
+  const handleUniversalShare = async () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      displayToast('Link copied to clipboard!');
+      return;
+    }
+    
+    // Save first to generate ID
+    setIsSaving(true);
+    try {
+      const snapshot = { type: 'quick-trip', city, members, meetAtSomeone, meetingMemberId, transportMode, stops, budget: { spent: totalCost } };
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination: city || 'Quick Trip', snapshot })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const link = `${window.location.origin}/quick-trip?id=${data.trip.id}`;
+        setShareLink(link);
+        navigator.clipboard.writeText(link);
+        displayToast('Link copied to clipboard!');
+      } else {
+        alert('Failed to generate share link.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error generating share link.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    setShowShareMenu(false);
+    
+    const element = document.getElementById('pdf-content');
+    if (!element) return;
+    
+    setIsGeneratingPdf(true);
+
+    if ((window as any).htmlToImage && (window as any).jspdf) {
+      setTimeout(async () => {
+        try {
+          const pdf = new (window as any).jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const usableWidth = pdfWidth;
+
+          const addSectionToPdf = async (elementId: string, isFirstPage: boolean = false) => {
+            const sectionEl = document.getElementById(elementId);
+            if (!sectionEl) return;
+            
+            const dataUrl = await (window as any).htmlToImage.toJpeg(sectionEl, { quality: 0.8, pixelRatio: 2 });
+            
+            if (!isFirstPage) {
+              pdf.addPage();
+            }
+            
+            const img = new Image();
+            img.src = dataUrl;
+            await new Promise((resolve) => {
+              img.onload = () => {
+                const imgRatio = img.height / img.width;
+                let finalHeight = usableWidth * imgRatio;
+                pdf.addImage(dataUrl, 'JPEG', 0, 0, usableWidth, finalHeight, undefined, 'FAST');
+                resolve(null);
+              };
+            });
+          };
+
+          await addSectionToPdf('pdf-summary', true);
+
+          pdf.save(`QuickTrip_${city || 'Plan'}.pdf`);
+          setIsGeneratingPdf(false);
+        } catch (err: any) {
+          console.error('PDF generation error', err);
+          alert('Failed to generate PDF.');
+          setIsGeneratingPdf(false);
+        }
+      }, 500);
+    } else {
+      alert("PDF library is still loading. Please try again.");
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const handleShareGoogleMaps = () => {
     const allPoints = [
       ...memberPins.map(m => `${m.lat},${m.lng}`),
       ...stopPins.map(s => `${s.lat},${s.lng}`),
@@ -618,7 +752,7 @@ export default function QuickTripPage() {
       navigator.share({ title: `Quick Trip Plan`, url }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url);
-      alert('Google Maps route link copied to clipboard!');
+      displayToast('Google Maps route link copied to clipboard!');
     }
   };
 
@@ -626,8 +760,12 @@ export default function QuickTripPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
+      {/* ── Scripts ── */}
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" strategy="lazyOnload" />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" strategy="lazyOnload" />
+
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-[#0d0d0d] sticky top-0 z-40">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-[#0d0d0d] sticky top-0 z-[9999]">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/')}
@@ -641,14 +779,50 @@ export default function QuickTripPage() {
           </div>
           <div className="text-xs text-zinc-600 hidden sm:block">Plan a hangout in 60 seconds</div>
         </div>
-        <button
-          onClick={handleShare}
-          disabled={!hasEnoughData}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all"
-        >
-          <Share2 size={14} />
-          Share Plan
-        </button>
+        
+        <div className="relative">
+          <button
+            onClick={() => setShowShareMenu(!showShareMenu)}
+            disabled={!hasEnoughData || isGeneratingPdf || isSaving}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all"
+          >
+            {isGeneratingPdf || isSaving ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Share2 size={14} />
+            )}
+            Share Plan
+          </button>
+
+          {showShareMenu && (
+            <>
+              <div className="fixed inset-0 z-[9999]" onClick={() => setShowShareMenu(false)} />
+              <div className="absolute right-0 mt-2 w-56 bg-[#111] border border-[#222] rounded-xl shadow-2xl z-[10000] overflow-hidden text-sm">
+                <button
+                  onClick={() => { setShowShareMenu(false); handleUniversalShare(); }}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[#1a1a1a] transition-colors text-zinc-300 hover:text-white border-b border-[#222]"
+                >
+                  <LinkIcon size={14} />
+                  Copy Share Link
+                </button>
+                <button
+                  onClick={handleDownloadPdf}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[#1a1a1a] transition-colors text-zinc-300 hover:text-white border-b border-[#222]"
+                >
+                  <Download size={14} />
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => { setShowShareMenu(false); handleShareGoogleMaps(); }}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[#1a1a1a] transition-colors text-zinc-300 hover:text-white"
+                >
+                  <Map size={14} />
+                  Open in Google Maps
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Body: two-column layout ── */}
@@ -972,6 +1146,84 @@ export default function QuickTripPage() {
           </div>
         </div>
       </div>
+
+      {/* Hidden PDF Content */}
+      <div id="pdf-content" className="bg-[#050505] text-white w-[1024px] absolute top-[-9999px] left-[-9999px] z-[-50] overflow-visible" style={{ opacity: 0, pointerEvents: 'none' }}>
+        <div id="pdf-summary" className="p-8 bg-[#050505]">
+          <h1 className="text-4xl font-bold mb-8 tracking-tight text-white">Quick Trip to {city || 'Somewhere'}</h1>
+          
+          <div className="bg-[#111] border border-[#222] rounded-2xl p-6 mb-8 flex justify-between">
+            <div className="flex gap-8">
+              <div>
+                <p className="text-zinc-500 text-sm font-bold uppercase tracking-wider mb-1">Members</p>
+                <p className="font-medium text-lg">{paxCount || '?'} People</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-sm font-bold uppercase tracking-wider mb-1">Stops</p>
+                <p className="font-medium text-lg">{stops.length}</p>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-sm font-bold uppercase tracking-wider mb-1">Estimated Travel Cost</p>
+                <p className="font-medium text-lg text-emerald-400">₹{totalCost}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#111] border border-[#222] rounded-2xl overflow-hidden mt-8">
+            <div className="px-6 py-4 border-b border-[#222] flex items-center justify-between bg-[#161616]">
+              <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <Map size={20} className="text-emerald-500" />
+                Trip Map & Timeline
+              </h2>
+            </div>
+            
+            <div className="h-[600px] w-full relative">
+              <QuickTripMapInnerDynamic members={memberPins} meetingPoint={meetingPin} stops={stopPins} />
+            </div>
+
+            <div className="p-8">
+                {timelineItems.map((item, idx) => (
+                  <div key={idx} className="flex gap-6 mb-6 last:mb-0 relative">
+                    {idx < timelineItems.length - 1 && (
+                      <div className="absolute top-8 left-[110px] bottom-[-32px] w-0.5 bg-zinc-800 z-0" />
+                    )}
+                    <div className="w-24 shrink-0 font-bold text-zinc-400 pt-1 text-right">{item.arrivalTime}</div>
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shrink-0 z-10 mt-0">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <div className="font-bold text-xl">{item.stop.name}</div>
+                      <div className="text-zinc-500 mt-1">{formatDuration(item.stop.durationMins)}</div>
+                      {item.commute && (
+                         <div className="mt-4 p-4 bg-zinc-900 rounded-xl flex justify-between items-center text-sm border border-zinc-800">
+                           <span className="text-zinc-400">Travel to next stop</span>
+                           <span className="font-medium text-emerald-400">{formatDuration(item.travelMins)} · {item.travelDistanceStr} km</span>
+                         </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[250] bg-[#1c1c1e] text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3"
+          >
+            <div className="bg-emerald-500 rounded-full p-0.5 text-black">
+              <CheckCircle2 size={16} />
+            </div>
+            <span className="text-[14px] font-medium tracking-wide">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

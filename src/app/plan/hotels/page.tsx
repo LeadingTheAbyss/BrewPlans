@@ -208,13 +208,13 @@ export default function HotelsPage() {
                               src={hotel.imageUrl} 
                               alt={hotel.name} 
                               className="w-full h-full object-cover absolute inset-0 z-10 cursor-pointer" 
-                              onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl, name: hotel.name }); }}
+                              onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl as string, name: hotel.name }); }}
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                               }}
                             />
                             <button 
-                              onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl, name: hotel.name }); }}
+                              onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl as string, name: hotel.name }); }}
                               className="absolute top-4 left-4 z-[100] bg-black/40 hover:bg-black/60 backdrop-blur-md text-white p-2 rounded-full transition-colors shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 pointer-events-none sm:pointer-events-auto"
                             >
                               <Maximize size={18} />

@@ -6,6 +6,15 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Place } from '@/types/trip';
 
+// CRITICAL FIX: Force Leaflet to use left/top positioning instead of CSS 3D transforms.
+// html-to-image completely fails to parse Leaflet's translate3d() math, causing
+// all map tiles and markers to squish into the top-left corner in the PDF!
+if (typeof window !== 'undefined') {
+  L.Browser.any3d = false;
+  (L.Browser as any).webkit3d = false;
+  (L.Browser as any).gecko3d = false;
+}
+
 interface VisualJourneyMapInnerProps {
   places: Place[];
 }
@@ -34,7 +43,7 @@ function MapEffects({ places }: { places: Place[] }) {
         const bounds = L.latLngBounds(validPlaces.map(p => [p.lat!, p.lng!]));
         // Increased maxZoom to 16 (from 14) so the map zooms in much closer when places are tightly clustered
         // Increased right padding to prevent labels from being cut off on the edge
-        map.fitBounds(bounds, { paddingBottomRight: [120, 50], paddingTopLeft: [50, 50], maxZoom: 16, animate: true });
+        map.fitBounds(bounds, { paddingBottomRight: [120, 50], paddingTopLeft: [50, 50], maxZoom: 14, animate: true });
       }
     }
   }, [map, places]);
@@ -61,6 +70,7 @@ export default function VisualJourneyMapInner({ places }: VisualJourneyMapInnerP
       <TileLayer
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         maxZoom={18}
+        crossOrigin="anonymous"
       />
       
       {positions.length > 1 && (

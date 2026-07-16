@@ -176,7 +176,7 @@ export default function ProfilePage() {
 
                       <div className="flex items-center gap-16">
                         <div className="hidden md:block">
-                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">Pax</p>
+                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">Travelers</p>
                           <p className="text-lg font-light text-white">{snap.passengers?.length || 0}</p>
                         </div>
                         <div className="hidden sm:block">

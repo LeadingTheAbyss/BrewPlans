@@ -7,8 +7,9 @@ import { useItineraryStore } from '@/store/itineraryStore';
 import { useCacheStore } from '@/store/cacheStore';
 import { Place } from '@/types/trip';
 import { 
-  CheckCircle, CheckCircle2, ArrowRight, ArrowLeft, Users
+  CheckCircle, CheckCircle2, ArrowRight, ArrowLeft, Users, Share2, ChevronDown, Link as LinkIcon, Download
 } from 'lucide-react';
+import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import MemberTravelCard from '@/components/review/MemberTravelCard';
@@ -24,8 +25,46 @@ export default function ReviewPage() {
   const cache = useCacheStore();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [selectedDayForJourney, setSelectedDayForJourney] = useState<number | null>(null);
+  
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const loadedTripId = React.useRef<string | null>(null);
+  const [isLoadingTrip, setIsLoadingTrip] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tripId = searchParams.get('tripId');
+      
+      if (tripId && loadedTripId.current !== tripId) {
+        loadedTripId.current = tripId;
+        const fetchTrip = async () => {
+          setIsLoadingTrip(true);
+          try {
+            const res = await fetch(`/api/trips/${tripId}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.trip && data.trip.snapshot) {
+                const snap = data.trip.snapshot;
+                useTripStore.getState().loadSnapshot(snap, data.trip.destination);
+                useItineraryStore.getState().loadSnapshot(snap);
+                useBudgetStore.getState().loadSnapshot(snap);
+              }
+            } else {
+              alert('Failed to load shared trip. You might need to log in or the trip was deleted.');
+            }
+          } catch (e) {
+            console.error('Error loading trip', e);
+          } finally {
+            setIsLoadingTrip(false);
+          }
+        };
+        fetchTrip();
+      }
+    }
+  }, []);
   
   const [panelWidth, setPanelWidth] = useState(380);
   const isDragging = React.useRef(false);
@@ -100,6 +139,122 @@ export default function ReviewPage() {
     }
   };
 
+  const handleUniversalLink = async () => {
+    setShowShareMenu(false);
+    setIsSaving(true);
+    try {
+      const snapshot = {
+        source: trip.source,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        passengers: trip.passengers,
+        selectedTransports: trip.selectedTransports,
+        selectedHotel: trip.selectedHotel,
+        itinerary: itinerary.days,
+        selectedPlaces: itinerary.selectedPlaces,
+        budget: {
+          total: budget.totalBudget,
+          spent: budget.spentTransport + budget.spentHotels + budget.spentPlaces,
+          remaining: budget.remaining
+        }
+      };
+
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination: trip.destination || 'Unknown Destination',
+          snapshot
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const url = `${window.location.origin}/plan/review?tripId=${data.trip.id}`;
+        if (navigator.share) {
+          navigator.share({ title: `Trip to ${trip.destination}`, url }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(url);
+          alert('Share link copied to clipboard!');
+        }
+      } else {
+        alert(`Failed to generate link.`);
+      }
+    } catch (error) {
+      alert('An error occurred while generating the link.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    setShowShareMenu(false);
+    
+    const element = document.getElementById('pdf-content');
+    if (!element) return;
+    
+    setIsGeneratingPdf(true);
+
+    if ((window as any).htmlToImage && (window as any).jspdf) {
+      setTimeout(async () => {
+        try {
+          const pdf = new (window as any).jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const usableWidth = pdfWidth; // No margins to fill the whole page
+
+            // Helper to capture and add a section to the PDF
+            const addSectionToPdf = async (elementId: string, isFirstPage: boolean = false) => {
+              const sectionEl = document.getElementById(elementId);
+              if (!sectionEl) return;
+              
+              // Use JPEG with quality 0.8 and pixelRatio 2 to keep the file size under 10MB while remaining sharp
+              const dataUrl = await (window as any).htmlToImage.toJpeg(sectionEl, { quality: 0.8, pixelRatio: 2 });
+              
+              if (!isFirstPage) {
+                pdf.addPage();
+              }
+              
+              const img = new Image();
+              img.src = dataUrl;
+              await new Promise((resolve) => {
+                img.onload = () => {
+                  const imgRatio = img.height / img.width;
+                  let finalHeight = usableWidth * imgRatio;
+                  // Add as JPEG and use 'FAST' compression alias to further optimize size
+                  pdf.addImage(dataUrl, 'JPEG', 0, 0, usableWidth, finalHeight, undefined, 'FAST');
+                  resolve(null);
+                };
+              });
+            };
+
+          // 1. Capture Summary
+          await addSectionToPdf('pdf-summary', true);
+
+          // 2. Capture Each Day
+          for (const day of itinerary.days.filter(d => d.placeIds.length > 0)) {
+            await addSectionToPdf(`pdf-day-${day.dayNumber}`);
+          }
+
+          pdf.save(`Trip_to_${trip.destination}.pdf`);
+          
+          setIsGeneratingPdf(false);
+        } catch (err: any) {
+          console.error('PDF generation error', err);
+          alert('Failed to generate PDF. Check console for details.');
+          setIsGeneratingPdf(false);
+        }
+      }, 500); // 500ms delay to ensure layout is perfectly settled
+    } else {
+      alert("PDF library is still loading. Please try again in a moment.");
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const resolveTransport = (passengerId: string) => {
     const selected = trip.selectedTransports.find(t => t.passengerId === passengerId);
     if (!selected) return null;
@@ -154,7 +309,45 @@ export default function ReviewPage() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#222] bg-[#111] text-sm shrink-0">
+              <div className="relative">
+                <button
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  disabled={itinerary.selectedPlaces.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
+                >
+                  <Share2 size={16} />
+                  Share Plan
+                  <ChevronDown size={14} />
+                </button>
+                
+                <AnimatePresence>
+                  {showShareMenu && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-[#1A1A1A] border border-[#333] rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col p-1"
+                    >
+                      <button 
+                        onClick={handleUniversalLink}
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full"
+                      >
+                        <LinkIcon size={16} className="text-emerald-500 shrink-0" />
+                        Share Link
+                      </button>
+                      <button 
+                        onClick={handleDownloadPdf}
+                        disabled={isGeneratingPdf}
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full disabled:opacity-50"
+                      >
+                        <Download size={16} className="text-blue-500 shrink-0" />
+                        {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#222] bg-[#111] text-sm shrink-0">
                 <Users size={16} className="text-green-500" />
                 <span className="font-medium">{trip.passengers.length} Members</span>
               </div>
@@ -324,6 +517,103 @@ export default function ReviewPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden PDF Content */}
+      <div id="pdf-content" className="bg-[#050505] text-white w-[1024px] absolute top-[-9999px] left-[-9999px] z-[-50] overflow-visible" style={{ opacity: 0, pointerEvents: 'none' }}>
+        
+        {/* Summary Page */}
+        <div id="pdf-summary" className="p-8 bg-[#050505]">
+          <h1 className="text-4xl font-bold mb-8 text-center text-emerald-500">Trip to {trip.destination}</h1>
+          
+          <section className="mb-12">
+            <h2 className="text-xl font-bold tracking-widest uppercase text-green-500 flex items-center gap-2 mb-6">
+               1. Member Travel Details
+            </h2>
+            <div className="grid grid-cols-2 gap-6">
+              {groupedPassengers.map((group, idx) => (
+                <MemberTravelCard 
+                  key={group.passengers[0].id} 
+                  passengers={group.passengers} 
+                  transport={group.transport}
+                  isPrimary={idx === 0}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-xl font-bold tracking-widest uppercase text-green-500 flex items-center gap-2 mb-6">
+               2. Stay Details
+            </h2>
+            {trip.selectedHotel && (
+              <StayDetailsCard 
+                hotel={trip.selectedHotel}
+                checkInDate={trip.startDate}
+                checkOutDate={trip.endDate}
+                paxCount={trip.passengers.length}
+              />
+            )}
+          </section>
+
+          <section className="mb-12">
+            <h2 className="text-xl font-bold tracking-widest uppercase text-green-500 flex items-center gap-2 mb-6">
+               3. Itinerary Overview
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {itinerary.days.map(day => {
+                const dayPlaces = day.placeIds.map(id => itinerary.selectedPlaces.find(p => p.id === id)).filter(Boolean) as Place[];
+                return (
+                  <DayCard 
+                    key={day.dayNumber} 
+                    dayNumber={day.dayNumber}
+                    date={day.date}
+                    places={dayPlaces}
+                    hotel={trip.selectedHotel}
+                    paxCount={trip.passengers.length}
+                    totalCost={day.totalCost}
+                    exactTravelMins={day.exactTravelMins}
+                    exactDistanceKm={day.exactDistanceKm}
+                    exactCommuteCost={day.exactCommuteCost}
+                    isSelected={false}
+                    onSelect={() => {}}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        {/* Visual Journeys (One per day) */}
+        {itinerary.days.filter(d => d.placeIds.length > 0).map((day) => {
+           const places = day.placeIds.map(id => itinerary.selectedPlaces.find(p => p.id === id)).filter(Boolean) as Place[];
+           const dDate = new Date(day.date);
+           const formattedDate = !isNaN(dDate.getTime()) 
+             ? dDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+             : day.date;
+             
+           return (
+             <div id={`pdf-day-${day.dayNumber}`} key={`pdf-vj-${day.dayNumber}`} className="p-8 bg-[#050505] flex flex-col" style={{ width: '1024px', height: '1448px' }}>
+               <h2 className="text-xl font-bold tracking-widest uppercase text-green-500 mb-6 shrink-0">
+                 Visual Journey - Day {day.dayNumber} ({formattedDate})
+               </h2>
+               <div className="flex-1 w-full relative border border-white/20 rounded-xl overflow-hidden bg-[#0A0A0A]">
+                 <VisualJourneyMap 
+                   dayNumber={day.dayNumber}
+                   date={day.date}
+                   places={places}
+                   hotel={trip.selectedHotel}
+                   paxCount={trip.passengers.length}
+                   onClose={() => {}}
+                   isPdfMode={true}
+                 />
+               </div>
+             </div>
+           );
+        })}
+      </div>
+
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" strategy="lazyOnload" />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" strategy="lazyOnload" />
     </div>
   );
 }

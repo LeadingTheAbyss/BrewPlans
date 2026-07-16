@@ -19,6 +19,8 @@ interface VisualJourneyMapProps {
   hotel: Hotel | null;
   paxCount: number;
   onClose: () => void;
+  hideMap?: boolean;
+  isPdfMode?: boolean;
 }
 
 // Haversine formula
@@ -85,7 +87,9 @@ function calculateCost(distanceKm: number, timeMins: number, paxCount: number) {
   }
 }
 
-export default function VisualJourneyMap({ dayNumber, date, places, hotel, paxCount, onClose }: VisualJourneyMapProps) {
+export default function VisualJourneyMap({ 
+  dayNumber, date, places, hotel, paxCount = 1, onClose, hideMap, isPdfMode = false
+}: VisualJourneyMapProps) {
   
   const placesKey = places.map(p => `${p.id}-${p.lat || 0}-${p.lng || 0}`).join(',');
   const hotelKey = hotel ? `${hotel.id}-${hotel.lat || hotel.coordinates?.[0] || 0}-${hotel.lng || hotel.coordinates?.[1] || 0}` : '';
@@ -306,7 +310,7 @@ export default function VisualJourneyMap({ dayNumber, date, places, hotel, paxCo
             {(() => {
               const d = new Date(date);
               if (isNaN(d.getTime())) return date;
-              return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+              return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
             })()}
           </p>
         </div>
@@ -341,12 +345,14 @@ export default function VisualJourneyMap({ dayNumber, date, places, hotel, paxCo
       </div>
 
       {/* Map Area */}
-      <div className="h-[35%] w-full relative shrink-0 border-b border-[#222]">
-        <MapWithNoSSR places={fullJourney} />
-      </div>
+      {!hideMap && (
+        <div className="h-[35%] w-full relative shrink-0 border-b border-[#222]">
+          <MapWithNoSSR places={fullJourney} />
+        </div>
+      )}
 
       {/* Timeline List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-0 relative">
+      <div className={`flex-1 ${isPdfMode ? 'overflow-hidden' : 'overflow-y-auto'} p-6 space-y-0 relative`}>
         {transportArrivalForThisDay && (
           <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl text-xs text-orange-400/90 leading-relaxed">
             🔔 <strong>Late Arrival Adjustment:</strong> Your transport arrives at{" "}
@@ -420,17 +426,19 @@ export default function VisualJourneyMap({ dayNumber, date, places, hotel, paxCo
       </div>
 
       {/* Bottom Action */}
-      <div className="p-4 border-t border-[#222] bg-[#111] shrink-0">
-        <a 
-          href={googleMapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all text-sm font-medium"
-        >
-          <Map size={16} />
-          Open in Google Maps
-        </a>
-      </div>
+      {!isPdfMode && (
+        <div className="p-4 border-t border-[#222] bg-[#111] shrink-0">
+          <a 
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all text-sm font-medium"
+          >
+            <Map size={16} />
+            Open in Google Maps
+          </a>
+        </div>
+      )}
     </div>
   );
 }

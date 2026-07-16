@@ -23,7 +23,7 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     } catch {
       return dateStr;
     }
