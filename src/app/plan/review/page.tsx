@@ -326,7 +326,7 @@ export default function ReviewPage() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 top-full mt-2 w-48 bg-[#1A1A1A] border border-[#333] rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col p-1"
+                      className="absolute left-0 md:right-0 md:left-auto top-full mt-2 w-48 bg-[#1A1A1A] border border-[#333] rounded-xl shadow-2xl overflow-hidden z-[9999] flex flex-col p-1"
                     >
                       <button 
                         onClick={handleUniversalLink}

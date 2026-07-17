@@ -207,7 +207,8 @@ export default function HotelsPage() {
                             <img 
                               src={hotel.imageUrl} 
                               alt={hotel.name} 
-                              className="w-full h-full object-cover absolute inset-0 z-10 cursor-pointer" 
+                              draggable={false}
+                              className="w-full h-full object-cover absolute inset-0 z-10 cursor-pointer select-none" 
                               onClick={(e) => { e.stopPropagation(); setMaximizedImage({ url: hotel.imageUrl as string, name: hotel.name }); }}
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';

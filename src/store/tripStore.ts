@@ -41,7 +41,24 @@ export const useTripStore = create<TripState>()(
   selectedTransports: [],
   selectedHotel: null,
 
-  setTripDetails: (details) => set((state) => ({ ...state, ...details })),
+  setTripDetails: (details) => set((state) => {
+    let clearSelections = false;
+
+    // Invalidate previous selections if core trip parameters change
+    if (details.source && details.source !== state.source) clearSelections = true;
+    if (details.destination && details.destination !== state.destination) clearSelections = true;
+    if (details.startDate && details.startDate !== state.startDate) clearSelections = true;
+    if (details.endDate && details.endDate !== state.endDate) clearSelections = true;
+
+    const newState = { ...state, ...details };
+    
+    if (clearSelections) {
+      if (details.selectedTransports === undefined) newState.selectedTransports = [];
+      if (details.selectedHotel === undefined) newState.selectedHotel = null;
+    }
+
+    return newState;
+  }),
 
   addPassenger: (passenger) => set((state) => ({
     passengers: [...state.passengers, passenger]
