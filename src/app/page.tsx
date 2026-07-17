@@ -665,7 +665,7 @@ export default function LandingPage() {
           <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white !w-full !px-3 md:!px-10" style={{ height: 'auto', minHeight: '100vh' }}>
             <h2 className="mb-8 md:mb-12">Let's go.</h2>
             
-            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-4xl mx-auto relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 w-full max-w-5xl mx-auto relative z-10">
               {/* Card 1: Recommend Mode */}
               <div 
                 onClick={() => handleNavigation('/recommend')}
@@ -695,6 +695,22 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center text-white text-xs md:text-base font-bold group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform">
                   Start <ArrowRight className="ml-1 w-3 h-3 md:w-5 md:h-5" />
+                </div>
+              </div>
+
+              {/* Card 3: Quick Trip Mode */}
+              <div 
+                onClick={() => handleNavigation('/quick-trip')}
+                className="bg-emerald-600 border border-emerald-500 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-emerald-500 transition-all duration-300 md:hover:scale-105 group shadow-[0_0_30px_-10px_rgba(5,150,105,0.5)] md:shadow-[0_0_40px_-10px_rgba(5,150,105,0.5)] hover:shadow-[0_0_60px_-15px_rgba(5,150,105,0.7)] flex flex-col justify-between h-full"
+              >
+                <div>
+                  <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Quick Trip</h3>
+                  <p className="text-emerald-100 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
+                    Short on time? Let's plan a spontaneous getaway.
+                  </p>
+                </div>
+                <div className="flex items-center text-white text-xs md:text-base font-bold group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform">
+                  Go <ArrowRight className="ml-1 w-3 h-3 md:w-5 md:h-5" />
                 </div>
               </div>
             </div>

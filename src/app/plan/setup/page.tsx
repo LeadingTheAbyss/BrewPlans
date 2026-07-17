@@ -8,11 +8,11 @@ import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import ModernDateRangePicker from '@/components/ModernDateRangePicker';
-import { Plus, Trash2, ArrowRight, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useCacheStore } from '@/store/cacheStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedGlobe from '@/components/AnimatedGlobe';
 
 const TRIP_STYLES = [
@@ -31,6 +31,14 @@ export default function TripSetupPage() {
   const [tripStyle, setTripStyle] = useState('family');
   const [error, setError] = useState('');
   const [savedPassengers, setSavedPassengers] = useState<any[]>([]);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const displayToast = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
 
   React.useEffect(() => {
     if (user) {
@@ -56,6 +64,7 @@ export default function TripSetupPage() {
       city: '',
       transportPreference: 'any'
     });
+    displayToast('Passenger Added');
   };
 
   const handleContinue = async () => {
@@ -328,6 +337,23 @@ export default function TripSetupPage() {
         </div>
 
       </motion.div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[250] bg-[#1c1c1e] text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3"
+          >
+            <div className="bg-emerald-500 rounded-full p-0.5 text-black">
+              <CheckCircle2 size={16} />
+            </div>
+            <span className="text-[14px] font-medium tracking-wide">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

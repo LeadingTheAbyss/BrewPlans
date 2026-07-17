@@ -426,6 +426,7 @@ export default function QuickTripPage() {
   // ── Members ──
   const addMember = () => {
     setMembers(prev => [...prev, { id: `member-${Date.now()}`, name: '', location: '' }]);
+    displayToast('Traveller Added');
   };
 
   const removeMember = (id: string) => {
@@ -847,6 +848,29 @@ export default function QuickTripPage() {
                     value={cityQuery}
                     onChange={e => { setCityQuery(e.target.value); setCity(''); }}
                     onFocus={() => { if (cityResults.length > 0) setCityDropdownOpen(true); }}
+                    onBlur={() => {
+                      setTimeout(() => {
+                        if (cityQuery && cityQuery !== city) {
+                          if (cityResults.length > 0) {
+                            selectCity(cityResults[0].name);
+                          } else {
+                            selectCity(cityQuery);
+                          }
+                        }
+                      }, 150);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (cityQuery && cityQuery !== city) {
+                          if (cityResults.length > 0) {
+                            selectCity(cityResults[0].name);
+                          } else {
+                            selectCity(cityQuery);
+                          }
+                        }
+                      }
+                    }}
                     placeholder="Which city are you hanging out in?"
                     className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 focus:outline-none"
                   />

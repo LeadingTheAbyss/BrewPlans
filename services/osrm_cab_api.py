@@ -15,7 +15,7 @@ async def get_coordinates(city_name: str) -> Dict[str, float]:
     global _GEOCODE_LOCK
     if _GEOCODE_LOCK is None:
         _GEOCODE_LOCK = asyncio.Lock()
-    """Dynamically fetch coordinates using Nominatim API with in-memory caching and rate limit lock."""
+    """Dynamically fetch coordinates using Open-Meteo API with in-memory caching."""
     cache_key = city_name.lower().strip()
     if cache_key in _GEOCODE_CACHE:
         return _GEOCODE_CACHE[cache_key]
@@ -25,22 +25,20 @@ async def get_coordinates(city_name: str) -> Dict[str, float]:
         if cache_key in _GEOCODE_CACHE:
             return _GEOCODE_CACHE[cache_key]
             
-        encoded_query = urllib.parse.quote(f"{city_name}, India")
-        url = f"https://nominatim.openstreetmap.org/search?q={encoded_query}&format=json&limit=1"
-        headers = {"User-Agent": "PlanBroTravelApp/1.0 (contact@planbro.com)"}
+        url = "https://geocoding-api.open-meteo.com/v1/search"
+        params = {"name": city_name, "count": 1, "language": "en", "format": "json"}
         try:
-            # Respect Nominatim 1 req/sec policy
-            await asyncio.sleep(1.0)
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, headers=headers, timeout=3.0)
+                response = await client.get(url, params=params, timeout=3.0)
                 response.raise_for_status()
                 data = response.json()
-                if data and len(data) > 0:
-                    coords = {"lat": float(data[0]["lat"]), "lng": float(data[0]["lon"])}
+                results = data.get("results")
+                if results and len(results) > 0:
+                    coords = {"lat": float(results[0]["latitude"]), "lng": float(results[0]["longitude"])}
                     _GEOCODE_CACHE[cache_key] = coords
                     return coords
         except Exception as e:
-            print(f"[Warning] Failed to geocode {city_name}: {e}")
+            print(f"[Warning] Failed to geocode {city_name} via open-meteo: {e}")
             
     return {}
 
@@ -144,8 +142,10 @@ async def calculate_cab_fare(
 async def search_live_cabs(source_city: str, dest_city: str, date: str) -> List[TransportOption]:
     print(f"\n[API Call] Fetching live cabs (via OSRM + Nominatim): {source_city} -> {dest_city} on {date}...")
     
-    source_coords = await get_coordinates(source_city)
-    dest_coords = await get_coordinates(dest_city)
+    source_coords, dest_coords = await asyncio.gather(
+        get_coordinates(source_city),
+        get_coordinates(dest_city)
+    )
     
     if not source_coords or not dest_coords:
         print(f"[Warning] Could not resolve coordinates for {source_city} or {dest_city}. Using fallback math.")

@@ -77,6 +77,29 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
           value={query}
           onChange={handleInputChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
+          onBlur={() => {
+            setTimeout(() => {
+              if (query && query !== value) {
+                if (results.length > 0) {
+                  handleSelect(results[0].name);
+                } else {
+                  handleSelect(query);
+                }
+              }
+            }, 150);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (query && query !== value) {
+                if (results.length > 0) {
+                  handleSelect(results[0].name);
+                } else {
+                  handleSelect(query);
+                }
+              }
+            }
+          }}
         />
         {/\d/.test(query) && (
           <div className="absolute top-full mt-1.5 left-0 text-red-500 text-[11px] font-medium flex items-center gap-1.5 bg-red-500/10 px-2 py-1.5 rounded-md backdrop-blur-sm border border-red-500/20 whitespace-nowrap z-50">

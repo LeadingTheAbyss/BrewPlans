@@ -73,31 +73,31 @@ export async function GET(req: Request) {
       if (mode === 'train' || mode === 'all') trainsCalls++;
       if (mode === 'bus' || mode === 'all') bussesCalls++;
 
-      // Update user call count
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          apiCalls: currentCalls + 1,
-          apiCallsFlights: flightsCalls,
-          apiCallsTrains: trainsCalls,
-          apiCallsBusses: bussesCalls,
-          lastApiCallDate: now
-        }
-      });
-
+      // Fire DB writes without awaiting them to block the Python proxy request
       const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
       const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
-      if (prisma.dailyUserStat) {
-        await prisma.dailyUserStat.upsert({
+      
+      Promise.all([
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            apiCalls: currentCalls + 1,
+            apiCallsFlights: flightsCalls,
+            apiCallsTrains: trainsCalls,
+            apiCallsBusses: bussesCalls,
+            lastApiCallDate: now
+          }
+        }),
+        prisma.dailyUserStat ? prisma.dailyUserStat.upsert({
           where: { userId_date: { userId: user.id, date: todayString } },
           update: { apiCalls: { increment: 1 } },
           create: { userId: user.id, date: todayString, apiCalls: 1 }
-        });
-      }
+        }) : Promise.resolve()
+      ]).catch(err => console.error("Async DB update error:", err));
+
     } catch (dbError) {
       console.warn('Database unreachable, skipping auth and rate limit checks for transport API.', dbError);
     }
-
 
     // 3. Proxy to Python Backend
     const response = await fetch(`${PYTHON_API_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}`, {
