@@ -225,3 +225,46 @@ model Landmark {
 
   @@index([name])
 }
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // e.g. "LOGIN", "ROLE_CHANGE", "TRIP_DELETED", "SUSPICIOUS_ACTIVITY"
+  details   String?  // JSON string or text description
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model TelemetryLog {
+  id           String   @id @default(cuid())
+  endpoint     String   // e.g. "/api/transport", "Ollama", "GooglePlaces"
+  status       String   // "SUCCESS", "ERROR", "CACHE_HIT"
+  durationMs   Int?
+  errorMessage String?
+  costEstimate Float    @default(0.0)
+  createdAt    DateTime @default(now())
+
+  @@index([endpoint])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DailySystemStat {
+  id                 String   @id @default(cuid())
+  date               String   @unique // YYYY-MM-DD
+  activeUsers        Int      @default(0)
+  newSignups         Int      @default(0)
+  tripsPlanned       Int      @default(0)
+  tripsCompleted     Int      @default(0)
+  aiGenerations      Int      @default(0)
+  apiCostEstimate    Float    @default(0.0)
+  cacheHitCount      Int      @default(0)
+  apiErrorCount      Int      @default(0)
+  totalApiCount      Int      @default(0)
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
