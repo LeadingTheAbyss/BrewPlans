@@ -117,7 +117,7 @@ def call_ollama(prompt: str) -> str:
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "meta-llama/llama-4-scout-17b-16e-instruct", # Upgraded to Llama 4 Scout for massive 30k TPM rate limits!
+        "model": "llama-3.3-70b-versatile", # Updated to a valid Groq model (Llama 3.3 70b)
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
