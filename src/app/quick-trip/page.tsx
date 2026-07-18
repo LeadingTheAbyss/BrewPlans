@@ -12,10 +12,13 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { getDistanceInKm, calculateCost, estimateTravelTime, TransportModeEnum } from '@/lib/travelCost';
-import { detectCategory, smartSortStops, buildTimeline, QuickStop, StopCategory } from '@/lib/quickTripSorter';
+import { detectCategory, smartSortStops, comfortSortStops, buildTimeline, QuickStop, StopCategory } from '@/lib/quickTripSorter';
 import { getAvatarHex } from '@/components/QuickTripMapInner';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { api } from '@/lib/api';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const QuickTripMapInnerDynamic = dynamic(
   () => import('@/components/QuickTripMapInner'),
@@ -407,6 +410,13 @@ export default function QuickTripPage() {
 
   useEffect(() => {
     if (cityQuery.length < 2) { setCityResults([]); setIsCityLoading(false); return; }
+    
+    // Prevent fetching and opening dropdown if it matches the selected city (case-insensitive)
+    if (city && cityQuery.toLowerCase() === city.toLowerCase()) {
+      setIsCityLoading(false);
+      return;
+    }
+
     setIsCityLoading(true);
     const t = setTimeout(async () => {
       const results = await api.searchCity(cityQuery);
@@ -415,12 +425,30 @@ export default function QuickTripPage() {
       setIsCityLoading(false);
     }, 400);
     return () => clearTimeout(t);
-  }, [cityQuery]);
+  }, [cityQuery, city]);
 
   const selectCity = (name: string) => {
     setCity(name);
     setCityQuery(name);
     setCityDropdownOpen(false);
+  };
+
+  // ── Drag & Drop ──
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setStops((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      setAutoSorted(false);
+    }
   };
 
   // ── Members ──
@@ -478,6 +506,11 @@ export default function QuickTripPage() {
 
   const handleSmartSort = () => {
     setStops(prev => smartSortStops(prev, meetingPin?.lat, meetingPin?.lng) as ActiveStop[]);
+    setAutoSorted(true);
+  };
+
+  const handleComfortSort = () => {
+    setStops(prev => comfortSortStops(prev, meetingPin?.lat, meetingPin?.lng) as ActiveStop[]);
     setAutoSorted(true);
   };
 
@@ -850,24 +883,28 @@ export default function QuickTripPage() {
                     onFocus={() => { if (cityResults.length > 0) setCityDropdownOpen(true); }}
                     onBlur={() => {
                       setTimeout(() => {
-                        if (cityQuery && cityQuery !== city) {
+                        if (cityQuery && cityQuery.toLowerCase() !== (city || '').toLowerCase()) {
                           if (cityResults.length > 0) {
                             selectCity(cityResults[0].name);
                           } else {
                             selectCity(cityQuery);
                           }
+                        } else if (cityQuery && cityQuery.toLowerCase() === (city || '').toLowerCase() && cityQuery !== city) {
+                          selectCity(city);
                         }
                       }, 150);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        if (cityQuery && cityQuery !== city) {
+                        if (cityQuery && cityQuery.toLowerCase() !== (city || '').toLowerCase()) {
                           if (cityResults.length > 0) {
                             selectCity(cityResults[0].name);
                           } else {
                             selectCity(cityQuery);
                           }
+                        } else if (cityQuery && cityQuery.toLowerCase() === (city || '').toLowerCase() && cityQuery !== city) {
+                          selectCity(city);
                         }
                       }
                     }}
@@ -979,18 +1016,33 @@ export default function QuickTripPage() {
               <div className="flex items-center justify-between">
                 <SectionHeader icon={<Map size={14} />} label="Places to Visit" number={3} />
                 {stops.length >= 2 && (
-                  <button
-                    onClick={handleSmartSort}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${autoSorted ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-                  >
-                    <Sparkles size={12} />
-                    {autoSorted ? 'Smart Sorted' : 'Auto-Sort'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSmartSort}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${autoSorted ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                    >
+                      <Sparkles size={12} />
+                      {autoSorted ? 'Smart Sorted' : 'Auto-Sort'}
+                    </button>
+                    <button
+                      onClick={handleComfortSort}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    >
+                      <CheckCircle2 size={12} />
+                      Comfort Sort
+                    </button>
+                  </div>
                 )}
               </div>
 
               <div className="mt-3 space-y-3">
                 <PlaceSearchBox city={city} onSelect={handleAddStop} />
+
+                {stops.length > 1 && (
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center justify-center gap-1 my-2">
+                    <GripVertical size={10} /> Drag to reorder your stops
+                  </p>
+                )}
 
                 {stops.length === 0 && (
                   <div className="text-center py-8 text-zinc-600 text-sm border border-dashed border-zinc-800 rounded-xl">
@@ -998,16 +1050,20 @@ export default function QuickTripPage() {
                   </div>
                 )}
 
-                {stops.map((stop, i) => (
-                  <StopCard
-                    key={stop.id}
-                    stop={stop}
-                    index={i}
-                    onRemove={() => removeStop(stop.id)}
-                    onDurationChange={(mins) => updateStopDuration(stop.id, mins)}
-                    onTimeslotChange={(ts) => updateStopTimeslot(stop.id, ts)}
-                  />
-                ))}
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={stops.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                    {stops.map((stop, i) => (
+                      <StopCard
+                        key={stop.id}
+                        stop={stop}
+                        index={i}
+                        onRemove={() => removeStop(stop.id)}
+                        onDurationChange={(mins) => updateStopDuration(stop.id, mins)}
+                        onTimeslotChange={(ts) => updateStopTimeslot(stop.id, ts)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
             </section>
 
@@ -1069,7 +1125,7 @@ export default function QuickTripPage() {
                   {/* Member convergence section */}
                   {memberPins.length > 1 && meetingPin && (
                     <div className="mb-6 p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
-                      <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Everyone Converges</p>
+                      <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Meet At</p>
                       <div className="flex flex-wrap gap-2">
                         {memberPins.map((m, i) => (
                           <div key={i} className="flex items-center gap-1.5 bg-zinc-800 rounded-full px-2.5 py-1">
@@ -1220,8 +1276,20 @@ export default function QuickTripPage() {
                       <div className="text-zinc-500 mt-1">{formatDuration(item.stop.durationMins)}</div>
                       {item.commute && (
                          <div className="mt-4 p-4 bg-zinc-900 rounded-xl flex justify-between items-center text-sm border border-zinc-800">
-                           <span className="text-zinc-400">Travel to next stop</span>
-                           <span className="font-medium text-emerald-400">{formatDuration(item.travelMins)} · {item.travelDistanceStr} km</span>
+                           <div className="flex flex-col">
+                             <span className="text-zinc-400">Travel to next stop</span>
+                             <span className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider font-bold">
+                               {transportMode === 'cab' 
+                                 ? `Recommended: ${item.commute.type === 'bike' ? 'Bike Ride' : 'Cab'}` 
+                                 : `Transport: ${item.commute.service}`}
+                             </span>
+                           </div>
+                           <div className="flex flex-col items-end">
+                             <span className="font-medium text-emerald-400">{formatDuration(item.travelMins)} · {item.travelDistanceStr} km</span>
+                             <span className="text-[11px] text-zinc-500 mt-0.5 font-bold">
+                               {item.commute.cost > 0 ? `₹${item.commute.cost}` : 'Free'}
+                             </span>
+                           </div>
                          </div>
                       )}
                     </div>
@@ -1361,9 +1429,20 @@ function StopCard({
 }) {
   const isEvent = stop.category === 'INDOOR_ENT';
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+    <div ref={setNodeRef} style={style} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 relative group">
       <div className="flex items-start gap-3">
+        <div {...attributes} {...listeners} className="cursor-grab hover:text-emerald-400 text-zinc-600 mt-0.5 shrink-0">
+          <GripVertical size={16} />
+        </div>
         <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
           {index + 1}
         </div>

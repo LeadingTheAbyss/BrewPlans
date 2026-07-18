@@ -271,8 +271,12 @@ export default function RecommendPage() {
                 <input 
                   type="number" min="1" placeholder="100000" className="w-32 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.budget || ''} onChange={e => {
-                    const val = parseInt(e.target.value);
-                    setForm({...form, budget: isNaN(val) ? '' as any : Math.max(1, val)});
+                    const raw = e.target.value;
+                    if (raw === '') setForm({...form, budget: '' as any});
+                    else {
+                      const val = parseInt(raw);
+                      if (!isNaN(val)) setForm({...form, budget: val});
+                    }
                   }}
                 />
               </div>
@@ -284,9 +288,12 @@ export default function RecommendPage() {
                 <input 
                   type="number" min={form.passengers.length} max="20" placeholder="1" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.groupSize || ''} onChange={e => {
-                    const val = parseInt(e.target.value);
-                    const minCount = form.passengers.length;
-                    setForm({...form, groupSize: isNaN(val) ? minCount : Math.max(minCount, Math.min(20, val))});
+                    const raw = e.target.value;
+                    if (raw === '') setForm({...form, groupSize: '' as any});
+                    else {
+                      const val = parseInt(raw);
+                      if (!isNaN(val)) setForm({...form, groupSize: val});
+                    }
                   }}
                 />
                 <span className="text-neutral-600 text-sm font-light uppercase tracking-widest">People</span>
@@ -299,8 +306,12 @@ export default function RecommendPage() {
                 <input 
                   type="number" min="1" placeholder="4" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.days || ''} onChange={e => {
-                    const val = parseInt(e.target.value);
-                    setForm({...form, days: isNaN(val) ? '' as any : Math.max(1, val)});
+                    const raw = e.target.value;
+                    if (raw === '') setForm({...form, days: '' as any});
+                    else {
+                      const val = parseInt(raw);
+                      if (!isNaN(val)) setForm({...form, days: val});
+                    }
                   }}
                 />
                 <span className="text-neutral-600 text-sm font-light uppercase tracking-widest">Days</span>
@@ -338,13 +349,13 @@ export default function RecommendPage() {
               </div>
             </div>
 
-            <div className="flex flex-row items-end gap-10">
-              <div className="flex flex-col gap-2 flex-1">
+            <div className="flex flex-col md:flex-row items-start md:items-end gap-6 md:gap-10 w-full">
+              <div className="flex flex-col gap-2 flex-1 w-full">
                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest min-h-[2.5rem] flex items-end">International Lookalike (Optional)</label>
-                <div className="flex items-start border-b border-neutral-300 dark:border-neutral-800 pb-2 focus-within:border-neutral-500 dark:focus-within:border-neutral-500 transition-colors">
+                <div className="flex items-start border-b border-neutral-300 dark:border-neutral-800 pb-2 w-full focus-within:border-neutral-500 dark:focus-within:border-neutral-500 transition-colors">
                   <textarea
                     placeholder="e.g. Switzerland, Maldives..."
-                    className="flex-1 bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none leading-relaxed overflow-y-auto"
+                    className="w-full bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none leading-relaxed overflow-y-auto"
                     rows={1}
                     style={{ maxHeight: '9rem' }}
                     value={lookalike}
@@ -357,12 +368,12 @@ export default function RecommendPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col gap-2 flex-1 w-full">
                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest min-h-[2.5rem] flex items-end">Specific Constraints (Optional)</label>
-                <div className="flex items-start border-b border-neutral-300 dark:border-neutral-800 pb-2 focus-within:border-neutral-500 dark:focus-within:border-neutral-500 transition-colors">
+                <div className="flex items-start border-b border-neutral-300 dark:border-neutral-800 pb-2 w-full focus-within:border-neutral-500 dark:focus-within:border-neutral-500 transition-colors">
                   <textarea
                     placeholder="e.g. No overcrowding, avoid hill stations, etc."
-                    className="flex-1 bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none leading-relaxed overflow-y-auto"
+                    className="w-full bg-transparent border-none focus:outline-none text-xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none leading-relaxed overflow-y-auto"
                     rows={1}
                     style={{ maxHeight: '9rem' }}
                     value={constraints}
@@ -376,7 +387,7 @@ export default function RecommendPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 items-end ml-6">
+            <div className="flex flex-col gap-3 items-center md:items-end w-full mt-4 md:mt-0">
               {error && (
                 <div className="text-red-500 text-[10px] font-bold tracking-widest uppercase bg-red-500/10 px-4 py-2 border border-red-500/20">
                   {error}

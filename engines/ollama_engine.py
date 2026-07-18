@@ -62,10 +62,10 @@ A group of {num_pax} travelers want to take a trip.
 - Duration: {days} days (excluding travel days)
 - Their travel preference / vibe: "{preference}"
 {guidance}
-Recommend UP TO 10 destinations in India that best match the preference "{preference}".
+Recommend EXACTLY 10 destinations in India that best match the preference "{preference}".
 
 {f"- HARD USER CONSTRAINTS: '{constraints}'\\n  You MUST respect these constraints. Destinations that violate these constraints are STRICTLY FORBIDDEN." if constraints else ""}
-ALL recommended destinations MUST strongly align with this preference. Do NOT recommend generic tourist spots that do not match. If there are fewer than 10 strong matches, just return the ones that match. DO NOT pad the list with bad recommendations.
+ALL recommended destinations MUST align with this preference. You MUST return exactly 10 destinations. If there are not enough strong matches, broaden your criteria slightly to provide exactly 10 solid recommendations.
 
 Respond ONLY with a JSON object containing a "destinations" array, where each item matches this EXACT structure:
 {{
@@ -95,7 +95,7 @@ Rules:
 - matchScore MUST be an integer between 70 and 98 based on how well the destination matches. Do not include weak matches.
 - The "why" explanation MUST be confident. Explain exactly why it fits the vibe.
 - isPrimaryMatch must be true for all returned destinations.
-- Return UP TO 10 destinations (fewer is fine if there aren't enough strong matches).
+- Return EXACTLY 10 UNIQUE and DISTINCT destinations. Do not repeat cities. No more, no less. Even if you have to stretch the definition of the preference, you MUST return 10 distinct, unique destinations.
 - DO NOT use any emojis.
 """
 
@@ -123,6 +123,7 @@ def call_ollama(prompt: str) -> str:
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.4,
+        "max_tokens": 6000,
         "response_format": {"type": "json_object"}
     }
     

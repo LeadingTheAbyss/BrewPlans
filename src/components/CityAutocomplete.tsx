@@ -22,7 +22,9 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
 
   // Sync internal query with external value if it changes
   useEffect(() => {
-    setQuery(value);
+    if (value !== undefined) {
+      setQuery(value);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -79,24 +81,28 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           onBlur={() => {
             setTimeout(() => {
-              if (query && query !== value) {
+              if (query && query.toLowerCase() !== (value || '').toLowerCase()) {
                 if (results.length > 0) {
                   handleSelect(results[0].name);
                 } else {
                   handleSelect(query);
                 }
+              } else if (query && query.toLowerCase() === (value || '').toLowerCase() && query !== value) {
+                setQuery(value);
               }
             }, 150);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              if (query && query !== value) {
+              if (query && query.toLowerCase() !== (value || '').toLowerCase()) {
                 if (results.length > 0) {
                   handleSelect(results[0].name);
                 } else {
                   handleSelect(query);
                 }
+              } else if (query && query.toLowerCase() === (value || '').toLowerCase() && query !== value) {
+                setQuery(value);
               }
             }
           }}

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClientOnly } from "@/components/layout/ClientOnly";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BackgroundFetcher } from "@/components/BackgroundFetcher";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
             {children}
           </ClientOnly>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -140,6 +140,91 @@ export function smartSortStops(stops: QuickStop[], startLat?: number, startLng?:
   return result;
 }
 
+export function comfortSortStops(stops: QuickStop[], startLat?: number, startLng?: number): QuickStop[] {
+  if (stops.length <= 1) return stops;
+
+  const fixed = stops
+    .filter(s => s.timeslot)
+    .sort((a, b) => TIMESLOT_HOUR[a.timeslot!] - TIMESLOT_HOUR[b.timeslot!]);
+
+  const flexible = stops.filter(s => !s.timeslot);
+  const result: QuickStop[] = [];
+  let currentLat = startLat;
+  let currentLng = startLng;
+  let currentHour = 9; 
+  
+  const remainingFlexible = [...flexible];
+  let fixedIdx = 0;
+  const totalStops = stops.length;
+  
+  // High energy categories that cause fatigue
+  const highEnergy = new Set(['ACTIVE', 'SHOPPING']);
+  let lastWasHighEnergy = false;
+
+  for (let step = 0; step < totalStops; step++) {
+    if (fixedIdx < fixed.length) {
+      const nextFixed = fixed[fixedIdx];
+      if (remainingFlexible.length === 0 || TIMESLOT_HOUR[nextFixed.timeslot!] <= currentHour + 1) {
+        result.push(nextFixed);
+        currentLat = nextFixed.lat;
+        currentLng = nextFixed.lng;
+        currentHour += (nextFixed.durationMins / 60) + 0.5;
+        lastWasHighEnergy = highEnergy.has(nextFixed.category);
+        fixedIdx++;
+        continue;
+      }
+    }
+
+    if (remainingFlexible.length > 0) {
+      if (!currentLat || !currentLng) {
+        remainingFlexible.sort((a, b) => CATEGORY_PREFERENCE[a.category] - CATEGORY_PREFERENCE[b.category]);
+        const next = remainingFlexible.shift()!;
+        result.push(next);
+        currentLat = next.lat;
+        currentLng = next.lng;
+        currentHour += (next.durationMins / 60) + 0.5;
+        lastWasHighEnergy = highEnergy.has(next.category);
+        continue;
+      }
+
+      let bestIdx = 0;
+      let minScore = Infinity;
+
+      for (let i = 0; i < remainingFlexible.length; i++) {
+        const candidate = remainingFlexible[i];
+        let distance = 0;
+        if (candidate.lat && candidate.lng) {
+           distance = getDistanceInKm(currentLat, currentLng, candidate.lat, candidate.lng);
+        }
+        
+        const idealHour = CATEGORY_PREFERENCE[candidate.category];
+        const hourDiff = Math.abs(idealHour - currentHour);
+        const penalty = hourDiff * 2;
+        
+        // Comfort penalty: strongly penalize back-to-back high energy activities
+        const isHighEnergy = highEnergy.has(candidate.category);
+        const comfortPenalty = (lastWasHighEnergy && isHighEnergy) ? 15 : 0;
+        
+        const score = distance + penalty + comfortPenalty;
+
+        if (score < minScore) {
+          minScore = score;
+          bestIdx = i;
+        }
+      }
+
+      const next = remainingFlexible.splice(bestIdx, 1)[0];
+      result.push(next);
+      currentLat = next.lat;
+      currentLng = next.lng;
+      currentHour += (next.durationMins / 60) + 0.5;
+      lastWasHighEnergy = highEnergy.has(next.category);
+    }
+  }
+
+  return result;
+}
+
 /**
  * Given the sorted stops and a start time (default 9:00 AM),
  * compute each stop's arrival time and departure time.
