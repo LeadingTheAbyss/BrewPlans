@@ -60,7 +60,6 @@ export default function ItineraryPage() {
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [remoteDragStates, setRemoteDragStates] = useState<Record<string, any>>({});
   const [isCopied, setIsCopied] = useState(false);
-  const wsRef = React.useRef<WebSocket | null>(null);
   const isRemoteUpdate = React.useRef(false);
   const [planId, setPlanId] = useState<string | null>(null);
 
@@ -89,63 +88,40 @@ export default function ItineraryPage() {
     }
     setPlanId(currentPlanId);
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Use 8002 for dev, or same host for prod
-    const wsUrl = process.env.NODE_ENV === 'development' 
-      ? `ws://localhost:8002/api/ws/plan/${currentPlanId}`
-      : `${protocol}//${window.location.host}/api/ws/plan/${currentPlanId}`;
-      
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      const colors = ['#ef4444', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
-      const name = names[Math.floor(Math.random() * names.length)];
-      ws.send(JSON.stringify({ type: 'JOIN', user: { name, color, picture: null } }));
+    // Initial state fetch
+    const fetchState = () => {
+      fetch(`/api/sync?planId=${currentPlanId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.state) {
+            isRemoteUpdate.current = true;
+            useItineraryStore.setState(data.state);
+            setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+          }
+        })
+        .catch(e => console.error("Sync error:", e));
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'PRESENCE') {
-          setActiveUsers(data.users || []);
-          setCollaboratorCount(data.users ? data.users.length : 1);
-        } else if (data.type === 'SYNC_STATE') {
-          isRemoteUpdate.current = true;
-          // Apply remote state to local store
-          useItineraryStore.setState(data.state);
-          // Allow small window before local changes re-broadcast
-          setTimeout(() => { isRemoteUpdate.current = false; }, 100);
-        } else if (data.type === 'DRAG_START') {
-          setRemoteDragStates(prev => ({ ...prev, [data.placeId]: data.user }));
-        } else if (data.type === 'DRAG_END') {
-          setRemoteDragStates(prev => {
-            const next = { ...prev };
-            delete next[data.placeId];
-            return next;
-          });
-        }
-      } catch(e) {}
-    };
+    fetchState();
+    const pollInterval = setInterval(fetchState, 3000);
 
-    return () => {
-      ws.close();
-    };
+    return () => clearInterval(pollInterval);
   }, []);
 
-  // Broadcast local changes
+  // Broadcast local changes via HTTP POST
   useEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || !planId) return;
     const unsub = useItineraryStore.subscribe((state) => {
       if (isRemoteUpdate.current) return;
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'SYNC_STATE', state }));
-      }
+      
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, state })
+      }).catch(e => console.error("Sync post error:", e));
     });
     return unsub;
-  }, [isMounted]);
+  }, [isMounted, planId]);
 
   // Initialize days on mount or if dates change
   useEffect(() => {
@@ -231,9 +207,6 @@ export default function ItineraryPage() {
     const place = itinerary.selectedPlaces.find(p => p.id === active.id);
     if (place) {
       setActivePlace(place);
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'DRAG_START', placeId: place.id }));
-      }
     }
   };
 
