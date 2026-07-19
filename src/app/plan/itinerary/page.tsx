@@ -55,8 +55,18 @@ export default function ItineraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Collaboration State
+  const myUser = React.useMemo(() => {
+     const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b', '#3b82f6'];
+     const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
+     return {
+        id: Math.random().toString(36).substring(2, 8),
+        name: names[Math.floor(Math.random() * names.length)],
+        color: colors[Math.floor(Math.random() * colors.length)]
+     };
+  }, []);
+
   const [collaboratorCount, setCollaboratorCount] = useState(1);
-  const [activeUsers, setActiveUsers] = useState<any[]>([{ id: 'me', name: 'You', color: '#3b82f6' }]);
+  const [activeUsers, setActiveUsers] = useState<any[]>([{ ...myUser, name: 'You' }]);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [remoteDragStates, setRemoteDragStates] = useState<Record<string, any>>({});
   const [isCopied, setIsCopied] = useState(false);
@@ -105,8 +115,32 @@ export default function ItineraryPage() {
     fetchState();
     const pollInterval = setInterval(fetchState, 3000);
 
-    return () => clearInterval(pollInterval);
-  }, []);
+    // Presence polling
+    const pollPresence = () => {
+      fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: currentPlanId, user: myUser })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.users) {
+           const others = data.users.filter((u: any) => u.id !== myUser.id);
+           setActiveUsers([{ ...myUser, name: 'You' }, ...others]);
+           setCollaboratorCount(data.users.length);
+        }
+      })
+      .catch(e => console.error("Presence error:", e));
+    };
+    
+    pollPresence();
+    const presenceInterval = setInterval(pollPresence, 5000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(presenceInterval);
+    };
+  }, [myUser]);
 
   // Broadcast local changes via HTTP POST
   useEffect(() => {
@@ -546,20 +580,6 @@ export default function ItineraryPage() {
                   navigator.clipboard.writeText(window.location.href);
                   setIsCopied(true);
                   setTimeout(() => setIsCopied(false), 2000);
-                  
-                  // Simulate someone joining a few seconds after inviting
-                  setTimeout(() => {
-                    setActiveUsers(prev => {
-                      if (prev.length < 2) {
-                        const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
-                        const names = ['Alex', 'Bob', 'Charlie', 'Dana', 'Eve'];
-                        const color = colors[Math.floor(Math.random() * colors.length)];
-                        const name = names[Math.floor(Math.random() * names.length)];
-                        return [...prev, { id: 'guest-' + Date.now(), name, color }];
-                      }
-                      return prev;
-                    });
-                  }, 4500);
                 }}
                 className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] whitespace-nowrap shrink-0 group border border-blue-500/50"
               >
