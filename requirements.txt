@@ -1,8 +1,9 @@
 fastapi
-uvicorn
+uvicorn[standard]
 httpx
 asyncpg
 python-dotenv
 requests
 pydantic
 pdfplumber
+websockets
