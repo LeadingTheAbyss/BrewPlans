@@ -56,9 +56,8 @@ export default function ItineraryPage() {
   
   const myUser = React.useMemo(() => {
      const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b', '#3b82f6'];
-     const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
      return {
-        id: 'me',
+        id: Math.random().toString(36).substring(2, 9),
         name: 'You',
         color: colors[Math.floor(Math.random() * colors.length)],
         isMe: true
@@ -114,21 +113,20 @@ export default function ItineraryPage() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      const colors = ['#ef4444', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
-      const name = names[Math.floor(Math.random() * names.length)];
-      ws.send(JSON.stringify({ type: 'JOIN', user: { name, color, picture: null } }));
+      const animals = ['Panda', 'Tiger', 'Koala', 'Fox', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Otter', 'Seal', 'Rhino', 'Moose'];
+      const animal = animals[Math.floor(Math.random() * animals.length)];
+      const name = 'Anonymous ' + animal;
+      ws.send(JSON.stringify({ type: 'JOIN', user: { frontend_id: myUser.id, name, color: myUser.color, picture: null } }));
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'PRESENCE') {
-          // Keep local user first, then add remote users
-          const others = (data.users || []).filter((u: any) => u.id !== ws.url.split('/').pop()); // basic filter
-          setActiveUsers([myUser, ...data.users]); 
-          setCollaboratorCount((data.users ? data.users.length : 0) + 1);
+          // Filter out the local user from the backend's presence list using frontend_id
+          const others = (data.users || []).filter((u: any) => u.frontend_id !== myUser.id);
+          setActiveUsers([myUser, ...others]); 
+          setCollaboratorCount(others.length + 1);
         } else if (data.type === 'SYNC_STATE') {
           isRemoteUpdate.current = true;
           syncReceived.current = true;
