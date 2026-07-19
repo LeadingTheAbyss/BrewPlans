@@ -54,13 +54,25 @@ export default function ItineraryPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  const myUser = React.useMemo(() => {
+     const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b', '#3b82f6'];
+     const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
+     return {
+        id: 'me',
+        name: 'You',
+        color: colors[Math.floor(Math.random() * colors.length)],
+        isMe: true
+     };
+  }, []);
+
   const [collaboratorCount, setCollaboratorCount] = useState(1);
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeUsers, setActiveUsers] = useState<any[]>([myUser]);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [remoteDragStates, setRemoteDragStates] = useState<Record<string, any>>({});
   const [isCopied, setIsCopied] = useState(false);
   const wsRef = React.useRef<WebSocket | null>(null);
   const isRemoteUpdate = React.useRef(false);
+  const syncReceived = React.useRef(false);
   const [planId, setPlanId] = useState<string | null>(null);
 
   // Layout & Filter State
@@ -113,10 +125,13 @@ export default function ItineraryPage() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'PRESENCE') {
-          setActiveUsers(data.users || []);
-          setCollaboratorCount(data.users ? data.users.length : 1);
+          // Keep local user first, then add remote users
+          const others = (data.users || []).filter((u: any) => u.id !== ws.url.split('/').pop()); // basic filter
+          setActiveUsers([myUser, ...data.users]); 
+          setCollaboratorCount((data.users ? data.users.length : 0) + 1);
         } else if (data.type === 'SYNC_STATE') {
           isRemoteUpdate.current = true;
+          syncReceived.current = true;
           // Apply remote state to local store
           useItineraryStore.setState(data.state);
           // Allow small window before local changes re-broadcast
@@ -167,7 +182,7 @@ export default function ItineraryPage() {
     // Prevent a guest joining via link with an empty trip store from wiping out the shared state
     const isGuest = !trip.destination && window.location.search.includes('planId');
     
-    if (!isGuest && (itinerary.days.length === 0 || itinerary.days.length !== totalDays)) {
+    if (!isGuest && !syncReceived.current && (itinerary.days.length === 0 || itinerary.days.length !== totalDays)) {
       itinerary.initializeDays(totalDays, startDateStr);
     }
   }, [trip.startDate, trip.endDate, trip.destination, itinerary.days.length, itinerary.initializeDays]);
@@ -535,42 +550,58 @@ export default function ItineraryPage() {
             <div className="flex items-center gap-4">
               
               {/* Active Collaborators */}
-              <div className="relative flex items-center">
+              <div className="relative flex items-center h-10">
                 {activeUsers.length > 0 && (
                   <div 
-                    className="flex items-center -space-x-2 mr-3 cursor-pointer hover:scale-105 transition-transform"
+                    className="flex items-center -space-x-3 mr-3 cursor-pointer hover:scale-105 transition-transform group"
                     onClick={() => setShowCollaborators(!showCollaborators)}
                   >
-                    {activeUsers.map((u, i) => (
+                    {activeUsers.slice(0, 4).map((u, i) => (
                       <div 
                         key={u.id || i}
-                        className="w-8 h-8 rounded-full border-2 border-[#111] flex items-center justify-center text-[10px] font-bold text-white uppercase shadow-md relative z-10"
-                        style={{ backgroundColor: u.color || '#3b82f6' }}
+                        className={`w-9 h-9 rounded-full border-[3px] border-[#0a0a0a] flex items-center justify-center text-[12px] font-bold text-white uppercase shadow-lg relative z-${40 - i * 10} avatar-animate ${!u.isMe ? 'avatar-pulse-ring' : ''}`}
+                        style={{ backgroundColor: u.color || '#3b82f6', animationDelay: `${i * 0.1}s` }}
                         title={u.name}
                       >
                         {u.name?.charAt(0) || 'U'}
+                        {/* Tooltip on hover */}
+                        <div className="absolute top-full mt-2 hidden group-hover:block bg-[#222] text-white text-[10px] px-2 py-1 rounded shadow-xl whitespace-nowrap z-50">
+                          {u.name} {u.isMe ? '(You)' : ''}
+                        </div>
                       </div>
                     ))}
+                    {activeUsers.length > 4 && (
+                      <div className="w-9 h-9 rounded-full border-[3px] border-[#0a0a0a] bg-[#222] flex items-center justify-center text-[11px] font-bold text-zinc-300 shadow-lg relative z-0 avatar-animate">
+                        +{activeUsers.length - 4}
+                      </div>
+                    )}
                   </div>
                 )}
                 
                 {/* Collaborators Popover */}
                 {showCollaborators && activeUsers.length > 0 && (
-                  <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#333] rounded-lg shadow-xl z-50 py-2">
-                    <div className="px-3 pb-2 mb-2 border-b border-[#333] text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                      Active Collaborators
+                  <div className="absolute top-full left-0 mt-3 w-56 bg-[#1a1a1a] border border-[#333] rounded-xl shadow-2xl z-50 py-3 backdrop-blur-xl bg-opacity-95">
+                    <div className="px-4 pb-2 mb-2 border-b border-[#333] text-[10px] text-zinc-500 font-bold uppercase tracking-widest flex justify-between items-center">
+                      <span>Collaborators</span>
+                      <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">{activeUsers.length} Online</span>
                     </div>
-                    {activeUsers.map((u, i) => (
-                      <div key={u.id || i} className="flex items-center gap-3 px-3 py-1.5 hover:bg-[#222]">
-                        <div 
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white uppercase"
-                          style={{ backgroundColor: u.color || '#3b82f6' }}
-                        >
-                          {u.name?.charAt(0) || 'U'}
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                      {activeUsers.map((u, i) => (
+                        <div key={u.id || i} className="flex items-center gap-3 px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer">
+                          <div 
+                            className="relative w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white uppercase shadow-inner"
+                            style={{ backgroundColor: u.color || '#3b82f6' }}
+                          >
+                            {u.name?.charAt(0) || 'U'}
+                            {!u.isMe && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#1a1a1a] rounded-full"></div>}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm text-zinc-200 font-medium">{u.name}</span>
+                            <span className="text-[10px] text-zinc-500">{u.isMe ? 'You (Host)' : 'Collaborator'}</span>
+                          </div>
                         </div>
-                        <span className="text-xs text-zinc-300 font-medium">{u.name}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
