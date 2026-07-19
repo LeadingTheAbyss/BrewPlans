@@ -82,7 +82,7 @@ export default function ItineraryPage() {
     const searchParams = new URLSearchParams(window.location.search);
     let currentPlanId = searchParams.get('planId');
     if (!currentPlanId) {
-      currentPlanId = crypto.randomUUID();
+      currentPlanId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('planId', currentPlanId);
       window.history.replaceState({}, '', newUrl.toString());
@@ -161,10 +161,13 @@ export default function ItineraryPage() {
     
     if (isNaN(totalDays)) totalDays = 1;
 
-    if (itinerary.days.length === 0 || itinerary.days.length !== totalDays) {
+    // Prevent a guest joining via link with an empty trip store from wiping out the shared state
+    const isGuest = !trip.destinationCity && window.location.search.includes('planId');
+    
+    if (!isGuest && (itinerary.days.length === 0 || itinerary.days.length !== totalDays)) {
       itinerary.initializeDays(totalDays, startDateStr);
     }
-  }, [trip.startDate, trip.endDate, itinerary.days.length, itinerary.initializeDays]);
+  }, [trip.startDate, trip.endDate, trip.destinationCity, itinerary.days.length, itinerary.initializeDays]);
 
   const pointerSensorOptions = React.useMemo(() => ({ activationConstraint: { distance: 5 } }), []);
   const touchSensorOptions = React.useMemo(() => ({ activationConstraint: { delay: 200, tolerance: 5 } }), []);
