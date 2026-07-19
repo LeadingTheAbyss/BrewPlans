@@ -54,22 +54,12 @@ export default function ItineraryPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Collaboration State
-  const myUser = React.useMemo(() => {
-     const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b', '#3b82f6'];
-     const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
-     return {
-        id: Math.random().toString(36).substring(2, 8),
-        name: names[Math.floor(Math.random() * names.length)],
-        color: colors[Math.floor(Math.random() * colors.length)]
-     };
-  }, []);
-
   const [collaboratorCount, setCollaboratorCount] = useState(1);
-  const [activeUsers, setActiveUsers] = useState<any[]>([{ ...myUser, name: 'You' }]);
+  const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [remoteDragStates, setRemoteDragStates] = useState<Record<string, any>>({});
   const [isCopied, setIsCopied] = useState(false);
+  const wsRef = React.useRef<WebSocket | null>(null);
   const isRemoteUpdate = React.useRef(false);
   const [planId, setPlanId] = useState<string | null>(null);
 
@@ -98,61 +88,64 @@ export default function ItineraryPage() {
     }
     setPlanId(currentPlanId);
 
-    // Initial state fetch
-    const fetchState = () => {
-      fetch(`/api/sync?planId=${currentPlanId}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.success && data.state) {
-            isRemoteUpdate.current = true;
-            useItineraryStore.setState(data.state);
-            setTimeout(() => { isRemoteUpdate.current = false; }, 100);
-          }
-        })
-        .catch(e => console.error("Sync error:", e));
-    };
-
-    fetchState();
-    const pollInterval = setInterval(fetchState, 3000);
-
-    // Presence polling
-    const pollPresence = () => {
-      fetch('/api/presence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: currentPlanId, user: myUser })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success && data.users) {
-           const others = data.users.filter((u: any) => u.id !== myUser.id);
-           setActiveUsers([{ ...myUser, name: 'You' }, ...others]);
-           setCollaboratorCount(data.users.length);
-        }
-      })
-      .catch(e => console.error("Presence error:", e));
-    };
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     
-    pollPresence();
-    const presenceInterval = setInterval(pollPresence, 5000);
+    // For production deployed on Vercel, it should connect to Render Backend
+    // Use env var or default to the Render URL if available
+    const productionWsHost = process.env.NEXT_PUBLIC_WS_URL || `${protocol}//${window.location.host}/api/ws/plan/`;
+    
+    const wsUrl = process.env.NODE_ENV === 'development' 
+      ? `ws://localhost:8002/api/ws/plan/${currentPlanId}`
+      : (process.env.NEXT_PUBLIC_WS_URL ? `${process.env.NEXT_PUBLIC_WS_URL}/${currentPlanId}` : `${productionWsHost}${currentPlanId}`);
+      
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      const colors = ['#ef4444', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
+      const name = names[Math.floor(Math.random() * names.length)];
+      ws.send(JSON.stringify({ type: 'JOIN', user: { name, color, picture: null } }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'PRESENCE') {
+          setActiveUsers(data.users || []);
+          setCollaboratorCount(data.users ? data.users.length : 1);
+        } else if (data.type === 'SYNC_STATE') {
+          isRemoteUpdate.current = true;
+          // Apply remote state to local store
+          useItineraryStore.setState(data.state);
+          // Allow small window before local changes re-broadcast
+          setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+        } else if (data.type === 'DRAG_START') {
+          setRemoteDragStates(prev => ({ ...prev, [data.placeId]: data.user }));
+        } else if (data.type === 'DRAG_END') {
+          setRemoteDragStates(prev => {
+            const next = { ...prev };
+            delete next[data.placeId];
+            return next;
+          });
+        }
+      } catch(e) {}
+    };
 
     return () => {
-      clearInterval(pollInterval);
-      clearInterval(presenceInterval);
+      ws.close();
     };
-  }, [myUser]);
+  }, []);
 
-  // Broadcast local changes via HTTP POST
+  // Broadcast local changes via WebSocket
   useEffect(() => {
     if (!isMounted || !planId) return;
     const unsub = useItineraryStore.subscribe((state) => {
       if (isRemoteUpdate.current) return;
-      
-      fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, state })
-      }).catch(e => console.error("Sync post error:", e));
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'SYNC_STATE', state }));
+      }
     });
     return unsub;
   }, [isMounted, planId]);
@@ -241,6 +234,9 @@ export default function ItineraryPage() {
     const place = itinerary.selectedPlaces.find(p => p.id === active.id);
     if (place) {
       setActivePlace(place);
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'DRAG_START', placeId: place.id }));
+      }
     }
   };
 
@@ -280,6 +276,11 @@ export default function ItineraryPage() {
   const handleDragEnd = (event: DragEndEvent) => {
     setActivePlace(null);
     const { active, over } = event;
+    
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'DRAG_END', placeId: active.id }));
+    }
+    
     if (!over) return;
 
     const activeId = active.id as string;
