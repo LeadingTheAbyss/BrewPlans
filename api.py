@@ -35,6 +35,7 @@ class ConnectionManager:
     def __init__(self):
         # Maps room_id -> dict of websocket to user info
         self.active_connections: dict[str, dict[WebSocket, dict]] = {}
+        self.room_states: dict[str, dict] = {} # Store the latest state for each room
         self.MAX_COLLABORATORS = 15
 
     async def connect(self, room_id: str, websocket: WebSocket):
@@ -91,7 +92,15 @@ async def websocket_endpoint(websocket: WebSocket, plan_id: str):
                 users = manager.get_room_users(plan_id)
                 await manager.broadcast(plan_id, {"type": "PRESENCE", "users": users})
                 await websocket.send_json({"type": "PRESENCE", "users": users})
+                
+                # Send the latest known state to the newly joined user
+                if plan_id in manager.room_states:
+                    await websocket.send_json({"type": "SYNC_STATE", "state": manager.room_states[plan_id]})
+                    
             elif data.get("type") in ["SYNC_STATE", "DRAG_START", "DRAG_END"]:
+                if data.get("type") == "SYNC_STATE":
+                    manager.room_states[plan_id] = data.get("state")
+                    
                 if data.get("type") in ["DRAG_START", "DRAG_END"]:
                     data["userId"] = str(id(websocket))
                 await manager.broadcast(plan_id, data, sender=websocket)
