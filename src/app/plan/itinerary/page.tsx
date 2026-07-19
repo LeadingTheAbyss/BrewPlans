@@ -162,12 +162,12 @@ export default function ItineraryPage() {
     if (isNaN(totalDays)) totalDays = 1;
 
     // Prevent a guest joining via link with an empty trip store from wiping out the shared state
-    const isGuest = !trip.destinationCity && window.location.search.includes('planId');
+    const isGuest = !trip.destination && window.location.search.includes('planId');
     
     if (!isGuest && (itinerary.days.length === 0 || itinerary.days.length !== totalDays)) {
       itinerary.initializeDays(totalDays, startDateStr);
     }
-  }, [trip.startDate, trip.endDate, trip.destinationCity, itinerary.days.length, itinerary.initializeDays]);
+  }, [trip.startDate, trip.endDate, trip.destination, itinerary.days.length, itinerary.initializeDays]);
 
   const pointerSensorOptions = React.useMemo(() => ({ activationConstraint: { distance: 5 } }), []);
   const touchSensorOptions = React.useMemo(() => ({ activationConstraint: { delay: 200, tolerance: 5 } }), []);
