@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTripStore } from '@/store/tripStore';
 import { useItineraryStore } from '@/store/itineraryStore';
+import { useAuthStore } from '@/store/authStore';
 import { Place } from '@/types/trip';
 import { Clock, Wand2, ArrowRight, CheckCircle, Search, MapPin, Zap, AlertTriangle, ListPlus, Loader2, Users, Plus, Link as LinkIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -54,15 +55,18 @@ export default function ItineraryPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  const authUser = useAuthStore(state => state.user);
+  
   const myUser = React.useMemo(() => {
      const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b', '#3b82f6'];
      return {
         id: Math.random().toString(36).substring(2, 9),
-        name: 'You',
+        name: authUser?.name || 'You',
         color: colors[Math.floor(Math.random() * colors.length)],
+        picture: authUser?.picture || null,
         isMe: true
      };
-  }, []);
+  }, [authUser]);
 
   const [collaboratorCount, setCollaboratorCount] = useState(1);
   const [activeUsers, setActiveUsers] = useState<any[]>([myUser]);
@@ -115,8 +119,8 @@ export default function ItineraryPage() {
     ws.onopen = () => {
       const animals = ['Panda', 'Tiger', 'Koala', 'Fox', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Otter', 'Seal', 'Rhino', 'Moose'];
       const animal = animals[Math.floor(Math.random() * animals.length)];
-      const name = 'Anonymous ' + animal;
-      ws.send(JSON.stringify({ type: 'JOIN', user: { frontend_id: myUser.id, name, color: myUser.color, picture: null } }));
+      const name = myUser.name !== 'You' ? myUser.name : 'Anonymous ' + animal;
+      ws.send(JSON.stringify({ type: 'JOIN', user: { frontend_id: myUser.id, name, color: myUser.color, picture: myUser.picture } }));
     };
 
     ws.onmessage = (event) => {
@@ -557,11 +561,16 @@ export default function ItineraryPage() {
                     {activeUsers.slice(0, 4).map((u, i) => (
                       <div 
                         key={u.id || i}
-                        className={`w-9 h-9 rounded-full border-[3px] border-[#0a0a0a] flex items-center justify-center text-[12px] font-bold text-white uppercase shadow-lg relative z-${40 - i * 10} avatar-animate ${!u.isMe ? 'avatar-pulse-ring' : ''}`}
+                        className={`w-9 h-9 rounded-full border-[3px] border-[#0a0a0a] flex items-center justify-center text-[12px] font-bold text-white uppercase shadow-lg relative z-${40 - i * 10} avatar-animate overflow-hidden ${!u.isMe ? 'avatar-pulse-ring' : ''}`}
                         style={{ backgroundColor: u.color || '#3b82f6', animationDelay: `${i * 0.1}s` }}
                         title={u.name}
                       >
-                        {u.name?.charAt(0) || 'U'}
+                        {u.picture ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={u.picture} alt={u.name} className="w-full h-full object-cover" />
+                        ) : (
+                          u.name?.charAt(0) || 'U'
+                        )}
                         {/* Tooltip on hover */}
                         <div className="absolute top-full mt-2 hidden group-hover:block bg-[#222] text-white text-[10px] px-2 py-1 rounded shadow-xl whitespace-nowrap z-50">
                           {u.name} {u.isMe ? '(You)' : ''}
@@ -587,10 +596,15 @@ export default function ItineraryPage() {
                       {activeUsers.map((u, i) => (
                         <div key={u.id || i} className="flex items-center gap-3 px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer">
                           <div 
-                            className="relative w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white uppercase shadow-inner"
+                            className="relative w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white uppercase shadow-inner overflow-hidden"
                             style={{ backgroundColor: u.color || '#3b82f6' }}
                           >
-                            {u.name?.charAt(0) || 'U'}
+                            {u.picture ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img src={u.picture} alt={u.name} className="w-full h-full object-cover" />
+                            ) : (
+                              u.name?.charAt(0) || 'U'
+                            )}
                             {!u.isMe && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#1a1a1a] rounded-full"></div>}
                           </div>
                           <div className="flex flex-col">
