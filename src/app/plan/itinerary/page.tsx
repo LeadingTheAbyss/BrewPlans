@@ -689,7 +689,6 @@ export default function ItineraryPage() {
                                 onRemoveFromDay={(placeId) => {
                                   itinerary.removePlaceFromDay(placeId, day.dayNumber);
                                   itinerary.recalcDay(day.dayNumber);
-                                  sendSyncState();
                                 }}
                               />
                               {!isLast && (
