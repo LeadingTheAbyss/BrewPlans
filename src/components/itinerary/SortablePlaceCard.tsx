@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Place } from '@/types/trip';
-import { Clock, Ticket, CheckSquare, Square, Plus, GripVertical, Wallet, CheckCircle } from 'lucide-react';
+import { Clock, Ticket, CheckSquare, Square, Plus, GripVertical, Trash2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface SortablePlaceCardProps {
@@ -15,6 +15,7 @@ interface SortablePlaceCardProps {
   dragUser?: { name: string; color: string } | null;
   onSelectToggle?: () => void;
   onQuickAdd?: (placeId: string) => void;
+  onRemoveFromDay?: (placeId: string) => void;
   onClickContainer?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function SortablePlaceCard({
   dragUser,
   onSelectToggle,
   onQuickAdd,
+  onRemoveFromDay,
   onClickContainer
 }: SortablePlaceCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: place.id });
@@ -119,39 +121,16 @@ export function SortablePlaceCard({
         <div className="flex justify-between items-start mb-1">
           <h4 className="font-bold text-sm text-zinc-100 truncate pr-6">{place.name}</h4>
           
-          {/* Micro-Expense Trigger (Only shown when in a day column i.e. dayColorCode exists) */}
-          {dayColorCode && (
+          {/* Remove Button (Only shown when in a day column i.e. dayColorCode exists) */}
+          {dayColorCode && onRemoveFromDay && (
             <div className="absolute right-0 top-0">
               <button 
-                onClick={(e) => { e.stopPropagation(); setShowWallet(!showWallet); }}
-                className="text-zinc-500 hover:text-emerald-400 transition-colors p-1 bg-[#1a1a1a] hover:bg-[#222] rounded-md border border-[#333]"
+                onClick={(e) => { e.stopPropagation(); onRemoveFromDay(place.id); }}
+                className="text-zinc-500 hover:text-red-400 transition-colors p-1 bg-[#1a1a1a] hover:bg-[#222] hover:border-red-500/50 rounded-md border border-[#333]"
+                title="Remove from day"
               >
-                <Wallet size={12} />
+                <Trash2 size={12} />
               </button>
-              
-              {showWallet && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a] border border-[#333] rounded-lg shadow-xl z-50 p-3 flex flex-col gap-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Who Paid?</span>
-                    <select className="bg-[#111] border border-[#333] rounded text-xs px-2 py-1.5 text-zinc-200 outline-none focus:border-emerald-500">
-                      <option>Me</option>
-                      <option>Friend A</option>
-                      <option>Friend B</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Split?</span>
-                    <div className="flex gap-2 text-xs text-zinc-300">
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input type="radio" name={`split-${place.id}`} defaultChecked className="accent-emerald-500" /> Equally
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input type="radio" name={`split-${place.id}`} className="accent-emerald-500" /> Custom
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

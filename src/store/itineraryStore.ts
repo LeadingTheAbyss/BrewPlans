@@ -16,6 +16,7 @@ interface ItineraryState {
   removePlaceFromBag: (placeId: string) => void;
 
   assignPlaceToDay: (placeId: string, dayNumber: number) => void;
+  removePlaceFromDay: (placeId: string, dayNumber: number) => void;
   movePlaceBetweenDays: (placeId: string, fromDay: number, toDay: number, newIndex?: number) => void;
   
   recalcDay: (dayNumber: number) => void;
@@ -75,6 +76,16 @@ export const useItineraryStore = create<ItineraryState>()(
         if (!day.placeIds.includes(placeId)) {
           return { ...day, placeIds: [...day.placeIds, placeId] };
         }
+      }
+      return day;
+    });
+    return { days: newDays };
+  }),
+
+  removePlaceFromDay: (placeId, dayNumber) => set((state) => {
+    const newDays = state.days.map(day => {
+      if (day.dayNumber === dayNumber) {
+        return { ...day, placeIds: day.placeIds.filter(id => id !== placeId) };
       }
       return day;
     });

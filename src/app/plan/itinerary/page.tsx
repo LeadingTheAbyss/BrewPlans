@@ -686,6 +686,11 @@ export default function ItineraryPage() {
                                 onClickContainer={() => {
                                   setGamifiedPlace(place);
                                 }}
+                                onRemoveFromDay={(placeId) => {
+                                  itinerary.removePlaceFromDay(placeId, day.dayNumber);
+                                  itinerary.recalcDay(day.dayNumber);
+                                  sendSyncState();
+                                }}
                               />
                               {!isLast && (
                                 <div className="flex items-center justify-center my-1.5 py-1 text-zinc-500 font-bold text-[10px] uppercase tracking-widest bg-[#1a1a1a]/50 rounded-md border border-[#222]">
