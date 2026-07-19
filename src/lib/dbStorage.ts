@@ -6,7 +6,9 @@ export const dbStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     if (typeof window === 'undefined') return null;
     try {
-      const res = await fetch(`/api/state?name=${name}`);
+      const planId = new URLSearchParams(window.location.search).get('planId');
+      const storeName = planId ? `shared-${planId}:${name}` : name;
+      const res = await fetch(`/api/state?name=${storeName}`);
       if (res.ok) {
         const data = await res.json();
         return data.value;
@@ -28,12 +30,14 @@ export const dbStorage: StateStorage = {
     // Debounce the save by 1 second to prevent spamming the database
     saveTimeouts[name] = setTimeout(async () => {
       try {
+        const planId = new URLSearchParams(window.location.search).get('planId');
+        const storeName = planId ? `shared-${planId}:${name}` : name;
         await fetch(`/api/state`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ name, value }),
+          body: JSON.stringify({ name: storeName, value }),
         });
       } catch (error) {
         console.error(`Error saving state for ${name} to DB:`, error);
@@ -48,7 +52,9 @@ export const dbStorage: StateStorage = {
     }
     
     try {
-      await fetch(`/api/state?name=${name}`, {
+      const planId = new URLSearchParams(window.location.search).get('planId');
+      const storeName = planId ? `shared-${planId}:${name}` : name;
+      await fetch(`/api/state?name=${storeName}`, {
         method: 'DELETE',
       });
     } catch (error) {

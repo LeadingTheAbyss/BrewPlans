@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Place } from '@/types/trip';
-import { Clock, Ticket, CheckSquare, Square, Plus, GripVertical } from 'lucide-react';
+import { Clock, Ticket, CheckSquare, Square, Plus, GripVertical, Wallet, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface SortablePlaceCardProps {
   place: Place;
   isOverlay?: boolean;
   compact?: boolean;
   isSelected?: boolean;
+  isAssigned?: boolean;
+  dayColorCode?: string;
+  dragUser?: { name: string; color: string } | null;
   onSelectToggle?: () => void;
   onQuickAdd?: (placeId: string) => void;
   onClickContainer?: () => void;
@@ -19,16 +23,21 @@ export function SortablePlaceCard({
   isOverlay = false, 
   compact = false,
   isSelected = false,
+  isAssigned = false,
+  dayColorCode,
+  dragUser,
   onSelectToggle,
   onQuickAdd,
   onClickContainer
 }: SortablePlaceCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: place.id });
+  const [showWallet, setShowWallet] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.3 : (isAssigned ? 0.4 : 1),
+    ...(dragUser ? { outline: `2px solid ${dragUser.color}`, boxShadow: `0 0 15px ${dragUser.color}40` } : {})
   };
 
   const getCategoryColor = (cat: string) => {
@@ -40,18 +49,45 @@ export function SortablePlaceCard({
   };
   const catStyle = getCategoryColor(place.category || '');
 
+  const borderClasses: Record<string, string> = {
+    'emerald': 'border-emerald-500/50 shadow-[inset_4px_0_0_rgba(16,185,129,0.3)]',
+    'amber': 'border-amber-500/50 shadow-[inset_4px_0_0_rgba(245,158,11,0.3)]',
+    'purple': 'border-purple-500/50 shadow-[inset_4px_0_0_rgba(168,85,247,0.3)]',
+    'blue': 'border-blue-500/50 shadow-[inset_4px_0_0_rgba(59,130,246,0.3)]',
+    'pink': 'border-pink-500/50 shadow-[inset_4px_0_0_rgba(236,72,153,0.3)]',
+  };
+  const dayBorder = dayColorCode ? borderClasses[dayColorCode] || 'border-[#222]' : '';
+
   return (
-    <div
+    <motion.div
+      layoutId={isOverlay || isAssigned ? undefined : `card-${place.id}`}
+      layout={!isOverlay && !isAssigned}
+      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
       ref={setNodeRef}
       style={style}
       onClick={onClickContainer}
-      className={`relative group bg-[#111111] border rounded-xl flex items-stretch transition-all duration-300
-        ${isOverlay ? 'shadow-[0_0_30px_rgba(34,197,94,0.15)] border-green-500/50 scale-[1.02] z-50' : 'border-[#222222] hover:border-[#333] hover:shadow-lg'}
+      className={`relative group bg-[#111111] border rounded-xl flex items-stretch transition-[border-color,background-color,box-shadow,opacity] duration-300
+        ${isOverlay ? 'shadow-[0_0_30px_rgba(34,197,94,0.15)] border-green-500/50 scale-[1.02] z-50' : (dayBorder || 'border-[#222222] hover:border-[#333] hover:shadow-lg')}
         ${isSelected ? 'border-emerald-500/50 bg-emerald-500/5' : ''}
-        ${onClickContainer ? 'cursor-pointer' : ''}
+        ${onClickContainer && !isAssigned ? 'cursor-pointer' : ''}
         ${compact ? 'p-3' : 'p-4'}
       `}
     >
+      {dragUser && (
+        <div 
+          className="absolute -top-3 -right-2 px-2 py-0.5 rounded text-[9px] font-bold text-white shadow-lg z-20 whitespace-nowrap"
+          style={{ backgroundColor: dragUser.color }}
+        >
+          {dragUser.name} dragging...
+        </div>
+      )}
+      
+      {isAssigned && compact && (
+        <div className="absolute -top-2 -right-2 flex items-center gap-1 z-10 pointer-events-none bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded text-emerald-400 backdrop-blur-sm shadow-md">
+          <CheckCircle size={10} />
+          <span className="text-[8px] font-bold uppercase tracking-widest">Assigned</span>
+        </div>
+      )}
       {/* Selection Checkbox (Vault only) */}
       {onSelectToggle && (
         <button 
@@ -70,17 +106,57 @@ export function SortablePlaceCard({
       <div 
         {...attributes} 
         {...listeners} 
-        className={`w-6 flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300 touch-none
-          ${compact ? 'opacity-40 lg:opacity-0 lg:group-hover:opacity-100' : 'opacity-40 group-hover:opacity-100'}
+        className={`w-6 flex items-center justify-center shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300 touch-none
+          ${isAssigned ? 'opacity-10 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100'}
+          ${compact && !isAssigned ? 'lg:opacity-0 lg:group-hover:opacity-100' : ''}
         `}
       >
         <GripVertical size={16} strokeWidth={2} />
       </div>
 
       {/* Content */}
-      <div className={`flex-1 min-w-0 ${compact ? 'pl-3' : 'pl-4'}`}>
+      <div className={`flex-1 min-w-0 ${compact ? 'pl-3' : 'pl-4'} relative`}>
         <div className="flex justify-between items-start mb-1">
-          <h4 className="font-bold text-sm text-zinc-100 truncate pr-2">{place.name}</h4>
+          <h4 className="font-bold text-sm text-zinc-100 truncate pr-6">{place.name}</h4>
+          
+          {/* Micro-Expense Trigger (Only shown when in a day column i.e. dayColorCode exists) */}
+          {dayColorCode && (
+            <div className="absolute right-0 top-0">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowWallet(!showWallet); }}
+                className="text-zinc-500 hover:text-emerald-400 transition-colors p-1 bg-[#1a1a1a] hover:bg-[#222] rounded-md border border-[#333]"
+              >
+                <Wallet size={12} />
+              </button>
+              
+              {showWallet && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a] border border-[#333] rounded-lg shadow-xl z-50 p-3 flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Who Paid?</span>
+                    <select className="bg-[#111] border border-[#333] rounded text-xs px-2 py-1.5 text-zinc-200 outline-none focus:border-emerald-500">
+                      <option>Me</option>
+                      <option>Friend A</option>
+                      <option>Friend B</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Split?</span>
+                    <div className="flex gap-2 text-xs text-zinc-300">
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input type="radio" name={`split-${place.id}`} defaultChecked className="accent-emerald-500" /> Equally
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input type="radio" name={`split-${place.id}`} className="accent-emerald-500" /> Custom
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2 mb-1.5">
           {place.entryFee && place.entryFee > 0 ? (
             <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#222] shrink-0">
               <Ticket size={10} /> ₹{place.entryFee}
@@ -112,6 +188,6 @@ export function SortablePlaceCard({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

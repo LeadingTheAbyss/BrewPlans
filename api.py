@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
@@ -29,6 +29,78 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Collaboration Websocket Manager
+class ConnectionManager:
+    def __init__(self):
+        # Maps room_id -> dict of websocket to user info
+        self.active_connections: dict[str, dict[WebSocket, dict]] = {}
+        self.MAX_COLLABORATORS = 15
+
+    async def connect(self, room_id: str, websocket: WebSocket):
+        await websocket.accept()
+        if room_id not in self.active_connections:
+            self.active_connections[room_id] = {}
+            
+        if len(self.active_connections[room_id]) >= self.MAX_COLLABORATORS:
+            await websocket.send_json({"type": "ERROR", "message": "Room is full (max 15)"})
+            await websocket.close()
+            return False
+            
+        self.active_connections[room_id][websocket] = {"id": str(id(websocket)), "name": "Guest", "picture": None}
+        return True
+
+    def disconnect(self, room_id: str, websocket: WebSocket):
+        if room_id in self.active_connections:
+            if websocket in self.active_connections[room_id]:
+                del self.active_connections[room_id][websocket]
+            if not self.active_connections[room_id]:
+                del self.active_connections[room_id]
+
+    async def broadcast(self, room_id: str, message: dict, sender: WebSocket = None):
+        if room_id in self.active_connections:
+            for connection in self.active_connections[room_id].keys():
+                if connection != sender:
+                    try:
+                        await connection.send_json(message)
+                    except:
+                        pass
+                        
+    def get_room_users(self, room_id: str):
+        return list(self.active_connections.get(room_id, {}).values())
+
+manager = ConnectionManager()
+
+@app.websocket("/api/ws/plan/{plan_id}")
+async def websocket_endpoint(websocket: WebSocket, plan_id: str):
+    success = await manager.connect(plan_id, websocket)
+    if not success:
+        return
+        
+    try:
+        users = manager.get_room_users(plan_id)
+        await manager.broadcast(plan_id, {"type": "PRESENCE", "users": users}, sender=websocket)
+        await websocket.send_json({"type": "PRESENCE", "users": users})
+        
+        while True:
+            data = await websocket.receive_json()
+            if data.get("type") == "JOIN":
+                user_info = data.get("user", {})
+                user_info["id"] = str(id(websocket))
+                manager.active_connections[plan_id][websocket].update(user_info)
+                users = manager.get_room_users(plan_id)
+                await manager.broadcast(plan_id, {"type": "PRESENCE", "users": users})
+                await websocket.send_json({"type": "PRESENCE", "users": users})
+            elif data.get("type") in ["SYNC_STATE", "DRAG_START", "DRAG_END"]:
+                if data.get("type") in ["DRAG_START", "DRAG_END"]:
+                    data["userId"] = str(id(websocket))
+                await manager.broadcast(plan_id, data, sender=websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(plan_id, websocket)
+        users = manager.get_room_users(plan_id)
+        if users:
+            await manager.broadcast(plan_id, {"type": "PRESENCE", "users": users})
+
 
 @app.post("/api/optimize_itinerary")
 async def api_optimize_itinerary(req: Request):

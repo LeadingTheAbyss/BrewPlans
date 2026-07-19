@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useTripStore } from '@/store/tripStore';
 import { useItineraryStore } from '@/store/itineraryStore';
 import { Place } from '@/types/trip';
-import { Clock, Wand2, ArrowRight, CheckCircle, Search, MapPin, Zap, AlertTriangle, ListPlus, Loader2 } from 'lucide-react';
+import { Clock, Wand2, ArrowRight, CheckCircle, Search, MapPin, Zap, AlertTriangle, ListPlus, Loader2, Users, Plus, Link as LinkIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -54,6 +54,21 @@ export default function ItineraryPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Collaboration State
+  const [collaboratorCount, setCollaboratorCount] = useState(1);
+  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [showCollaborators, setShowCollaborators] = useState(false);
+  const [remoteDragStates, setRemoteDragStates] = useState<Record<string, any>>({});
+  const [isCopied, setIsCopied] = useState(false);
+  const wsRef = React.useRef<WebSocket | null>(null);
+  const isRemoteUpdate = React.useRef(false);
+  const [planId, setPlanId] = useState<string | null>(null);
+
+  // Layout & Filter State
+  const [vaultFilter, setVaultFilter] = useState('All');
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+
   // Batch planning state
   const [selectedVaultPlaces, setSelectedVaultPlaces] = useState<Set<string>>(new Set());
 
@@ -62,7 +77,75 @@ export default function ItineraryPage() {
 
   useEffect(() => {
     setIsMounted(true);
+
+    // Collaboration setup
+    const searchParams = new URLSearchParams(window.location.search);
+    let currentPlanId = searchParams.get('planId');
+    if (!currentPlanId) {
+      currentPlanId = crypto.randomUUID();
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('planId', currentPlanId);
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+    setPlanId(currentPlanId);
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // Use 8002 for dev, or same host for prod
+    const wsUrl = process.env.NODE_ENV === 'development' 
+      ? `ws://localhost:8002/api/ws/plan/${currentPlanId}`
+      : `${protocol}//${window.location.host}/api/ws/plan/${currentPlanId}`;
+      
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      const colors = ['#ef4444', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const names = ['Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank'];
+      const name = names[Math.floor(Math.random() * names.length)];
+      ws.send(JSON.stringify({ type: 'JOIN', user: { name, color, picture: null } }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'PRESENCE') {
+          setActiveUsers(data.users || []);
+          setCollaboratorCount(data.users ? data.users.length : 1);
+        } else if (data.type === 'SYNC_STATE') {
+          isRemoteUpdate.current = true;
+          // Apply remote state to local store
+          useItineraryStore.setState(data.state);
+          // Allow small window before local changes re-broadcast
+          setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+        } else if (data.type === 'DRAG_START') {
+          setRemoteDragStates(prev => ({ ...prev, [data.placeId]: data.user }));
+        } else if (data.type === 'DRAG_END') {
+          setRemoteDragStates(prev => {
+            const next = { ...prev };
+            delete next[data.placeId];
+            return next;
+          });
+        }
+      } catch(e) {}
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
+
+  // Broadcast local changes
+  useEffect(() => {
+    if (!isMounted) return;
+    const unsub = useItineraryStore.subscribe((state) => {
+      if (isRemoteUpdate.current) return;
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'SYNC_STATE', state }));
+      }
+    });
+    return unsub;
+  }, [isMounted]);
 
   // Initialize days on mount or if dates change
   useEffect(() => {
@@ -97,14 +180,27 @@ export default function ItineraryPage() {
   const assignedPlaceIds = React.useMemo(() => new Set(itinerary.days.flatMap(d => d.placeIds)), [itinerary.days]);
   const allUnassigned = React.useMemo(() => itinerary.selectedPlaces.filter(p => !assignedPlaceIds.has(p.id)), [itinerary.selectedPlaces, assignedPlaceIds]);
   
-  // Filtered unassigned places
-  const unassignedPlaces = React.useMemo(() => {
-    if (!searchQuery) return allUnassigned;
-    const q = searchQuery.toLowerCase();
-    return allUnassigned.filter(p => p.name.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
-  }, [allUnassigned, searchQuery]);
+  // Filtered vault places
+  const vaultPlaces = React.useMemo(() => {
+    let places = itinerary.selectedPlaces;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      places = places.filter(p => p.name.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
+    }
+    if (vaultFilter !== 'All') {
+      const filterCat = vaultFilter.toLowerCase();
+      places = places.filter(p => {
+        const cat = (p.category || '').toLowerCase();
+        if (filterCat === 'attractions') return !cat.includes('food') && !cat.includes('hotel');
+        if (filterCat === 'food') return cat.includes('food') || cat.includes('restaurant') || cat.includes('cafe');
+        if (filterCat === 'hotels') return cat.includes('hotel') || cat.includes('resort');
+        return true;
+      });
+    }
+    return places;
+  }, [itinerary.selectedPlaces, searchQuery, vaultFilter]);
   
-  const unassignedItemIds = React.useMemo(() => unassignedPlaces.map(p => p.id), [unassignedPlaces]);
+  const vaultItemIds = React.useMemo(() => vaultPlaces.map(p => p.id), [vaultPlaces]);
 
   // Summary Metrics
   const totalScheduledHours = React.useMemo(() => itinerary.days.reduce((sum, d) => sum + d.totalTimeHours, 0), [itinerary.days]);
@@ -130,7 +226,12 @@ export default function ItineraryPage() {
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const place = itinerary.selectedPlaces.find(p => p.id === active.id);
-    if (place) setActivePlace(place);
+    if (place) {
+      setActivePlace(place);
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'DRAG_START', placeId: place.id }));
+      }
+    }
   };
 
   const handleDragOver = (event: any) => {
@@ -305,16 +406,13 @@ export default function ItineraryPage() {
       >
         
         {/* PANE 1: Left Vault (Unassigned) */}
-        <div className="w-full lg:w-[320px] flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto">
-          <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d]">
+        <div className={`transition-all duration-300 ease-in-out flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto overflow-hidden ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
+          <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d] shrink-0 w-[320px]">
             <div className="mb-4">
               <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-zinc-100">
                 <MapPin size={18} className="text-emerald-500" />
                 Saved Places
               </h2>
-              <p className="text-[11px] text-zinc-400 mt-1 font-medium leading-relaxed">
-                Drag places to a day, or <span className="text-zinc-200 font-bold">click on a place</span> to quickly assign it.
-              </p>
             </div>
             
             <div className="relative mb-4">
@@ -326,6 +424,19 @@ export default function ItineraryPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-[#111] border border-[#222] rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-[#444] transition-colors"
               />
+            </div>
+            
+            {/* Filter Chips */}
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar-on-mobile mb-4 pb-1">
+              {['All', 'Attractions', 'Food', 'Hotels'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setVaultFilter(f)}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap border ${vaultFilter === f ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-[#111] text-zinc-500 border-[#333] hover:border-[#444] hover:text-zinc-300'}`}
+                >
+                  {f}
+                </button>
+              ))}
             </div>
             
             {/* Batch Actions Strip */}
@@ -341,7 +452,7 @@ export default function ItineraryPage() {
               ) : (
                 <button 
                   onClick={selectAllFiltered}
-                  disabled={unassignedPlaces.length === 0}
+                  disabled={vaultPlaces.length === 0}
                   className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-50 disabled:hover:text-zinc-500"
                 >
                   Select All
@@ -350,64 +461,150 @@ export default function ItineraryPage() {
             </div>
           </div>
           
-          <DroppableList id="unassigned" items={unassignedItemIds} className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 custom-scrollbar">
-            {unassignedPlaces.map(place => (
+          <DroppableList id="unassigned" items={vaultItemIds} className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 custom-scrollbar w-[320px]">
+            {vaultPlaces.map(place => (
               <SortablePlaceCard 
                 key={place.id} 
                 place={place} 
                 compact 
                 isSelected={selectedVaultPlaces.has(place.id)}
+                isAssigned={assignedPlaceIds.has(place.id)}
+                dragUser={remoteDragStates[place.id]}
                 onSelectToggle={() => handleToggleSelect(place.id)}
                 onQuickAdd={handleQuickAdd}
                 onClickContainer={() => setGamifiedPlace(place)}
               />
             ))}
             
-            {allUnassigned.length === 0 && (
+            {itinerary.selectedPlaces.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-zinc-600 px-4 text-center">
                 <div className="w-12 h-12 rounded-full bg-[#111] border border-[#222] flex items-center justify-center mb-3 shadow-inner">
                   <CheckCircle size={20} className="text-emerald-500/50" />
                 </div>
                 <p className="text-xs font-bold tracking-wider uppercase mb-1">Vault Empty</p>
-                <p className="text-[10px] text-zinc-500">All places have been routed onto the timeline.</p>
+                <p className="text-[10px] text-zinc-500">Save places from the map first.</p>
               </div>
             )}
             
-            {allUnassigned.length > 0 && unassignedPlaces.length === 0 && (
+            {itinerary.selectedPlaces.length > 0 && vaultPlaces.length === 0 && (
               <div className="py-10 text-center text-sm text-zinc-600 font-medium">
-                No places match your search.
+                No places match your filter/search.
               </div>
             )}
           </DroppableList>
         </div>
 
         {/* PANE 2: Center Canvas (Horizontal Board) */}
-        <div className="flex-1 flex flex-col z-10 relative min-w-0 min-h-[60vh] lg:min-h-0">
+        <div className="flex-1 flex flex-col z-10 relative min-w-0 min-h-[60vh] lg:min-h-0 bg-[#050505]">
+          {/* Toggle Left Sidebar */}
+          <button 
+            onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
+          >
+            {isLeftSidebarOpen ? '<' : '>'}
+          </button>
+
+          {/* Toggle Right Sidebar */}
+          <button 
+            onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
+          >
+            {isRightSidebarOpen ? '>' : '<'}
+          </button>
+
           {/* Top Overview / Minimap Bar */}
           <div className="h-auto min-h-[64px] shrink-0 border-b border-[#1a1a1a] bg-[#0a0a0a]/80 backdrop-blur flex flex-col sm:flex-row sm:items-center px-4 lg:px-8 py-4 sm:py-0 justify-between z-20 gap-3">
             <div>
-              <h1 className="text-xl font-black tracking-tight drop-shadow-md">
-                Route <span className="text-emerald-500">Board</span>
-              </h1>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Horizontal Planning</p>
+              <p className="text-sm text-zinc-300 font-medium leading-relaxed tracking-wide">
+                Drag places to a day, or <span className="text-emerald-400 font-bold">click on a place</span> to quickly assign it.
+              </p>
             </div>
             
-            {/* Day Capacity Minimap */}
-            <div className="flex gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar-on-mobile">
-              {itinerary.days.map(d => (
-                <div 
-                  key={d.dayNumber}
-                  className={`w-12 h-8 shrink-0 rounded border flex flex-col justify-end overflow-hidden
-                    ${d.totalTimeHours > 8 ? 'bg-red-950/30 border-red-900/50' : 'bg-[#111] border-[#222]'}
-                  `}
-                  title={`Day ${d.dayNumber}: ${d.totalTimeHours}h scheduled`}
-                >
+            {/* Day Capacity Minimap & Collaboration */}
+            <div className="flex items-center gap-4">
+              
+              {/* Active Collaborators */}
+              <div className="relative flex items-center">
+                {activeUsers.length > 0 && (
                   <div 
-                    className={`w-full transition-all duration-500 ${d.totalTimeHours > 8 ? 'bg-red-500/80' : 'bg-emerald-500/60'}`}
-                    style={{ height: `${Math.min(100, (d.totalTimeHours / 8) * 100)}%` }}
-                  />
-                </div>
-              ))}
+                    className="flex items-center -space-x-2 mr-3 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setShowCollaborators(!showCollaborators)}
+                  >
+                    {activeUsers.map((u, i) => (
+                      <div 
+                        key={u.id || i}
+                        className="w-8 h-8 rounded-full border-2 border-[#111] flex items-center justify-center text-[10px] font-bold text-white uppercase shadow-md relative z-10"
+                        style={{ backgroundColor: u.color || '#3b82f6' }}
+                        title={u.name}
+                      >
+                        {u.name?.charAt(0) || 'U'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Collaborators Popover */}
+                {showCollaborators && activeUsers.length > 0 && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#333] rounded-lg shadow-xl z-50 py-2">
+                    <div className="px-3 pb-2 mb-2 border-b border-[#333] text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                      Active Collaborators
+                    </div>
+                    {activeUsers.map((u, i) => (
+                      <div key={u.id || i} className="flex items-center gap-3 px-3 py-1.5 hover:bg-[#222]">
+                        <div 
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white uppercase"
+                          style={{ backgroundColor: u.color || '#3b82f6' }}
+                        >
+                          {u.name?.charAt(0) || 'U'}
+                        </div>
+                        <span className="text-xs text-zinc-300 font-medium">{u.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Invite Collaborators Button */}
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 2000);
+                }}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] group border border-blue-500/50"
+              >
+                {isCopied ? (
+                  <>
+                    <CheckCircle size={16} />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} strokeWidth={3} />
+                    <span>Invite Collaborators</span>
+                  </>
+                )}
+              </button>
+
+              <div className="hidden sm:block h-6 w-px bg-[#222]"></div>
+
+              {/* Minimap */}
+              <div className="flex gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar-on-mobile">
+                {itinerary.days.map(d => (
+                  <div 
+                    key={d.dayNumber}
+                    className={`w-12 h-8 shrink-0 rounded border flex flex-col justify-end overflow-hidden
+                      ${d.totalTimeHours > 8 ? 'bg-red-950/30 border-red-900/50' : 'bg-[#111] border-[#222]'}
+                    `}
+                    title={`Day ${d.dayNumber}: ${d.totalTimeHours}h scheduled`}
+                  >
+                    <div 
+                      className={`w-full transition-all duration-500 ${d.totalTimeHours > 8 ? 'bg-red-500/80' : 'bg-emerald-500/60'}`}
+                      style={{ height: `${Math.min(100, (d.totalTimeHours / 8) * 100)}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -433,21 +630,31 @@ export default function ItineraryPage() {
                   <div key={day.dayNumber} className="w-[300px] lg:w-[340px] flex flex-col h-full bg-[#0c0c0c] rounded-2xl border border-[#1a1a1a] shadow-xl overflow-hidden shrink-0 transition-colors hover:border-[#222]">
                     
                     {/* Day Column Header */}
-                    <div className="p-4 border-b border-[#1a1a1a] bg-[#111] flex items-center justify-between shrink-0">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner
-                          ${isOverloaded ? 'bg-red-950/50 border-red-500/30 text-red-400' : 'bg-zinc-900 border-zinc-700/50 text-emerald-400'}
-                        `}>
-                          <span className="text-xl font-black">{day.dayNumber}</span>
-                        </div>
-                        <div>
-                          <span className="block text-[13px] font-semibold text-zinc-200">{formattedDate}</span>
-                          <span className={`text-[10px] font-medium tracking-wider mt-0.5 block
-                            ${isOverloaded ? 'text-red-400' : 'text-zinc-500'}
+                    <div className="p-4 border-b border-[#1a1a1a] bg-[#111] flex flex-col gap-3 shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner
+                            ${isOverloaded ? 'bg-red-950/50 border-red-500/30 text-red-400' : 'bg-zinc-900 border-zinc-700/50 text-emerald-400'}
                           `}>
-                            {day.totalTimeHours} / 8 HOURS
-                          </span>
+                            <span className="text-xl font-black">{day.dayNumber}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[13px] font-semibold text-zinc-200">{formattedDate}</span>
+                            <span className={`text-[10px] font-medium tracking-wider mt-0.5 block
+                              ${isOverloaded ? 'text-red-400' : 'text-zinc-500'}
+                            `}>
+                              {day.totalTimeHours} / 8 HOURS
+                            </span>
+                          </div>
                         </div>
+                      </div>
+                      
+                      {/* Interactive Budget Bar */}
+                      <div className="w-full h-1.5 bg-[#222] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${isOverloaded ? 'bg-red-500' : (day.totalTimeHours > 6 ? 'bg-amber-500' : 'bg-emerald-500')}`}
+                          style={{ width: `${Math.min(100, (day.totalTimeHours / 8) * 100)}%` }}
+                        />
                       </div>
                     </div>
 
@@ -455,15 +662,39 @@ export default function ItineraryPage() {
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative">
 
                       <DroppableList id={day.dayNumber.toString()} items={day.placeIds} className="p-3 space-y-3 min-h-full relative z-10">
-                        {dayPlaces.map(place => (
-                          <SortablePlaceCard 
-                            key={place.id} 
-                            place={place} 
-                            onClickContainer={() => {
-                              setGamifiedPlace(place);
-                            }}
-                          />
-                        ))}
+                        {dayPlaces.map((place, idx) => {
+                          const isLast = idx === dayPlaces.length - 1;
+                          const dayColorCodes = ['emerald', 'amber', 'purple', 'blue', 'pink'];
+                          const colorCode = dayColorCodes[(day.dayNumber - 1) % dayColorCodes.length];
+                          
+                          // Mock distance calculation for UI purposes
+                          const nextPlace = !isLast ? dayPlaces[idx + 1] : null;
+                          let distanceStr = '';
+                          if (nextPlace) {
+                            const hash = (place.id + nextPlace.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                            const km = ((hash % 150) / 10).toFixed(1);
+                            const mins = Math.floor(parseFloat(km) * (60 / 30));
+                            distanceStr = `🚗 ${mins} mins transit (${km} km)`;
+                          }
+
+                          return (
+                            <React.Fragment key={place.id}>
+                              <SortablePlaceCard 
+                                place={place}
+                                dayColorCode={colorCode}
+                                dragUser={remoteDragStates[place.id]}
+                                onClickContainer={() => {
+                                  setGamifiedPlace(place);
+                                }}
+                              />
+                              {!isLast && (
+                                <div className="flex items-center justify-center my-1.5 py-1 text-zinc-500 font-bold text-[10px] uppercase tracking-widest bg-[#1a1a1a]/50 rounded-md border border-[#222]">
+                                  {distanceStr}
+                                </div>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                         
                         {dayPlaces.length === 0 && (
                           <div className="h-32 rounded-xl flex flex-col items-center justify-center text-zinc-500 opacity-80 bg-[#111]/50 border border-dashed border-[#333] px-6 text-center transition-all hover:border-[#444] hover:bg-[#111]">
@@ -501,8 +732,9 @@ export default function ItineraryPage() {
         </div>
 
         {/* PANE 3: Right Summary (Trip Overview) */}
-        <div className="w-full lg:w-[300px] bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-l border-t lg:border-t-0 border-[#1a1a1a] z-20 shrink-0 flex flex-col shadow-2xl">
-          <div className="px-6 py-8 border-b border-[#1a1a1a]">
+        <div className={`transition-all duration-300 ease-in-out bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-l border-t lg:border-t-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl overflow-hidden ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
+          <div className="w-[300px] flex flex-col h-full">
+            <div className="px-6 py-8 border-b border-[#1a1a1a] shrink-0">
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-300 mb-6">
               Trip Overview
             </h3>
@@ -556,19 +788,18 @@ export default function ItineraryPage() {
               </div>
             </div>
           </div>
-
           <div className="p-6 flex-1 flex flex-col gap-4 bg-gradient-to-b from-transparent to-[#050505]">
             <div className="flex-1"></div>
             
             <button
-              onClick={() => itinerary.batchAssign(allUnassigned.map(p => p.id))}
-              disabled={allUnassigned.length === 0 || itinerary.isOptimizing}
+              onClick={() => itinerary.batchAssign(vaultItemIds)}
+              disabled={vaultPlaces.length === 0 || itinerary.isOptimizing}
               className="w-full bg-[#111] border border-[#333] hover:border-emerald-500 hover:bg-[#1a1a1a] disabled:opacity-50 disabled:hover:border-[#333] text-zinc-300 hover:text-emerald-400 text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group"
             >
               {itinerary.isOptimizing && (
                 <Loader2 size={16} className="text-emerald-400 animate-spin" />
               )}
-              {itinerary.isOptimizing ? 'Optimizing Route...' : 'Schedule to maximize comfort'}
+              {itinerary.isOptimizing ? 'Optimizing Route...' : 'Schedule to Maximize Comfort'}
             </button>
             
             <button 
@@ -578,6 +809,7 @@ export default function ItineraryPage() {
               Complete Trip <ArrowRight size={18} />
             </button>
           </div>
+        </div>
         </div>
 
         {/* Drag Overlay */}

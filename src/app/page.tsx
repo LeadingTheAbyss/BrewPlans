@@ -539,7 +539,7 @@ export default function LandingPage() {
               onClick={() => handleNavigation('/quick-trip')} 
               className="text-base tracking-wide font-bold text-white/80 hover:text-white hover:scale-105 transition-all flex items-center gap-1.5"
             >
-              Quick Trip
+              Plan a Hangout in Your City
             </button>
           </div>
         </div>
@@ -586,9 +586,9 @@ export default function LandingPage() {
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); handleNavigation('/quick-trip'); }} 
-            className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"
+            className="w-full text-left py-4 text-2xl font-bold tracking-tight text-white border-b border-white/10"
           >
-            Quick Trip
+            Plan a Hangout in Your City
           </button>
         </div>
       )}
@@ -696,15 +696,14 @@ export default function LandingPage() {
                 <div className="flex items-center text-white text-xs md:text-base font-bold group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform">
                   Start <ArrowRight className="ml-1 w-3 h-3 md:w-5 md:h-5" />
                 </div>
-              </div>
-
-              {/* Card 3: Quick Trip Mode */}
+              </div>              {/* Card 3: Hangout Mode */}
               <div 
                 onClick={() => handleNavigation('/quick-trip')}
-                className="bg-emerald-600 border border-emerald-500 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-emerald-500 transition-all duration-300 md:hover:scale-105 group shadow-[0_0_30px_-10px_rgba(5,150,105,0.5)] md:shadow-[0_0_40px_-10px_rgba(5,150,105,0.5)] hover:shadow-[0_0_60px_-15px_rgba(5,150,105,0.7)] flex flex-col justify-between h-full"
+                className="group relative col-span-2 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-indigo-500/10 via-[#0a0a0a] to-[#0a0a0a] p-1.5 border border-white/5 cursor-pointer hover:border-white/20 transition-colors shadow-2xl h-[120px] md:h-[250px]"
               >
-                <div>
-                  <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Quick Trip</h3>
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative h-full w-full rounded-2xl bg-[#080808] border border-white/5 p-4 md:p-8 flex flex-col justify-between overflow-hidden group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-shadow">
+                  <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Plan a Hangout in Your City</h3>
                   <p className="text-emerald-100 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
                     Short on time? Let's plan a spontaneous getaway.
                   </p>

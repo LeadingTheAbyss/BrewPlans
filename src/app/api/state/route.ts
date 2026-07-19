@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const userId = await getUserId();
     if (!userId) return NextResponse.json({ value: null });
 
-    const scopedName = `${userId}:${name}`;
+    const scopedName = name.startsWith('shared-') ? name : `${userId}:${name}`;
     const cacheKey = `appState:${scopedName}`;
     
     // 1. Try fetching from Redis Cache first
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const userId = await getUserId();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const scopedName = `${userId}:${name}`;
+    const scopedName = name.startsWith('shared-') ? name : `${userId}:${name}`;
 
     const appState = await prisma.appState.upsert({
       where: { storeName: scopedName },
@@ -104,7 +104,7 @@ export async function DELETE(request: Request) {
     const userId = await getUserId();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const scopedName = `${userId}:${name}`;
+    const scopedName = name.startsWith('shared-') ? name : `${userId}:${name}`;
 
     await prisma.appState.delete({
       where: { storeName: scopedName },

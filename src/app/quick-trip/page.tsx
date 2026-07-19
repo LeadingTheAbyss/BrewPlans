@@ -757,7 +757,7 @@ export default function QuickTripPage() {
 
           await addSectionToPdf('pdf-summary', true);
 
-          pdf.save(`QuickTrip_${city || 'Plan'}.pdf`);
+          pdf.save(`HangoutPlan_${city || 'Plan'}.pdf`);
           setIsGeneratingPdf(false);
         } catch (err: any) {
           console.error('PDF generation error', err);
@@ -783,7 +783,7 @@ export default function QuickTripPage() {
     let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
     if (waypoints) url += `&waypoints=${waypoints}`;
     if (navigator.share) {
-      navigator.share({ title: `Quick Trip Plan`, url }).catch(() => {});
+      navigator.share({ title: `Hangout Plan`, url }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url);
       displayToast('Google Maps route link copied to clipboard!');
@@ -809,7 +809,7 @@ export default function QuickTripPage() {
           </button>
           <div className="w-px h-4 bg-zinc-800" />
           <div className="flex items-center gap-2">
-            <span className="font-bold text-base tracking-tight">Quick Trip</span>
+            <span className="font-bold text-base tracking-tight">Plan a Hangout in Your City</span>
           </div>
           <div className="text-xs text-zinc-600 hidden sm:block">Plan a hangout in 60 seconds</div>
         </div>
@@ -1216,7 +1216,7 @@ export default function QuickTripPage() {
                         }`}
                       >
                         {isSaving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 
-                         isSaved ? <><Check size={16} /> Trip Saved!</> : 'Save Quick Trip'}
+                         isSaved ? <><Check size={16} /> Trip Saved!</> : 'Save Hangout Plan'}
                       </button>
                     </div>
                   )}
@@ -1230,7 +1230,7 @@ export default function QuickTripPage() {
       {/* Hidden PDF Content */}
       <div id="pdf-content" className="bg-[#050505] text-white w-[1024px] absolute top-[-9999px] left-[-9999px] z-[-50] overflow-visible" style={{ opacity: 0, pointerEvents: 'none' }}>
         <div id="pdf-summary" className="p-8 bg-[#050505]">
-          <h1 className="text-4xl font-bold mb-8 tracking-tight text-white">Quick Trip to {city || 'Somewhere'}</h1>
+          <h1 className="text-4xl font-bold mb-8 tracking-tight text-white">Hangout Plan for {city || 'Somewhere'}</h1>
           
           <div className="bg-[#111] border border-[#222] rounded-2xl p-6 mb-8 flex justify-between">
             <div className="flex gap-8">

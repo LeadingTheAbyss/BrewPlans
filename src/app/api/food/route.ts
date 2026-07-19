@@ -57,9 +57,9 @@ export async function GET(req: Request) {
 
     const isAdmin = ADMIN_EMAILS.includes(user.email);
 
-    if (!isAdmin && currentCalls >= 999) {
+    if (!isAdmin && currentCalls >= 150) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded: You have reached your 999 API calls limit for today.' }, 
+        { error: 'Rate limit exceeded: You have reached your 150 API calls limit for today.' }, 
         { status: 429 }
       );
     }

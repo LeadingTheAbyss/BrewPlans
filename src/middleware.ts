@@ -10,8 +10,10 @@ export function middleware(request: NextRequest) {
 
   if (!sessionCookie) {
     console.log('[Middleware] Redirecting to login, no session cookie found.');
-    // Redirect to login if unauthenticated
-    return NextResponse.redirect(new URL('/login', request.url));
+    // Redirect to login if unauthenticated and append the return url
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', request.nextUrl.pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
