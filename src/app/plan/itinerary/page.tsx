@@ -68,6 +68,11 @@ export default function ItineraryPage() {
      };
   }, [authUser]);
 
+  const myUserRef = React.useRef(myUser);
+  useEffect(() => {
+    myUserRef.current = myUser;
+  }, [myUser]);
+
   const [collaboratorCount, setCollaboratorCount] = useState(1);
   const [activeUsers, setActiveUsers] = useState<any[]>([myUser]);
   const [showCollaborators, setShowCollaborators] = useState(false);
@@ -119,8 +124,8 @@ export default function ItineraryPage() {
     ws.onopen = () => {
       const animals = ['Panda', 'Tiger', 'Koala', 'Fox', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Otter', 'Seal', 'Rhino', 'Moose'];
       const animal = animals[Math.floor(Math.random() * animals.length)];
-      const name = myUser.name !== 'You' ? myUser.name : 'Anonymous ' + animal;
-      ws.send(JSON.stringify({ type: 'JOIN', user: { frontend_id: myUser.id, name, color: myUser.color, picture: myUser.picture } }));
+      const name = myUserRef.current.name !== 'You' ? myUserRef.current.name : 'Anonymous ' + animal;
+      ws.send(JSON.stringify({ type: 'JOIN', user: { frontend_id: myUserRef.current.id, name, color: myUserRef.current.color, picture: myUserRef.current.picture } }));
     };
 
     ws.onmessage = (event) => {
@@ -128,8 +133,8 @@ export default function ItineraryPage() {
         const data = JSON.parse(event.data);
         if (data.type === 'PRESENCE') {
           // Filter out the local user from the backend's presence list using frontend_id
-          const others = (data.users || []).filter((u: any) => u.frontend_id !== myUser.id);
-          setActiveUsers([myUser, ...others]); 
+          const others = (data.users || []).filter((u: any) => u.frontend_id !== myUserRef.current.id);
+          setActiveUsers([myUserRef.current, ...others]); 
           setCollaboratorCount(others.length + 1);
         } else if (data.type === 'SYNC_STATE') {
           isRemoteUpdate.current = true;
@@ -153,7 +158,23 @@ export default function ItineraryPage() {
     return () => {
       ws.close();
     };
-  }, []);
+  }, []); // Only run once on mount
+
+  // Sync auth updates to the backend presence
+  useEffect(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const animals = ['Panda', 'Tiger', 'Koala', 'Fox', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Otter', 'Seal', 'Rhino', 'Moose'];
+      const animal = animals[Math.floor(Math.random() * animals.length)];
+      const name = myUser.name !== 'You' ? myUser.name : 'Anonymous ' + animal;
+      wsRef.current.send(JSON.stringify({ type: 'JOIN', user: { frontend_id: myUser.id, name, color: myUser.color, picture: myUser.picture } }));
+    }
+    
+    // Also explicitly update the local activeUsers list in case PRESENCE is delayed
+    setActiveUsers(prev => {
+      const others = prev.filter(u => u.frontend_id !== myUser.id && !u.isMe);
+      return [myUser, ...others];
+    });
+  }, [myUser]);
 
   // Broadcast local changes via WebSocket
   useEffect(() => {
