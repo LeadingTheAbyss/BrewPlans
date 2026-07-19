@@ -383,7 +383,7 @@ export default function ItineraryPage() {
 
   const selectAllFiltered = () => {
     const newSet = new Set(selectedVaultPlaces);
-    unassignedPlaces.forEach(p => newSet.add(p.id));
+    vaultPlaces.forEach(p => newSet.add(p.id));
     setSelectedVaultPlaces(newSet);
   };
 
