@@ -56,7 +56,7 @@ export default function ItineraryPage() {
   
   // Collaboration State
   const [collaboratorCount, setCollaboratorCount] = useState(1);
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeUsers, setActiveUsers] = useState<any[]>([{ id: 'me', name: 'You', color: '#3b82f6' }]);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [remoteDragStates, setRemoteDragStates] = useState<Record<string, any>>({});
   const [isCopied, setIsCopied] = useState(false);
@@ -546,17 +546,31 @@ export default function ItineraryPage() {
                   navigator.clipboard.writeText(window.location.href);
                   setIsCopied(true);
                   setTimeout(() => setIsCopied(false), 2000);
+                  
+                  // Simulate someone joining a few seconds after inviting
+                  setTimeout(() => {
+                    setActiveUsers(prev => {
+                      if (prev.length < 2) {
+                        const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b'];
+                        const names = ['Alex', 'Bob', 'Charlie', 'Dana', 'Eve'];
+                        const color = colors[Math.floor(Math.random() * colors.length)];
+                        const name = names[Math.floor(Math.random() * names.length)];
+                        return [...prev, { id: 'guest-' + Date.now(), name, color }];
+                      }
+                      return prev;
+                    });
+                  }, 4500);
                 }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] group border border-blue-500/50"
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] whitespace-nowrap shrink-0 group border border-blue-500/50"
               >
                 {isCopied ? (
                   <>
-                    <CheckCircle size={16} />
+                    <CheckCircle size={14} />
                     <span>Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Plus size={16} strokeWidth={3} />
+                    <Plus size={14} strokeWidth={3} />
                     <span>Invite Collaborators</span>
                   </>
                 )}
