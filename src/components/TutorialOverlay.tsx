@@ -24,8 +24,10 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
 
   useEffect(() => {
     setMounted(true);
-    // TEMPORARY: Always show for debugging
-    setIsVisible(true);
+    const hasCompleted = localStorage.getItem(`tutorial-completed-${tutorialKey}`);
+    if (!hasCompleted) {
+      setIsVisible(true);
+    }
   }, [tutorialKey]);
 
   useEffect(() => {
