@@ -14,6 +14,7 @@ import { useCacheStore } from '@/store/cacheStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedGlobe from '@/components/AnimatedGlobe';
+import TutorialOverlay from '@/components/TutorialOverlay';
 
 const TRIP_STYLES = [
   { id: 'family', label: 'Family' },
@@ -108,7 +109,7 @@ export default function TripSetupPage() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 bg-background transition-colors duration-300" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className="w-full h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 bg-background transition-colors duration-300 overflow-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -126,8 +127,8 @@ export default function TripSetupPage() {
           <div className="space-y-6 md:space-y-10">
             {/* Row 1: Destination & Dates */}
             <div className="grid grid-cols-2 gap-2 md:gap-8">
-              <div className="space-y-1.5 sm:space-y-3 min-w-0">
-                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Destination</label>
+              <div id="tutorial-step-destination" className="space-y-1.5 sm:space-y-3 min-w-0 rounded-lg">
+                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Destination</label>
                 <div className="relative text-white z-50">
                   <CityAutocomplete 
                     label="" 
@@ -152,8 +153,8 @@ export default function TripSetupPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5 sm:space-y-3 min-w-0">
-                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Dates</label>
+              <div id="tutorial-step-dates" className="space-y-1.5 sm:space-y-3 min-w-0 rounded-lg">
+                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Dates</label>
                 <div className="relative text-white z-40">
                   <ModernDateRangePicker 
                     label=""
@@ -167,8 +168,8 @@ export default function TripSetupPage() {
             </div>
 
             {/* Row 2: Budget */}
-            <div className="space-y-1.5 sm:space-y-3">
-              <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Total Budget (INR)</label>
+            <div id="tutorial-step-budget" className="space-y-1.5 sm:space-y-3 rounded-lg">
+              <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Total Budget (INR)</label>
               <div className="flex items-center gap-3 border-b border-border pb-2 hover:border-primary/50 transition-colors">
                 <span className="text-xl font-medium text-muted-foreground">₹</span>
                 <input 
@@ -189,9 +190,9 @@ export default function TripSetupPage() {
             </div>
 
             {/* Row 3: Passengers */}
-            <div className="pt-8 border-t border-neutral-800">
+            <div id="tutorial-step-passenger" className="pt-8 border-t border-neutral-800 rounded-lg">
                <div className="flex flex-row justify-between items-center mb-5 gap-2">
-                 <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest truncate">Passengers</label>
+                 <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Passengers</label>
                  <button onClick={handleAddPassenger} className="text-muted-foreground hover:text-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 transition-colors whitespace-nowrap shrink-0">
                    <Plus size={12}/> Add Passenger
                  </button>
@@ -213,7 +214,7 @@ export default function TripSetupPage() {
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         {/* Name Input with Autocomplete */}
                         <div className="md:col-span-5 relative">
-                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Full Name</label>
+                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Full Name</label>
                           <input 
                             type="text" placeholder="e.g. John Doe"
                             className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
@@ -354,6 +355,32 @@ export default function TripSetupPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <TutorialOverlay 
+        tutorialKey="plan-setup"
+        steps={[
+          {
+            targetId: 'tutorial-step-destination',
+            title: 'Enter your destination here',
+            text: ''
+          },
+          {
+            targetId: 'tutorial-step-dates',
+            title: 'Select your dates to check booking availability',
+            text: ''
+          },
+          {
+            targetId: 'tutorial-step-budget',
+            title: 'Set your budget for the trip (include Travel and Stay as well)',
+            text: ''
+          },
+          {
+            targetId: 'tutorial-step-passenger',
+            title: 'Add co-travelers for the trip',
+            text: ''
+          }
+        ]}
+      />
     </div>
   );
 }

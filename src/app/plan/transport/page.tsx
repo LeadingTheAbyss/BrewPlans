@@ -12,6 +12,7 @@ import { useCacheStore } from '@/store/cacheStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
 import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/components/ui/TrainModals';
 import AnimatedGlobe from '@/components/AnimatedGlobe';
+import TutorialOverlay from '@/components/TutorialOverlay';
 
 const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -430,6 +431,7 @@ export default function TransportPage() {
                 {trip.passengers.length > 0 && (
                   <div className="relative">
                     <div 
+                      id="tutorial-transport-passenger"
                       onClick={() => setIsPassengerDropdownOpen(!isPassengerDropdownOpen)}
                       className="bg-card p-5 rounded-2xl border border-border cursor-pointer flex justify-between items-center shadow-sm hover:border-primary/50 hover:shadow-md transition-all group"
                     >
@@ -496,7 +498,7 @@ export default function TransportPage() {
                         {/* Transport Section */}
                     <div className="space-y-5">
                       {/* Transport Type Pills */}
-                      <div className="flex overflow-x-auto no-scrollbar items-center gap-2.5 pb-2">
+                      <div id="tutorial-transport-options" className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto no-scrollbar items-center gap-2.5 pb-2">
                         {['flight', 'train', 'bus', 'cab'].map((type) => {
                           const destination = trip.destination || 'Unknown';
                           const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
@@ -524,7 +526,7 @@ export default function TransportPage() {
                               data-active={isActive}
                               onClick={() => handleAccordionClick(pax, type)}
                               disabled={isDisabled}
-                              className={`w-[135px] shrink-0 px-2 py-3.5 flex flex-col items-center justify-center gap-1.5 font-bold rounded-2xl border transition-all ${
+                              className={`w-[calc(50%-5px)] sm:w-[135px] shrink-0 px-2 py-3.5 flex flex-col items-center justify-center gap-1.5 font-bold rounded-2xl border transition-all ${
                                 isDisabled
                                   ? 'bg-muted/20 border-border/40 text-muted-foreground/40 cursor-not-allowed'
                                   : isActive
@@ -1098,6 +1100,22 @@ export default function TransportPage() {
         onClose={() => setStationBoardOpen(false)} 
         stationCode={trip.destination}
         stationName={trip.destination}
+      />
+
+      <TutorialOverlay 
+        tutorialKey="plan-transport"
+        steps={[
+          {
+            targetId: 'tutorial-transport-passenger',
+            title: 'Change Traveller',
+            text: 'Click on the top to change the traveller'
+          },
+          {
+            targetId: 'tutorial-transport-options',
+            title: 'Transport Modes',
+            text: 'Click on a box to view the options to go to the destination using that type of transport'
+          }
+        ]}
       />
     </div>
   );

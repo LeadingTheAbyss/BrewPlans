@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useBudgetStore } from '@/store/budgetStore';
 import { useTripStore } from '@/store/tripStore';
-import { Plane, Building, Landmark, Coffee, User, Menu, ChevronUp, Check, ListFilter, Sun, Moon, X, AlertCircle } from 'lucide-react';
+import { Plane, Building, Landmark, Coffee, User, Menu, ChevronUp, Check, ListFilter, Sun, Moon, X, AlertCircle, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
   const [isBudgetDropdownOpen, setIsBudgetDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       
       {/* Horizontal Progression Track */}
       {pathname !== '/profile' && pathname !== '/' && (
-        <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
+        <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 md:gap-3 shrink-0">
               <img src="/icon.png" alt="PlanBro Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
@@ -153,6 +155,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {isDark ? <Sun size={14} /> : <Moon size={14} />}
             </button>
+            
+            <button 
+              onClick={() => setIsFeedbackOpen(true)}
+              className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
+              title="Send us Feedback"
+            >
+              <MessageSquare size={14} />
+            </button>
             <Link href="/profile" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
               {user ? (
                 <UserAvatar user={user} className="w-full h-full text-[10px]" />
@@ -224,6 +234,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
       </main>
+
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
   );
 }

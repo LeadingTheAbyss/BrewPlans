@@ -50,17 +50,17 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
 
       {/* Details Area */}
       <div className="flex-1 p-6 flex flex-col">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              {hotel.name}
-              <span className="text-yellow-500 text-sm">{'★'.repeat(Math.round(hotel.rating || 5))}</span>
+        <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4 mb-6">
+          <div className="w-full sm:w-auto pr-0 sm:pr-4">
+            <h3 className="text-lg sm:text-xl font-bold text-white flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>{hotel.name}</span>
+              <span className="text-yellow-500 text-sm shrink-0">{'★'.repeat(Math.round(hotel.rating || 5))}</span>
             </h3>
             <p className="text-sm text-zinc-400 mt-1">{(hotel as any).location || 'City Center, Destination'}</p>
           </div>
           <Link 
             href="/plan/hotels"
-            className="px-4 py-1.5 rounded-full border border-zinc-700 text-xs font-medium hover:bg-zinc-800 text-zinc-300 transition-colors"
+            className="shrink-0 px-4 py-1.5 rounded-full border border-zinc-700 text-xs font-medium hover:bg-zinc-800 text-zinc-300 transition-colors"
           >
             View Details
           </Link>
@@ -89,9 +89,9 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
             <div className="text-sm font-medium text-zinc-200">{rooms} {rooms === 1 ? 'Room' : 'Rooms'}</div>
           </div>
 
-          <div className="text-right md:ml-auto">
+          <div className="col-span-2 md:col-span-1 text-center md:text-right mt-2 md:mt-0 md:ml-auto">
             <div className="text-[11px] text-zinc-500 mb-1">Total Cost</div>
-            <div className="text-lg font-bold text-white">₹{totalCost.toLocaleString('en-IN')}</div>
+            <div className="text-xl font-bold text-white">₹{totalCost.toLocaleString('en-IN')}</div>
             <div className="text-xs text-zinc-500 mt-0.5">₹{Math.round(totalCost / nights).toLocaleString('en-IN')} / night</div>
           </div>
 

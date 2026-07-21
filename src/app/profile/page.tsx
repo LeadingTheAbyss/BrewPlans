@@ -3,18 +3,20 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit2, LogOut, Map, History, Compass, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Edit2, LogOut, Map, History, Compass, ChevronRight, MessageSquare } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useTripStore } from '@/store/tripStore';
 import { useItineraryStore } from '@/store/itineraryStore';
 import { useBudgetStore } from '@/store/budgetStore';
+import { FeedbackModal } from '@/components/FeedbackModal';
 
 export default function ProfilePage() {
   const { user, fetchUser, isLoading, logout } = useAuthStore();
   const router = useRouter();
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   useEffect(() => {
     fetchUser();
@@ -76,7 +78,6 @@ export default function ProfilePage() {
       <div className="w-full min-h-[calc(100vh-2rem)] bg-[#0A0A0A] text-[#EDEDED] p-8 lg:p-16 rounded-3xl font-sans">
         
         {/* Header */}
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-0 mb-10 sm:mb-16 border-b border-white/10 pb-6 sm:pb-8">
           <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-8 w-full sm:w-auto">
             <button 
@@ -96,12 +97,21 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <button 
-            onClick={handleLogout} 
-            className="hidden sm:flex text-red-500/60 hover:text-red-500 transition-colors items-center gap-2 text-xs font-bold uppercase tracking-widest shrink-0"
-          >
-            <LogOut size={16} /> Sign Out
-          </button>
+          <div className="hidden sm:flex items-center gap-4 shrink-0">
+            <button
+              onClick={() => setIsFeedbackOpen(true)}
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center text-white shrink-0"
+              title="Send us Feedback"
+            >
+              <MessageSquare size={14} />
+            </button>
+            <button 
+              onClick={handleLogout} 
+              className="text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest ml-2"
+            >
+              <LogOut size={16} /> Sign Out
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-20">
@@ -136,6 +146,30 @@ export default function ProfilePage() {
           {/* Mission History Section (Right) */}
           <div className="flex-1 flex flex-col">
             
+            {/* Planbro Wrapped Section */}
+            <div className="mb-12 border border-white/10 rounded-2xl p-6 lg:p-8 bg-gradient-to-br from-[#121A3F] to-[#0A0E27] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FF3D7F] rounded-full blur-[100px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
+              <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-[#F5B942] rounded-full blur-[100px] opacity-10 group-hover:opacity-20 transition-opacity"></div>
+              
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                    Planbro Wrapped <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full uppercase tracking-widest font-normal">New</span>
+                  </h3>
+                  <p className="text-sm text-white/60 mt-2 max-w-md">Relive your travels, destinations, and adventures. See your journey visualized like never before.</p>
+                </div>
+                
+                <div className="flex flex-col gap-3 min-w-[200px]">
+                  <button 
+                    onClick={() => router.push('/wrapped?range=all-time')}
+                    className="w-full py-3 px-6 bg-white text-black font-bold text-xs uppercase tracking-widest rounded-full hover:bg-white/90 transition-colors flex justify-center items-center gap-2"
+                  >
+                    View All Time <Compass size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-8 flex items-center gap-3">
               <History size={14} className="text-white/20"/> Past Trips
             </h3>
@@ -195,6 +229,7 @@ export default function ProfilePage() {
 
         </div>
       </div>
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </AppShell>
   );
 }

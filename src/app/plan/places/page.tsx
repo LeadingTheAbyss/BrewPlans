@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
 import { CinematicLoader } from '@/components/CinematicLoader';
+import TutorialOverlay from '@/components/TutorialOverlay';
 
 function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected }: {
   place: Place;
@@ -434,7 +435,7 @@ export default function PlacesPage() {
             <p className="text-sm mt-1">Try selecting a different category or go back and set a destination.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div id="tutorial-places-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {displayedPlaces.map(place => {
               const isSelected = itinerary.selectedPlaces.some(p => p.id === place.id);
               return (
@@ -547,6 +548,17 @@ export default function PlacesPage() {
           isSelected={itinerary.selectedPlaces.some(p => p.id === selectedModalPlace.id)}
         />
       )}
+
+      <TutorialOverlay 
+        tutorialKey="plan-places"
+        steps={[
+          {
+            targetId: 'tutorial-places-grid',
+            title: `Select places you're interested to visit at ${trip.destination || 'your destination'}`,
+            text: ''
+          }
+        ]}
+      />
     </div>
   );
 }

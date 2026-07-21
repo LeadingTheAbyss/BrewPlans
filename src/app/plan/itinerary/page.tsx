@@ -29,6 +29,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { SortablePlaceCard } from '@/components/itinerary/SortablePlaceCard';
+import TutorialOverlay from '@/components/TutorialOverlay';
 
 // --- DROPPABLE LIST COMPONENT ---
 function DroppableList({ id, items, children, className }: { id: string, items: string[], children: React.ReactNode, className?: string }) {
@@ -455,7 +456,7 @@ export default function ItineraryPage() {
       >
         
         {/* PANE 1: Left Vault (Unassigned) */}
-        <div className={`transition-all duration-300 ease-in-out flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto overflow-hidden ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
+        <div id="tutorial-itinerary-vault" className={`transition-all duration-300 ease-in-out flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto overflow-hidden ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
           <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d] shrink-0 w-[320px]">
             <div className="mb-4">
               <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-zinc-100">
@@ -573,7 +574,7 @@ export default function ItineraryPage() {
             <div className="flex items-center gap-4">
               
               {/* Active Collaborators */}
-              <div className="relative flex items-center h-10">
+              <div id="tutorial-itinerary-collaborators" className="relative flex items-center h-10">
                 {activeUsers.length > 0 && (
                   <div 
                     className="flex items-center -space-x-3 mr-3 cursor-pointer hover:scale-105 transition-transform group"
@@ -664,7 +665,7 @@ export default function ItineraryPage() {
               <div className="hidden sm:block h-6 w-px bg-[#222]"></div>
 
               {/* Minimap */}
-              <div className="flex gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar-on-mobile">
+              <div id="tutorial-itinerary-minimap" className="flex gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar-on-mobile">
                 {itinerary.days.map(d => (
                   <div 
                     key={d.dayNumber}
@@ -684,7 +685,7 @@ export default function ItineraryPage() {
           </div>
 
           {/* Horizontal Day Rail */}
-          <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar scroll-smooth overscroll-x-contain bg-[url('/grid.svg')] bg-center transform-gpu">
+          <div id="tutorial-itinerary-daycolumns" className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar scroll-smooth overscroll-x-contain bg-[url('/grid.svg')] bg-center transform-gpu">
             <div className="flex h-full p-4 lg:p-8 gap-4 lg:gap-6 w-max">
               {itinerary.days.map((day) => {
                 const dayPlaces = day.placeIds.map(id => itinerary.selectedPlaces.find(p => p.id === id)).filter(Boolean) as Place[];
@@ -871,6 +872,7 @@ export default function ItineraryPage() {
             <div className="flex-1"></div>
             
             <button
+              id="tutorial-itinerary-automagic"
               onClick={() => itinerary.batchAssign(vaultItemIds)}
               disabled={vaultPlaces.length === 0 || itinerary.isOptimizing}
               className="w-full bg-[#111] border border-[#333] hover:border-emerald-500 hover:bg-[#1a1a1a] disabled:opacity-50 disabled:hover:border-[#333] text-zinc-300 hover:text-emerald-400 text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group"
@@ -994,6 +996,37 @@ export default function ItineraryPage() {
           background: #333;
         }
       `}</style>
+
+      <TutorialOverlay 
+        tutorialKey="plan-itinerary" 
+        steps={[
+          {
+            targetId: 'tutorial-itinerary-vault',
+            title: 'Your saved places live here',
+            text: 'Everything you picked earlier is in this vault. Click to quick-assign, or grab and drag it onto a day.',
+          },
+          {
+            targetId: 'tutorial-itinerary-daycolumns',
+            title: 'Drop places into your days',
+            text: 'Each column is one day of the trip. Drag a place here to slot it into your schedule.',
+          },
+          {
+            targetId: 'tutorial-itinerary-minimap',
+            title: 'Keep an eye on the pace',
+            text: 'This minimap shows how packed each day is, so you can spot an overloaded day at a glance.',
+          },
+          {
+            targetId: 'tutorial-itinerary-collaborators',
+            title: "See who's planning with you",
+            text: 'Invite collaborators and see live avatars of everyone editing the trip right now.',
+          },
+          {
+            targetId: 'tutorial-itinerary-automagic',
+            title: 'Stuck? Let AI take a pass',
+            text: "Auto-Magic Plan arranges your saved places into a full itinerary in one click. You're always free to rearrange it after.",
+          },
+        ]} 
+      />
     </div>
   );
 }

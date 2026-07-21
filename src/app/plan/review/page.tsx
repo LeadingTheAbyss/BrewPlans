@@ -16,6 +16,7 @@ import MemberTravelCard from '@/components/review/MemberTravelCard';
 import StayDetailsCard from '@/components/review/StayDetailsCard';
 import DayCard from '@/components/review/DayCard';
 import VisualJourneyMap from '@/components/VisualJourneyMap';
+import LedgerView from '@/components/review/LedgerView';
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function ReviewPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [selectedDayForJourney, setSelectedDayForJourney] = useState<number | null>(null);
+  
+  const [viewMode, setViewMode] = useState<'itinerary' | 'ledger'>('itinerary');
   
   const [showShareMenu, setShowShareMenu] = useState(false);
   const loadedTripId = React.useRef<string | null>(null);
@@ -304,8 +307,30 @@ export default function ReviewPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Trip Review and Itinerary</h1>
-              <p className="text-sm text-zinc-400 mt-2">Review all your trip details before confirming</p>
+              <h1 className="text-3xl font-bold tracking-tight">Trip Review and Finances</h1>
+              <p className="text-sm text-zinc-400 mt-2">Review your trip details and settle up expenses</p>
+            </div>
+            
+            <div className="flex bg-[#111] border border-white/5 p-1 rounded-full items-center relative self-start md:self-end">
+              <div 
+                className="absolute inset-y-1 bg-white/10 rounded-full transition-all duration-300 ease-out" 
+                style={{
+                  width: 'calc(50% - 4px)',
+                  left: viewMode === 'itinerary' ? '4px' : 'calc(50%)'
+                }}
+              />
+              <button 
+                onClick={() => setViewMode('itinerary')}
+                className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'itinerary' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+              >
+                View Itinerary
+              </button>
+              <button 
+                onClick={() => setViewMode('ledger')}
+                className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'ledger' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+              >
+                Track Expenses
+              </button>
             </div>
             
             <div className="flex items-center gap-4">
@@ -354,7 +379,16 @@ export default function ReviewPage() {
             </div>
           </div>
 
-          {/* 1. Member Travel Details */}
+          <AnimatePresence mode="wait">
+            {viewMode === 'itinerary' ? (
+              <motion.div 
+                key="itinerary"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-12"
+              >
+                {/* 1. Member Travel Details */}
           <section className="space-y-4">
             <h2 className="text-sm font-bold tracking-widest uppercase text-green-500 flex items-center gap-2">
               <Users size={16} /> 1. Member Travel Details
@@ -432,6 +466,19 @@ export default function ReviewPage() {
               Each day's route includes places to visit, food stops and travel between locations.
             </p>
           </section>
+          </motion.div>
+            ) : (
+              <motion.div 
+                key="ledger"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }}
+                className="h-full min-h-[600px]"
+              >
+                <LedgerView />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Bottom Actions */}
           <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-[#222] gap-4">

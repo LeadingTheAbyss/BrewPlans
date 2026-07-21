@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
-import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning } from 'lucide-react';
+import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 const ADMIN_EMAILS = [
@@ -95,6 +95,7 @@ export default function AdminStatsPage() {
   const router = useRouter();
   
   const [data, setData] = useState<StatsData | null>(null);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -118,6 +119,13 @@ export default function AdminStatsPage() {
       }
       const json = await res.json();
       setData(json);
+
+      // Fetch feedbacks
+      const fbRes = await fetch('/api/feedback');
+      if (fbRes.ok) {
+        const fbJson = await fbRes.json();
+        setFeedbacks(fbJson.feedbacks || []);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -441,6 +449,41 @@ export default function AdminStatsPage() {
           </div>
 
         </motion.div>
+
+        {/* SECTION 4: Feedbacks */}
+        <div className="mt-12 max-w-7xl mx-auto relative z-10">
+          <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">User Feedback</h2>
+          <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden">
+            {feedbacks.length > 0 ? (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                {feedbacks.map((fb) => (
+                  <div key={fb.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                      <MessageSquare size={16} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <span className="text-sm font-bold text-white">{fb.user?.name || 'Anonymous User'}</span>
+                          <span className="text-xs text-white/40 ml-2 font-mono">{fb.user?.email || 'No email provided'}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">{fb.type}</div>
+                      <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{fb.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-white/30 gap-3">
+                <MessageSquare size={24} className="opacity-50" />
+                <span className="font-mono uppercase tracking-widest text-xs">No feedback received yet</span>
+              </div>
+            )}
+          </motion.div>
+        </div>
+
       </div>
     </AppShell>
   );

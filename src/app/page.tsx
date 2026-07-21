@@ -4,11 +4,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
+import { FeedbackModal } from '@/components/FeedbackModal';
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X, MessageSquare } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const handleNavigation = (path: string) => {
     if (!user) {
@@ -553,13 +555,22 @@ export default function LandingPage() {
           </div>
 
           {user ? (
-            <button 
-              onClick={() => router.push('/profile')}
-              className="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white transition-all overflow-hidden flex items-center justify-center"
-              title="Profile"
-            >
-              <UserAvatar user={user} className="w-full h-full text-xs" />
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsFeedbackOpen(true)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all flex items-center justify-center text-white shrink-0"
+                title="Send us Feedback"
+              >
+                <MessageSquare size={14} />
+              </button>
+              <button 
+                onClick={() => router.push('/profile')}
+                className="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white transition-all overflow-hidden flex items-center justify-center shrink-0"
+                title="Profile"
+              >
+                <UserAvatar user={user} className="w-full h-full text-xs" />
+              </button>
+            </div>
           ) : (
             <button 
               onClick={() => router.push('/login')}
@@ -586,7 +597,7 @@ export default function LandingPage() {
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); handleNavigation('/quick-trip'); }} 
-            className="w-full text-left py-4 text-2xl font-bold tracking-tight text-white border-b border-white/10"
+            className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"
           >
             Plan a Hangout in Your City
           </button>
@@ -723,6 +734,8 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>
   );
 }
