@@ -114,8 +114,14 @@ export default function LedgerView() {
     passengers.forEach(p => bals[p.id] = 0);
     
     expenses.forEach(exp => {
-      if (bals[exp.paidBy] !== undefined) bals[exp.paidBy] += exp.totalAmount;
-      else bals[exp.paidBy] = exp.totalAmount;
+      const payers = Array.isArray(exp.paidBy) ? exp.paidBy : [exp.paidBy];
+      if (payers.length > 0) {
+        const payerShare = exp.totalAmount / payers.length;
+        payers.forEach(payerId => {
+          if (bals[payerId] !== undefined) bals[payerId] += payerShare;
+          else bals[payerId] = payerShare;
+        });
+      }
       
       exp.lineItems.forEach(item => {
         const splitCount = item.assignedTo.length;
