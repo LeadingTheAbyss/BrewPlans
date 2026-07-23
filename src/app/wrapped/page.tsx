@@ -1,17 +1,181 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
-export default function WrappedPage() {
+const LeafletMap = dynamic(() => import('@/components/LeafletMap'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-transparent animate-pulse" />
+});
+
+const CITY_COORDS: Record<string, {lat: number, lng: number}> = {
+  "Jaipur": {lat: 26.9124, lng: 75.7873},
+  "Udaipur": {lat: 24.5854, lng: 73.7125},
+  "Goa": {lat: 15.2993, lng: 74.1240},
+  "Manali": {lat: 32.2396, lng: 77.1887},
+  "Rishikesh": {lat: 30.0869, lng: 78.2676},
+  "Pondicherry": {lat: 11.9416, lng: 79.8083},
+  "Munnar": {lat: 10.0889, lng: 77.0595},
+  "Varanasi": {lat: 25.3176, lng: 82.9739},
+  "Leh": {lat: 34.1526, lng: 77.5771},
+  "Delhi": {lat: 28.7041, lng: 77.1025},
+  "Mumbai": {lat: 19.0760, lng: 72.8777},
+  "Bangalore": {lat: 12.9716, lng: 77.5946},
+  "Chennai": {lat: 13.0827, lng: 80.2707},
+  "Kolkata": {lat: 22.5726, lng: 88.3639},
+  "Hyderabad": {lat: 17.3850, lng: 78.4867},
+  "Pune": {lat: 18.5204, lng: 73.8567},
+  "Agra": {lat: 27.1767, lng: 78.0081},
+  "Kochi": {lat: 9.9312, lng: 76.2673},
+  "Ahmedabad": {lat: 23.0225, lng: 72.5714},
+  "Srinagar": {lat: 34.0837, lng: 74.7973},
+  "Darjeeling": {lat: 27.0410, lng: 88.2663},
+  "Ooty": {lat: 11.4100, lng: 76.6950},
+  "Shimla": {lat: 31.1048, lng: 77.1734}
+};
+
+function WrappedContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const total = 8;
   const [current, setCurrent] = useState(1);
   const [showToast, setShowToast] = useState(false);
+  
+  const range = searchParams.get('range') || 'all-time';
+  const startDateStr = searchParams.get('start');
+  const endDateStr = searchParams.get('end');
 
-  const cities = ["Jaipur","Udaipur","Goa","Manali","Rishikesh","Pondicherry","Munnar","Varanasi","Leh"];
-  const foods = ["Rajasthani Thali","Goan Seafood","Kashmiri Wazwan","Street Chaat","Filter Coffee","Momos","Butter Chicken","Kerala Sadya"];
-  const buddies = [["Apoorv",4],["Meera",3],["Rohan",2],["Simran",2],["Kabir",1]];
+  const [loading, setLoading] = useState(true);
+  const [cities, setCities] = useState<string[]>([]);
+  const [foods, setFoods] = useState<string[]>([]);
+  const [buddies, setBuddies] = useState<[string, number][]>([]);
+  const [tripsCount, setTripsCount] = useState(0);
+  const [foodStopsCount, setFoodStopsCount] = useState(0);
+  const [distance, setDistance] = useState(0);
+  const [topBuddy, setTopBuddy] = useState<string>('Solo');
+  const [topBuddyCount, setTopBuddyCount] = useState(0);
+  const [buddiesCount, setBuddiesCount] = useState(0);
+  
+  const [mapCoords, setMapCoords] = useState<any[]>([]);
+  const [mapRoutes, setMapRoutes] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/trips')
+      .then(res => res.json())
+      .then(data => {
+        let trips = data.trips || [];
+        
+        // Filter by date
+        const now = new Date();
+        trips = trips.filter((t: any) => {
+          const tDate = new Date(t.createdAt);
+          if (range === 'today') {
+            return tDate.toDateString() === now.toDateString();
+          } else if (range === 'this-week') {
+            const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return tDate >= lastWeek;
+          } else if (range === 'this-month') {
+            return tDate.getMonth() === now.getMonth() && tDate.getFullYear() === now.getFullYear();
+          } else if (range === 'this-year') {
+            return tDate.getFullYear() === now.getFullYear();
+          } else if (range === 'custom' && startDateStr && endDateStr) {
+            const end = new Date(endDateStr);
+            end.setHours(23, 59, 59); // include entire end day
+            return tDate >= new Date(startDateStr) && tDate <= end;
+          }
+          return true; // all-time
+        });
+
+        // Calculate statistics
+        const cityMap: Record<string, number> = {};
+        const foodMap: Record<string, number> = {};
+        const buddyMap: Record<string, number> = {};
+        let totalFoodStops = 0;
+
+        trips.forEach((t: any) => {
+          // City
+          const dest = t.destination || t.snapshot?.city || 'Unknown';
+          cityMap[dest] = (cityMap[dest] || 0) + 1;
+
+          // Foods
+          if (t.snapshot?.selectedFood) {
+             t.snapshot.selectedFood.forEach((f: any) => {
+               const fname = typeof f === 'string' ? f : f.name || 'Food';
+               foodMap[fname] = (foodMap[fname] || 0) + 1;
+               totalFoodStops++;
+             });
+          }
+          if (t.snapshot?.stops) {
+             t.snapshot.stops.forEach((s: any) => {
+               if (s.category === 'FOOD') {
+                 const sname = s.name || 'Food Stop';
+                 foodMap[sname] = (foodMap[sname] || 0) + 1;
+                 totalFoodStops++;
+               }
+             });
+          }
+
+          // Buddies
+          const passengers = t.snapshot?.passengers || t.snapshot?.members || [];
+          passengers.forEach((p: any) => {
+            const pname = typeof p === 'string' ? p : p.name;
+            if (pname) {
+               buddyMap[pname] = (buddyMap[pname] || 0) + 1;
+            }
+          });
+        });
+
+        // Sort and select
+        const sortedCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 10);
+        const sortedFoods = Object.entries(foodMap).sort((a, b) => b[1] - a[1]).map(x => x[0]).slice(0, 10);
+        const sortedBuddies = Object.entries(buddyMap).sort((a, b) => b[1] - a[1]).slice(0, 5) as [string, number][];
+
+        setCities(sortedCities.length > 0 ? sortedCities : ['No trips yet']);
+        setFoods(sortedFoods.length > 0 ? sortedFoods : ['No food logged']);
+        setBuddies(sortedBuddies);
+        setTripsCount(trips.length);
+        setFoodStopsCount(totalFoodStops);
+        setDistance(trips.length * 1520); // heuristic distance
+        setBuddiesCount(Object.keys(buddyMap).length);
+        
+        if (sortedBuddies.length > 0) {
+           setTopBuddy(sortedBuddies[0][0]);
+           setTopBuddyCount(sortedBuddies[0][1]);
+        } else {
+           setTopBuddy('Solo');
+           setTopBuddyCount(0);
+        }
+        
+        // Generate sequential map routes
+        const coords: any[] = [];
+        const routes: any[] = [];
+        let validCities = sortedCities.filter(c => CITY_COORDS[c]);
+        
+        validCities.forEach((city, index) => {
+          const coord = CITY_COORDS[city];
+          const node = { id: `city-${city}`, lat: coord.lat, lng: coord.lng, type: 'destination', name: city };
+          coords.push(node);
+          
+          if (index > 0) {
+            routes.push({
+              id: `route-${validCities[index-1]}-${city}`,
+              start: coords[index - 1],
+              end: node
+            });
+          }
+        });
+        
+        setMapCoords(coords);
+        setMapRoutes(routes);
+
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [range, startDateStr, endDateStr]);
 
   const handleNext = () => {
     if(current < total) setCurrent(c => c + 1);
@@ -20,6 +184,27 @@ export default function WrappedPage() {
   const handlePrev = () => {
     if(current > 1) setCurrent(c => c - 1);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        setCurrent(c => (c < total ? c + 1 : c));
+      } else if (e.key === 'ArrowLeft') {
+        setCurrent(c => (c > 1 ? c - 1 : c));
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [total]);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-[#05061A] flex items-center justify-center">
+        <p className="text-white font-mono text-xs tracking-widest animate-pulse">ANALYZING YOUR JOURNEYS...</p>
+      </div>
+    );
+  }
 
   const triggerToast = () => {
     setShowToast(true);
@@ -300,14 +485,15 @@ export default function WrappedPage() {
         .mapwrap{
           margin-top:16px; position:relative; flex:1;
           display:flex; align-items:center; justify-content:center;
+          width:100%; border-radius: 20px; overflow: hidden;
+          box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
         }
-        .mapwrap svg{width:100%; height:auto; max-height:100%;}
-        .india-shape{fill:rgba(247,243,236,0.05); stroke:rgba(247,243,236,0.25); stroke-width:1.4; stroke-linejoin:round;}
-        .route-arc{
-          fill:none; stroke:url(#arcgrad); stroke-width:1.6;
-          stroke-dasharray:6 6;
-          animation:dashmove 1.2s linear infinite;
-          opacity:0.9;
+        .mapwrap::after {
+          content: "";
+          position: absolute; inset: 0;
+          background: linear-gradient(180deg, rgba(5,6,26,0) 0%, rgba(5,6,26,0.6) 100%);
+          pointer-events: none;
+          z-index: 10;
         }
         .city-dot{fill:var(--gold); stroke:var(--ink); stroke-width:2;}
         .city-pulse{fill:none; stroke:var(--gold); stroke-width:1.5; opacity:0.6; animation:pulseRing 2.2s ease-out infinite;}
@@ -449,16 +635,16 @@ export default function WrappedPage() {
                   <div className="wordmark">PLANBRO PRESENTS</div>
                   <div className="display">Your 2026,<br/>in motion<span>.</span></div>
                   <div className="subcopy">Every city you chased, every km you clocked, every plate you didn't finish. We tracked it all so you don't have to remember it.</div>
-                  <div className="cta">Tap to begin <div className="arrow">&rarr;</div></div>
+                  <div className="cta" onClick={handleNext} style={{cursor: 'pointer'}}>Tap to begin <div className="arrow">&rarr;</div></div>
                 </div>
 
                 {/* 2 EXPLORER */}
                 <div className={`screen ${current === 2 ? 'active' : ''}`} id="s2">
                   <div className="eyebrow">Terminal 01 &middot; Destinations</div>
-                  <div className="statnum" data-count="9">9</div>
+                  <div className="statnum" data-count={cities.length === 1 && cities[0] === 'No trips yet' ? 0 : cities.length}>{cities.length === 1 && cities[0] === 'No trips yet' ? 0 : cities.length}</div>
                   <div className="statunit">cities explored</div>
                   <div className="accentline" style={{background:'var(--gold)'}}></div>
-                  <div className="subcopy" style={{marginTop:'20px'}}>You didn't just travel this year. You collected stamps.</div>
+                  <div className="subcopy" style={{marginTop:'20px'}}>You didn't just travel. You collected stamps.</div>
                   <div className="chiprow" id="citychips">
                     {cities.map((c, i) => (
                       <div key={i} className="citychip" style={{animationDelay: `${0.15 + i*0.05}s`}}>{c}</div>
@@ -469,7 +655,7 @@ export default function WrappedPage() {
                 {/* 3 DISTANCE */}
                 <div className={`screen ${current === 3 ? 'active' : ''}`} id="s3">
                   <div className="eyebrow" style={{color:'var(--mint)'}}>Terminal 02 &middot; Distance</div>
-                  <div className="statnum" data-count="14820">14,820</div>
+                  <div className="statnum" data-count={distance}>{distance.toLocaleString()}</div>
                   <div className="statunit">kilometers covered</div>
                   <div className="accentline" style={{background:'var(--mint)'}}></div>
                   <div className="routeviz">
@@ -488,20 +674,20 @@ export default function WrappedPage() {
                 {/* 4 TRIPS */}
                 <div className={`screen ${current === 4 ? 'active' : ''}`} id="s4">
                   <div className="eyebrow">Terminal 03 &middot; Trips</div>
-                  <div className="statnum" data-count="7">7</div>
+                  <div className="statnum" data-count={tripsCount}>{tripsCount}</div>
                   <div className="statunit">trips planned</div>
                   <div className="accentline" style={{background:'var(--gold)'}}></div>
-                  <div className="subcopy" style={{marginTop:'20px'}}>Seven times you said "let's just go" &mdash; and actually went.</div>
+                  <div className="subcopy" style={{marginTop:'20px'}}>{tripsCount} times you said "let's just go" &mdash; and actually went.</div>
                   <div className="dashed-divider"></div>
-                  <div className="ticket-tag">&#10003; 3 weekend runs</div>
+                  <div className="ticket-tag">&#10003; Exploring {range === 'all-time' ? 'forever' : range.replace('-', ' ')}</div>
                   <div style={{height:'8px'}}></div>
-                  <div className="ticket-tag">&#10003; 4 full getaways</div>
+                  <div className="ticket-tag">&#10003; The world is yours</div>
                 </div>
 
                 {/* 5 FOODIE */}
                 <div className={`screen ${current === 5 ? 'active' : ''}`} id="s5">
                   <div className="eyebrow" style={{color:'var(--pink)'}}>Terminal 04 &middot; Food Stops</div>
-                  <div className="statnum" data-count="42">42</div>
+                  <div className="statnum" data-count={foodStopsCount}>{foodStopsCount}</div>
                   <div className="statunit">restaurants &amp; food stops</div>
                   <div className="accentline" style={{background:'var(--pink)'}}></div>
                   <div className="subcopy" style={{marginTop:'20px'}}>Certified plate-cleaner. Here's what you kept ordering.</div>
@@ -517,54 +703,29 @@ export default function WrappedPage() {
                   <div className="eyebrow">Terminal 05 &middot; Footprint</div>
                   <div className="display" style={{fontSize:'24px'}}>Your route across India</div>
                   <div className="mapwrap">
-                    <svg viewBox="0 0 340 500">
-                      <defs>
-                        <linearGradient id="arcgrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#F5B942"/>
-                          <stop offset="100%" stopColor="#FF3D7F"/>
-                        </linearGradient>
-                      </defs>
-                      <path className="india-shape" d="M150,15 185,25 230,45 265,70 290,95 305,130 295,160 310,190 300,225 280,245 290,270 270,300 250,330 230,360 215,390 205,420 195,450 185,480 170,460 160,430 150,400 130,410 115,390 100,360 90,330 95,300 80,270 90,240 75,210 65,180 70,150 60,120 75,95 65,70 85,55 100,35 120,20 Z"/>
-
-                      {/* route arcs */}
-                      <path className="route-arc" d="M175,95 Q170,112 165,130"/>
-                      <path className="route-arc" d="M165,130 Q148,148 130,165"/>
-                      <path className="route-arc" d="M130,165 Q120,185 110,205"/>
-                      <path className="route-arc" d="M110,205 Q160,197 210,190"/>
-                      <path className="route-arc" d="M210,190 Q200,125 190,60"/>
-                      <path className="route-arc" d="M190,60 Q145,190 100,320"/>
-                      <path className="route-arc" d="M100,320 Q150,365 195,410"/>
-                      <path className="route-arc" d="M195,410 Q175,425 155,440"/>
-
-                      {/* city dots */}
-                      <g>
-                        <circle className="city-pulse" cx="190" cy="60"/><circle className="city-dot" cx="190" cy="60" r="4"/><text className="city-label" x="197" y="58">LEH</text>
-                        <circle className="city-pulse" cx="175" cy="95"/><circle className="city-dot" cx="175" cy="95" r="4"/><text className="city-label" x="182" y="93">MANALI</text>
-                        <circle className="city-pulse" cx="165" cy="130"/><circle className="city-dot" cx="165" cy="130" r="4"/><text className="city-label" x="172" y="128">RISHIKESH</text>
-                        <circle className="city-pulse" cx="130" cy="165"/><circle className="city-dot" cx="130" cy="165" r="4"/><text className="city-label" x="102" y="163">JAIPUR</text>
-                        <circle className="city-pulse" cx="110" cy="205"/><circle className="city-dot" cx="110" cy="205" r="4"/><text className="city-label" x="45" y="208">UDAIPUR</text>
-                        <circle className="city-pulse" cx="210" cy="190"/><circle className="city-dot" cx="210" cy="190" r="4"/><text className="city-label" x="217" y="188">VARANASI</text>
-                        <circle className="city-pulse" cx="100" cy="320"/><circle className="city-dot" cx="100" cy="320" r="4"/><text className="city-label" x="60" y="323">GOA</text>
-                        <circle className="city-pulse" cx="195" cy="410"/><circle className="city-dot" cx="195" cy="410" r="4"/><text className="city-label" x="202" y="408">PONDICHERRY</text>
-                        <circle className="city-pulse" cx="155" cy="440"/><circle className="city-dot" cx="155" cy="440" r="4"/><text className="city-label" x="105" y="448">MUNNAR</text>
-                      </g>
-                    </svg>
+                    {mapCoords.length > 0 ? (
+                      <div className="absolute inset-0 z-0">
+                        <LeafletMap coords={mapCoords} routes={mapRoutes} />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-white/50 text-sm font-mono">No route data available</div>
+                    )}
                   </div>
-                  <div className="subcopy" style={{marginTop:'0'}}>Leh to Munnar &mdash; you covered more of the map than most people's bucket lists.</div>
+                  <div className="subcopy" style={{marginTop:'0'}}>You covered more of the map than most people's bucket lists.</div>
                 </div>
 
                 {/* 7 SOCIAL */}
                 <div className={`screen ${current === 7 ? 'active' : ''}`} id="s7">
                   <div className="eyebrow" style={{color:'var(--pink)'}}>Terminal 06 &middot; Travel Squad</div>
                   <div className="buddy-count-row">
-                    <div className="statnum" style={{fontSize:'64px'}} data-count="6">6</div>
-                    <div className="statunit" style={{marginTop:'0'}}>travel buddies this year</div>
+                    <div className="statnum" style={{fontSize:'64px'}} data-count={buddiesCount}>{buddiesCount}</div>
+                    <div className="statunit" style={{marginTop:'0'}}>travel buddies in this period</div>
                   </div>
                   <div className="reveal-card">
                     <div className="lbl">Out of all your buddies, your top buddy was</div>
-                    <div className="avatar-ring">A</div>
-                    <div className="name">Apoorv</div>
-                    <div className="meta">4 TRIPS TOGETHER &middot; YOUR #1 CO-PILOT</div>
+                    <div className="avatar-ring">{topBuddy.charAt(0).toUpperCase()}</div>
+                    <div className="name">{topBuddy}</div>
+                    <div className="meta">{topBuddyCount} TRIPS TOGETHER &middot; YOUR #1 CO-PILOT</div>
                   </div>
                   <div className="buddy-bars" id="buddybars">
                     {buddies.map((b, i) => (
@@ -584,16 +745,16 @@ export default function WrappedPage() {
                   <div className="ticket">
                     <div className="ticket-top">
                       <div className="tlogo">PLAN<span>BRO</span></div>
-                      <div className="tyear">WRAPPED &middot; 2026</div>
+                      <div className="tyear">WRAPPED &middot; {range === 'all-time' ? 'ALL TIME' : range.replace('-', ' ').toUpperCase()}</div>
                     </div>
-                    <div className="ticket-headline">This was your year on the move.</div>
+                    <div className="ticket-headline">This was your journey on the move.</div>
                     <div className="ticket-grid">
-                      <div className="ticket-stat"><div className="k">Destinations</div><div className="v gold">9</div></div>
-                      <div className="ticket-stat"><div className="k">Distance</div><div className="v mint">14,820 km</div></div>
-                      <div className="ticket-stat"><div className="k">Trips</div><div className="v">7</div></div>
-                      <div className="ticket-stat"><div className="k">Food stops</div><div className="v pink">42</div></div>
-                      <div className="ticket-stat"><div className="k">Travel buddies</div><div className="v">6</div></div>
-                      <div className="ticket-stat"><div className="k">Top buddy</div><div className="v gold">Apoorv</div></div>
+                      <div className="ticket-stat"><div className="k">Destinations</div><div className="v gold">{cities.length === 1 && cities[0] === 'No trips yet' ? 0 : cities.length}</div></div>
+                      <div className="ticket-stat"><div className="k">Distance</div><div className="v mint">{distance.toLocaleString()} km</div></div>
+                      <div className="ticket-stat"><div className="k">Trips</div><div className="v">{tripsCount}</div></div>
+                      <div className="ticket-stat"><div className="k">Food stops</div><div className="v pink">{foodStopsCount}</div></div>
+                      <div className="ticket-stat"><div className="k">Travel buddies</div><div className="v">{buddiesCount}</div></div>
+                      <div className="ticket-stat"><div className="k">Top buddy</div><div className="v gold">{topBuddy}</div></div>
                     </div>
                     <div className="perforation"></div>
                     <div className="ticket-bottom">
@@ -617,5 +778,17 @@ export default function WrappedPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function WrappedPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full bg-[#05061A] flex items-center justify-center">
+        <p className="text-white font-mono text-xs tracking-widest animate-pulse">LOADING YOUR WRAPPED...</p>
+      </div>
+    }>
+      <WrappedContent />
+    </Suspense>
   );
 }

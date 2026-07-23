@@ -213,11 +213,11 @@ async def debug_places():
 
 @app.get("/api/test-import")
 async def test_import():
-    from services.live_places_api import search_live_places
+    from services.google_places_api import search_google_places
     import traceback
     try:
-        res = await asyncio.to_thread(search_live_places, "New Delhi")
-        return {"count": len(res), "places": [p.name for p in res]}
+        res = await search_google_places("New Delhi", max_results=5)
+        return {"count": len(res), "places": [p.get("displayName", {}).get("text", "") for p in res] if res else []}
     except Exception as e:
         return {"error": str(e), "trace": traceback.format_exc()}
 
@@ -487,11 +487,11 @@ async def get_food(destination: str, check_only: bool = Query(False)):
         })
     return result
 
-from services.live_places_api import fetch_live_reviews
+from services.google_places_api import fetch_google_place_reviews
 
 @app.get("/api/places/reviews")
 async def get_place_reviews(location_id: str):
-    return await asyncio.to_thread(fetch_live_reviews, location_id)
+    return await fetch_google_place_reviews(location_id)
 
 
 @app.get("/api/hotels")
@@ -515,8 +515,7 @@ async def get_hotels(destination: str, check_only: bool = Query(False)):
     async def _resolve_photo(h):
         if getattr(h, "photo_name", None):
             if h.photo_name.startswith("http"):
-                import urllib.parse
-                return f"/api/proxy-image?url={urllib.parse.quote(h.photo_name)}"
+                return h.photo_name
             google_img = get_google_photo_url(h.photo_name)
             if google_img:
                 return google_img
@@ -675,6 +674,19 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
 @app.get("/api/search-city")
 async def api_search_city(q: str = Query(..., min_length=1)):
     return await asyncio.to_thread(_fetch_photon_cities, q)
+
+@app.get("/api/test-redbus")
+async def test_redbus(q: str = Query(...)):
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"https://www.redbus.in/mobapi/v2/locations/search?query={q}",
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            return {"status": res.status_code, "data": res.text[:500]}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/api/overpass-search")
 @app.get("/api/ola-search")

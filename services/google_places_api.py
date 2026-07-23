@@ -401,94 +401,47 @@ async def fetch_foursquare_image(name: str, lat: float, lng: float) -> Optional[
     await _cache_set(cache_key, "NOT_FOUND", ttl_seconds=86400)
     return None
 
-async def fetch_tripadvisor_image(name: str, lat: float, lng: float) -> Optional[str]:
-    """Fallback to Tripadvisor Content API for images, heavily cached to protect 5k monthly limit."""
-    cache_key = f"ta_photo_{name}_{lat}_{lng}".replace(" ", "_").lower()
-    
-    # 1. Check Redis cache first (0 API calls!)
-    cached_url = await _cache_get(cache_key)
-    if cached_url:
-        if cached_url == "NOT_FOUND":
-            return None
-        return cached_url
-        
-    api_key = "90eb5451-53e4-4e83-9a66-f8c4d3b86fb8"
-    search_url = "https://api.content.tripadvisor.com/api/v1/location/search"
-    search_params = {
-        "searchQuery": name,
-        "latLong": f"{lat},{lng}",
-        "key": api_key,
-        "language": "en"
+async def fetch_google_place_reviews(place_id: str) -> List[dict]:
+    """Fetch reviews for a place using Google Places API."""
+    if not PLACES_API_KEY or not place_id:
+        return []
+
+    url = f"https://places.googleapis.com/v1/places/{place_id}"
+    headers = {
+        "X-Goog-Api-Key": PLACES_API_KEY,
+        "X-Goog-FieldMask": "reviews",
+        "Referer": "http://localhost:3000/"
     }
-    headers = {"accept": "application/json"}
-    
+
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            # 2. Search for the location (1 API call)
-            search_resp = await client.get(search_url, params=search_params, headers=headers)
-            if search_resp.status_code == 200:
-                data = search_resp.json()
-                if data.get("data"):
-                    location_id = data["data"][0].get("location_id")
-                    
-                    if location_id:
-                        # 3. Fetch photos for the location (1 API call)
-                        photo_url = f"https://api.content.tripadvisor.com/api/v1/location/{location_id}/photos"
-                        photo_params = {"key": api_key, "language": "en"}
-                        p_resp = await client.get(photo_url, params=photo_params, headers=headers)
-                        
-                        if p_resp.status_code == 200:
-                            p_data = p_resp.json()
-                            if p_data.get("data"):
-                                best_img_url = None
-                                bad_words = ["map", "menu", "bill", "receipt", "selfie", "ticket", "brochure", "price"]
-                                
-                                # Scan the returned photos for the highest quality one
-                                for photo_obj in p_data["data"]:
-                                    caption = photo_obj.get("caption", "")
-                                    caption_lower = caption.lower() if caption else ""
-                                    source = photo_obj.get("source", {}).get("name", "").lower()
-                                    
-                                    # 1. Skip obvious garbage photos (menus, maps, receipts)
-                                    if any(bad in caption_lower for bad in bad_words):
-                                        continue
-                                        
-                                    images = photo_obj.get("images", {})
-                                    img_url = images.get("original", {}).get("url") or \
-                                              images.get("large", {}).get("url") or \
-                                              images.get("medium", {}).get("url")
-                                              
-                                    if not img_url:
-                                        continue
-                                        
-                                    # 2. If the photo was uploaded by the Management/Owner, it is professional. Pick it immediately.
-                                    if source == "management":
-                                        best_img_url = img_url
-                                        break
-                                        
-                                    # 3. Otherwise, store the first acceptable traveler photo as our fallback
-                                    if not best_img_url:
-                                        best_img_url = img_url
-                                
-                                # If EVERY single photo was a menu or a map (very rare), just grab the first one to avoid failing
-                                if not best_img_url:
-                                    images = p_data["data"][0].get("images", {})
-                                    best_img_url = images.get("original", {}).get("url") or \
-                                                   images.get("large", {}).get("url") or \
-                                                   images.get("medium", {}).get("url")
-                                          
-                                if best_img_url:
-                                    # Cache for 30 days
-                                    await _cache_set(cache_key, best_img_url, ttl_seconds=60*60*24*30)
-                                    return best_img_url
-                                    
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, headers=headers)
+            
+            if resp.status_code != 200:
+                print(f"[GoogleReviews] Error {resp.status_code} for {place_id}: {resp.text[:200]}")
+                return []
+                
+            data = resp.json()
+            raw_reviews = data.get("reviews", [])
+            
+            formatted_reviews = []
+            for i, rev in enumerate(raw_reviews):
+                author_attr = rev.get("authorAttribution", {})
+                text_obj = rev.get("text", {})
+                
+                formatted_reviews.append({
+                    "id": rev.get("name", f"rev_{i}"),
+                    "author": author_attr.get("displayName", "Anonymous"),
+                    "rating": float(rev.get("rating", 5.0)),
+                    "text": text_obj.get("text", ""),
+                    "title": "", # Google doesn't have titles for reviews
+                    "date": rev.get("relativePublishTimeDescription", "")
+                })
+                
+            return formatted_reviews
     except Exception as e:
-        print(f"[Tripadvisor] Error fetching image for {name}: {e}")
-        
-    # If we get here, no photo was found or an error occurred. 
-    # Cache the negative result for 30 days so we don't keep wasting API calls on it!
-    await _cache_set(cache_key, "NOT_FOUND", ttl_seconds=60*60*24*30)
-    return None
+        print(f"[GoogleReviews] Exception fetching reviews for {place_id}: {e}")
+        return []
 
 
 async def fetch_google_place_details_photo(place_id: str) -> Optional[str]:

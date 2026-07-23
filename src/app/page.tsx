@@ -175,24 +175,26 @@ export default function LandingPage() {
 
       const sectionDuration = 1;
 
-      gsap.to('.ground', {
-        y: "30%",
-        scrollTrigger: {
-          trigger: ".ground-container",
-          scrub: true,
-          start: "top bottom",
-          end: "bottom top"
-        }
+      // Animate background layers independently over the full scroll duration
+      gsap.to('.particles-takeoff', {
+        backgroundPosition: "0 500px", // parallax scroll
+        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
       });
-
-      gsap.from('.clouds', {
-        y: "25%",
-        scrollTrigger: {
-          trigger: ".ground-container",
-          scrub: true,
-          start: "top bottom",
-          end: "bottom top"
-        }
+      gsap.to('.volumetric-clouds', {
+        y: "-15%", // parallax
+        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
+      });
+      gsap.to('.nav-grid', {
+        rotation: 15, scale: 1.1,
+        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
+      });
+      gsap.to('.mountain-silhouettes', {
+        y: "20vh", // Parallax mountains down as we fly over them
+        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
+      });
+      gsap.to('.city-skyline', {
+        y: "10vh",
+        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
       });
 
       gsap.fromTo('.silhouette-back', 
@@ -240,6 +242,9 @@ export default function LandingPage() {
       // 1. Intro (Left text) -> Plane Right (or Left on mobile)
       tl.to('.scroll-cta', { duration: 0.25, opacity: 0 }, delay);
       tl.to(plane.position, { x: xOffset, ease: 'power1.in' }, delay);
+      // Atmosphere transition 1 -> 2
+      tl.to('.takeoff-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.altitude-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 2. "Destination" (Right text) -> Plane Left
@@ -250,6 +255,9 @@ export default function LandingPage() {
       // 3. "Complex" (Left text) -> Plane Right
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: xOffset, y: 0, z: -60, ease: 'power2.inOut' }, delay);
+      // Atmosphere transition 2 -> 3
+      tl.to('.altitude-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.nav-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 4. "Tabs" (Right text) -> Plane Left
@@ -260,6 +268,9 @@ export default function LandingPage() {
       // 5. "Logistics" (Left text) -> Plane Right
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: xOffset, y: 0, z: -30, ease: 'power2.inOut' }, delay);
+      // Atmosphere transition 3 -> 4
+      tl.to('.nav-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.descent-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 6. "Defying" (Right text) -> Plane Left
@@ -270,6 +281,9 @@ export default function LandingPage() {
       // 7. Sunset empty -> Fly away
       tl.to(plane.rotation, { x: tau * 0.15, y: tau * .85 * m, z: -tau * 0, ease: 'power1.in' }, delay);
       tl.to(plane.position, { z: -150, x: 0, y: 0, ease: 'power1.inOut' }, delay);
+      // Atmosphere transition 4 -> 5
+      tl.to('.descent-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.arrival-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 8. Sunset end -> Rotate outwards and fly to a balanced Y position on mobile
@@ -279,7 +293,7 @@ export default function LandingPage() {
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
     }
 
-    let object: THREE.Group;
+    let mounted = true;
 
     function addWindows(planeGroup: THREE.Group, planeMesh: THREE.Mesh) {
       const box = new THREE.Box3().setFromObject(planeMesh);
@@ -394,9 +408,11 @@ export default function LandingPage() {
       });
     }
 
-    function onModelLoaded() {
+    function onModelLoaded(loadedObject: THREE.Group) {
+      if (!mounted) return;
+      
       let planeMesh: THREE.Mesh | null = null;
-      object.traverse(function (child) {
+      loadedObject.traverse(function (child) {
         if ((child as THREE.Mesh).isMesh) {
           planeMesh = child as THREE.Mesh;
 
@@ -478,21 +494,38 @@ export default function LandingPage() {
 
       if (planeMesh) {
         try {
-          addWindows(object, planeMesh);
+          addWindows(loadedObject, planeMesh);
         } catch (e) { console.error("Failed to add windows", e); }
       }
 
-      setupAnimation(object);
+      setupAnimation(loadedObject);
     }
 
-    const manager = new THREE.LoadingManager(onModelLoaded);
-    manager.onProgress = (item, loaded, total) => console.log(item, loaded, total);
-
-    const loader = new OBJLoader(manager);
-    loader.load('https://assets.codepen.io/557388/1405+Plane_1.obj', function (obj) { object = obj; });
+    const loader = new OBJLoader();
+    loader.load(
+      '/api/plane-obj', 
+      function (obj) { 
+        if (mounted) onModelLoaded(obj); 
+      },
+      undefined,
+      function (error) {
+        console.error("Failed to load plane model:", error);
+        if (!mounted) return;
+        
+        // Fallback: create a dummy object so animations still run and page unhides
+        const dummyGroup = new THREE.Group();
+        const dummyMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.1, 0.1, 0.1), 
+          new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
+        );
+        dummyGroup.add(dummyMesh);
+        setupAnimation(dummyGroup);
+      }
+    );
 
     // Cleanup
     return () => {
+      mounted = false;
       window.removeEventListener('mousemove', handleMouseMove);
       ScrollTrigger.getAll().forEach(t => t.kill());
       if (sceneObj) {
@@ -505,8 +538,42 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-body bg-[#dfddd5] text-[#151515]" ref={containerRef} style={{ backgroundColor: '#D0CBC7' }}>
-      {/* Clean Navbar */}
+    <div className="landing-body bg-[#0b0f19] text-white" ref={containerRef}>
+      <div className="cinematic-bg">
+        <div className="cinematic-bg-noise"></div>
+        
+        {/* Stage 1: TAKEOFF */}
+        <div className="atmosphere-layer atmosphere-takeoff takeoff-layer">
+          <div className="runway-glow"></div>
+          <div className="particles-takeoff"></div>
+        </div>
+
+        {/* Stage 2: HIGH ALTITUDE */}
+        <div className="atmosphere-layer atmosphere-altitude altitude-layer">
+          <div className="volumetric-clouds"></div>
+          <div className="sun-rays"></div>
+        </div>
+
+        {/* Stage 3: GLOBAL NAVIGATION */}
+        <div className="atmosphere-layer atmosphere-nav nav-layer">
+          <div className="nav-grid"></div>
+          <div className="nav-lines"></div>
+          <div className="nav-nodes"></div>
+        </div>
+
+        {/* Stage 4: GOLDEN HOUR DESCENT */}
+        <div className="atmosphere-layer atmosphere-descent descent-layer">
+          <div className="mountain-silhouettes"></div>
+          <div className="atmospheric-haze"></div>
+        </div>
+
+        {/* Stage 5: ARRIVAL */}
+        <div className="atmosphere-layer atmosphere-arrival arrival-layer">
+          <div className="arrival-fog"></div>
+          <div className="city-lights"></div>
+          <div className="city-skyline"></div>
+        </div>
+      </div>
       <nav className="absolute top-0 left-0 w-full z-[100] flex items-center justify-between px-6 py-4 bg-[#282828] border-b border-[#3e3e3e] text-white font-sans transition-all duration-300">
         
         {/* Left: Logos and Links */}
@@ -606,16 +673,15 @@ export default function LandingPage() {
       </nav>
 
       <canvas ref={canvasRef} />
-      
-      <div className="content">
+      <div className="content relative z-10">
         <div className="loading">Loading Engine...</div>
         <div className="trigger"></div>
         <div className="ground-container">
-          <div className="parallax ground" style={{ backgroundImage: 'url("https://assets.codepen.io/557388/background-reduced.jpg"), linear-gradient(to bottom, #b4afaa, #D0CBC7)', zIndex: 0 }}></div>
+          <div className="parallax ground hidden"></div>
           
           <div className="section relative z-50 max-md:!px-6 max-md:!w-full max-md:!mx-0">
             <div className="pt-[8vh] md:pt-[12vh] max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
-              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[1] text-[#151515] mb-6 drop-shadow-sm">
+              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[1] text-white mb-6 drop-shadow-sm">
                 We plan the trip.<br/>
                 <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">You pack your bags.</span>
               </h1>
@@ -623,55 +689,56 @@ export default function LandingPage() {
             </div>
 
             <div className="scroll-cta absolute bottom-[10vh] left-6 md:left-0 flex flex-col items-start gap-3">
-              <span className="font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#151515]/60">Scroll to explore</span>
-              <div className="w-[2px] h-12 md:h-16 bg-gradient-to-b from-[#151515]/50 to-transparent ml-1"></div>
+              <span className="font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase text-white/60">Scroll to explore</span>
+              <div className="w-[2px] h-12 md:h-16 bg-gradient-to-b from-white/50 to-transparent ml-1"></div>
             </div>
           </div>
           
           <div className="section right relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl">
-              <h2 className="!text-black" style={{ color: '#000000' }}>Trip planning shouldn't feel like a part-time job.</h2>
+            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl">
+              <h2 className="!text-white">Trip planning shouldn't feel like a part-time job.</h2>
             </div>
           </div>
 
           <div className="section relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl text-left">
-              <h2 className="!text-black" style={{ color: '#000000' }}>Leave the details to us.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">No tabs. No spreadsheets. No back-and-forth over budgets.</p>
+            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl text-left">
+              <h2 className="!text-white">Leave the details to us.</h2>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">No tabs. No spreadsheets. No back-and-forth over budgets.</p>
             </div>
           </div>
 
           <div className="section right relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl">
-              <h2 className="!text-black" style={{ color: '#000000' }}>We find the way there.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">Flights, trains, and buses, quietly compared until only the best remains.</p>
+            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl">
+              <h2 className="!text-white">We find the way there.</h2>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">Flights, trains, and buses, quietly compared until only the best remains.</p>
             </div>
           </div>
 
           <div className="section relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl text-left">
-              <h2 className="!text-black" style={{ color: '#000000' }}>Your whole trip, stitched together.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">Stays, experiences, and timing, all laid out in one clean plan.</p>
+            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl text-left">
+              <h2 className="!text-white">Your whole trip, stitched together.</h2>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">Stays, experiences, and timing, all laid out in one clean plan.</p>
             </div>
           </div>
           
           <div className="section right relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-white/40 p-8 md:p-12 rounded-3xl border border-white/50 shadow-xl">
-              <h2 className="!text-black" style={{ color: '#000000' }}>Less planning. More going.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-bold mt-2">Stop juggling logistics. Start the trip.</p>
+            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl">
+              <h2 className="!text-white">Less planning. More going.</h2>
+              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">Stop juggling logistics. Start the trip.</p>
             </div>
           </div>
           <div className="parallax clouds"></div>
         </div>
         
-
+        <div className="blueprint relative z-0">
+          {/* SVG blueprint outline removed for clean topographic map */}
+          <div className="section"></div>
+          <div className="section"></div>
+        </div>
 
         <div className="sunset">
           <div className="silhouette-back"></div>
           <div className="silhouette-front"></div>
-          <div className="section"></div>
-          {/* Padding sections to perfectly map the 3x duration final animation */}
-          <div className="section"></div>
           <div className="section"></div>
           <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white !w-full !px-3 md:!px-10" style={{ height: 'auto', minHeight: '100vh' }}>
             <h2 className="mb-8 md:mb-12">Let's go.</h2>
@@ -683,10 +750,10 @@ export default function LandingPage() {
                 className="bg-white/10 backdrop-blur-md border border-white/20 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all md:hover:scale-105 group flex flex-col justify-between h-full"
               >
                 <div>
-                  <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Discovery Engine</h3>
-                  <p className="text-zinc-300 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
+                  <div className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Discovery Engine</div>
+                  <div className="text-zinc-300 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
                     Not sure where to go? Tell us your budget and vibe.
-                  </p>
+                  </div>
                 </div>
                 <div className="flex items-center text-white text-xs md:text-base font-bold group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform">
                   Explore <ArrowRight className="ml-1 w-3 h-3 md:w-5 md:h-5" />
@@ -699,10 +766,10 @@ export default function LandingPage() {
                 className="bg-blue-600 border border-blue-500 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-blue-500 transition-all duration-300 md:hover:scale-105 group shadow-[0_0_30px_-10px_rgba(37,99,235,0.5)] md:shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.7)] flex flex-col justify-between h-full"
               >
                 <div>
-                  <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Plan Itinerary</h3>
-                  <p className="text-blue-100 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
+                  <div className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Plan Itinerary</div>
+                  <div className="text-blue-100 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
                     Know your destination? We'll lock down the logistics.
-                  </p>
+                  </div>
                 </div>
                 <div className="flex items-center text-white text-xs md:text-base font-bold group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform">
                   Start <ArrowRight className="ml-1 w-3 h-3 md:w-5 md:h-5" />
@@ -710,14 +777,13 @@ export default function LandingPage() {
               </div>              {/* Card 3: Hangout Mode */}
               <div 
                 onClick={() => handleNavigation('/quick-trip')}
-                className="group relative col-span-2 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-indigo-500/10 via-[#0a0a0a] to-[#0a0a0a] p-1.5 border border-white/5 cursor-pointer hover:border-white/20 transition-colors shadow-2xl h-[120px] md:h-[250px]"
+                className="bg-[#1a1a1a] border border-[#333] p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-[#222] transition-all duration-300 md:hover:scale-105 group shadow-2xl flex flex-col justify-between h-full"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative h-full w-full rounded-2xl bg-[#080808] border border-white/5 p-4 md:p-8 flex flex-col justify-between overflow-hidden group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-shadow">
-                  <h3 className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Plan a Hangout in Your City</h3>
-                  <p className="text-emerald-100 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
+                <div>
+                  <div className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Hangout Mode</div>
+                  <div className="text-zinc-400 text-[11px] md:text-lg mb-3 md:mb-6 leading-snug">
                     Short on time? Let's plan a spontaneous getaway.
-                  </p>
+                  </div>
                 </div>
                 <div className="flex items-center text-white text-xs md:text-base font-bold group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform">
                   Go <ArrowRight className="ml-1 w-3 h-3 md:w-5 md:h-5" />

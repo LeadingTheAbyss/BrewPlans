@@ -17,6 +17,18 @@ import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
 import { CinematicLoader } from '@/components/CinematicLoader';
 
+function getDefaultDuration(category?: string): number {
+  if (!category) return 1.5;
+  switch (category.toLowerCase()) {
+    case 'premium':
+    case 'experiential': return 2.5;
+    case 'street food':
+    case 'hawker': return 0.5;
+    case 'cafe': return 1.5;
+    default: return 1.5;
+  }
+}
+
 function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }: {
   place: Place;
   destination: string;
@@ -50,8 +62,8 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
 
   if (!isOpen) return null;
 
-  const reviewCount = place.reviewsCount ?? ((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850);
-  const displayRating = place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1);
+  const reviewCount = place.reviewsCount || 0;
+  const displayRating = place.rating ? place.rating.toFixed(1) : 'New';
 
   const handleActionClick = (action: string) => {
     const query = encodeURIComponent(place.name + (destination ? ' ' + destination : '')).replace(/%20/g, '+');
@@ -460,17 +472,17 @@ export default function FoodPage() {
                     <div className="flex items-center gap-1 mb-3">
                       <Star size={12} className="text-yellow-400" fill="currentColor" />
                       <span className="text-xs font-semibold text-zinc-300">
-                        {place.rating || (4.0 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 11) / 10).toFixed(1)}
+                        {place.rating ? place.rating.toFixed(1) : 'New'}
                       </span>
-                      <span className="text-xs text-zinc-600 ml-1">
-                        ({(place.reviewsCount ?? ((place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 123) % 24000 + 850)).toLocaleString('en-IN')})
+                      <span className="text-zinc-500 text-xs mt-0.5">
+                        {place.reviewsCount ? `(${place.reviewsCount.toLocaleString('en-IN')})` : ''}
                       </span>
                     </div>
 
                     {/* Duration */}
                     <div className="flex items-center gap-1.5 text-zinc-500 text-xs mt-auto mb-3">
                       <Clock size={12} />
-                      <span>{place.visitDurationHours === 1.5 ? (1 + (place.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 4) * 0.5) : place.visitDurationHours} hrs visit</span>
+                      <span>{place.visitDurationHours || getDefaultDuration(place.category)} hrs visit</span>
                     </div>
 
                     {/* Add button */}

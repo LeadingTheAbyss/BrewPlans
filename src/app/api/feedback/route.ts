@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+    const rateLimit = await checkRateLimit(`feedback:${ip}`, 3, 3600); // 3 feedbacks per hour
+
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: 'Too many feedback requests. Please try again later.' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { content, type, userId } = body;
 

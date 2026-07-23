@@ -16,30 +16,32 @@ logging.basicConfig(level=logging.INFO)
 from dotenv import load_dotenv
 load_dotenv()
 
+# API Key Rotation State
+_parse_usage_count = 0
+_current_parse_index = 0
+
 def get_parse_api_key():
-    usage_file = "parse_key_usage.json"
-    count = 0
-    if os.path.exists(usage_file):
-        try:
-            with open(usage_file, "r") as f:
-                data = json.load(f)
-                count = data.get("count", 0)
-        except Exception:
-            pass
-            
-    count += 1
+    global _parse_usage_count, _current_parse_index
     
-    try:
-        with open(usage_file, "w") as f:
-            json.dump({"count": count}, f)
-    except Exception:
-        pass
+    keys = [
+        "PARSE_API_KEY1", "PARSE_API_KEY2", "PARSE_API_KEY3",
+        "PARSE_API_KEY4", "PARSE_API_KEY5", "PARSE_API_KEY6", "PARSE_API_KEY7"
+    ]
+    
+    available_keys = [os.getenv(k) for k in keys if os.getenv(k)]
+    if not available_keys:
+        return os.environ.get("PARSE_API_KEY1")
         
-    key_index = ((count - 1) // 100) % 7 + 1
-    api_key = os.environ.get(f"PARSE_API_KEY{key_index}")
-    if not api_key:
-        api_key = os.environ.get("PARSE_API_KEY1")
-    return api_key
+    # Rotate key after 50 calls
+    if _parse_usage_count >= 50:
+        _parse_usage_count = 0
+        _current_parse_index = (_current_parse_index + 1) % len(available_keys)
+        
+    if _current_parse_index >= len(available_keys):
+        _current_parse_index = 0
+        
+    _parse_usage_count += 1
+    return available_keys[_current_parse_index]
 
 async def fetch_redbus_api(origin: str, destination: str, travel_date: str, check_only: bool = False) -> List[dict]:
     """Strategy 1: Live redBus API via parse.bot"""
@@ -57,147 +59,6 @@ async def fetch_redbus_api(origin: str, destination: str, travel_date: str, chec
             valid_buses = []
             seen_buses = set()
             
-            for r in rows:
-                r_date_obj = datetime.strptime(r['date'], "%Y-%m-%d")
-                if r_date_obj.weekday() == req_dow:
-                    bus_key = f"{r['bus_name']}-{r['timings']}"
-                    if bus_key not in seen_buses:
-                        seen_buses.add(bus_key)
-                        valid_buses.append({
-                            "bus_name": r['bus_name'], 
-                            "timings": r['timings'], 
-                            "route": f"{origin} to {destination}", 
-                            "price": r['price']
-                        })
-                        
-            if valid_buses:
-                logging.info(f"Returning {len(valid_buses)} cached buses from DB using Day-of-Week pattern match.")
-                return valid_buses
-    except Exception as e:
-        logging.warning(f"DB cache check failed: {e}")
-
-    if check_only:
-        return None
-
-    api_key = get_parse_api_key()
-    if not api_key:
-        raise Exception("PARSE_API_KEY1 not found in environment.")
-        
-    base_url = "https://api.parse.bot/scraper/35a9b6fe-4009-43dd-89e2-993f11b60ad0"
-    headers = {"X-API-Key": api_key}
-    
-    async with httpx.AsyncClient() as client:
-        # Get origin city ID
-        orig_res = await client.get(f"{base_url}/get_city_suggestions", params={"limit": 1, "query": origin}, headers=headers, timeout=10.0)
-        orig_res.raise_for_status()
-        orig_data = orig_res.json()
-        orig_docs = orig_data.get("data", {}).get("docs", [])
-        if not orig_docs:
-            raise Exception(f"Origin city '{origin}' not found on redBus API.")
-        orig_id = orig_docs[0]["ID"]
-
-        # Get destination city ID
-        dest_res = await client.get(f"{base_url}/get_city_suggestions", params={"limit": 1, "query": destination}, headers=headers, timeout=10.0)
-        dest_res.raise_for_status()
-        dest_data = dest_res.json()
-        dest_docs = dest_data.get("data", {}).get("docs", [])
-        if not dest_docs:
-            raise Exception(f"Destination city '{destination}' not found on redBus API.")
-        dest_id = dest_docs[0]["ID"]
-        
-        # Format date: YYYY-MM-DD -> DD-Mon-YYYY
-        try:
-            parsed_date = datetime.strptime(travel_date, "%Y-%m-%d")
-            doj_str = parsed_date.strftime("%d-%b-%Y")
-        except ValueError:
-            doj_str = travel_date
-
-        # Fetch bus services
-        search_params = {
-            "from_city_id": orig_id,
-            "to_city_id": dest_id,
-            "doj": doj_str,
-            "limit": 15
-        }
-        search_res = await client.get(f"{base_url}/search_buses", params=search_params, headers=headers, timeout=15.0)
-        search_res.raise_for_status()
-        
-    inventories = search_res.json().get("data", {}).get("inventories", [])
-    if not inventories:
-        logging.warning("No buses found on live API.")
-        return []
-        
-    results = []
-    for inv in inventories:
-        dep = str(inv.get("departureTime", "")).strip()
-        arr = str(inv.get("arrivalTime", "")).strip()
-        
-        if "T" in dep:
-            try:
-                dep = datetime.fromisoformat(dep.replace("Z", "+00:00")).strftime("%H:%M")
-            except:
-                pass
-        elif len(dep) >= 4 and ":" not in dep: 
-            dep = f"{dep[:2]}:{dep[2:4]}"
-            
-        if "T" in arr:
-            try:
-                arr = datetime.fromisoformat(arr.replace("Z", "+00:00")).strftime("%H:%M")
-            except:
-                pass
-        elif len(arr) >= 4 and ":" not in arr: 
-            arr = f"{arr[:2]}:{arr[2:4]}"
-            
-        if ":" not in dep: dep = "10:00"
-        if ":" not in arr: arr = "20:00"
-        
-        timings = f"{dep} - {arr}"
-        
-        fare_list = inv.get("fareList", [])
-        price = 1000
-        if fare_list:
-            if isinstance(fare_list, list) and len(fare_list) > 0:
-                if isinstance(fare_list[0], dict):
-                    price = float(fare_list[0].get("fare", 1000))
-                else:
-                    try:
-                        price = float(fare_list[0])
-                    except:
-                        pass
-            elif isinstance(fare_list, (int, float, str)):
-                try:
-                    price = float(fare_list)
-                except:
-                    pass
-            
-        bus_name = inv.get("travelsName", "Unknown Operator")
-        if inv.get("busType"):
-            bus_name += f" ({inv.get('busType')})"
-            
-        results.append({
-            "bus_name": bus_name,
-            "timings": timings,
-            "route": f"{origin} to {destination}",
-            "price": price
-        })
-        
-    # Save to DB cache
-    if results:
-        try:
-            conn = await get_db_connection()
-            for r in results:
-                bus_id = uuid.uuid4().hex
-                await conn.execute('''
-                    INSERT INTO "Bus" (id, origin, dest, date, bus_name, timings, price)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                    ON CONFLICT (origin, dest, date, bus_name, timings) DO NOTHING
-                ''', bus_id, origin.upper(), destination.upper(), travel_date, r["bus_name"], r["timings"], r["price"])
-            await conn.close()
-        except Exception as e:
-            logging.warning(f"Failed to cache bus data to DB: {e}")
-            
-    return results
-
 from services.heuristic_pricing import calculate_heuristic_bus_fare
 import urllib.parse
 import math
@@ -306,18 +167,13 @@ def validate_payload(data: List[dict]) -> bool:
 
 async def get_live_bus_data(origin: str, destination: str, travel_date: str, check_only: bool = False) -> dict:
     """The Multi-Source Redundancy Pipeline."""
-    scraping_pipeline = [
-        fetch_redbus_api       # Strategy 1 (Live redBus API via parse.bot)
+    strategies = [
+        scrape_redbus_mobile    # Strategy 2 (Heuristic Bus Synthesis Engine)
     ]
     
-    for scrape_strategy in scraping_pipeline:
+    for scrape_strategy in strategies:
         try:
             # Attempt to extract the 4 required fields
-            if scrape_strategy.__name__ == 'fetch_redbus_api':
-                bus_listings = await scrape_strategy(origin, destination, travel_date, check_only=check_only)
-            else:
-                if check_only:
-                    continue
                 bus_listings = await scrape_strategy(origin, destination, travel_date)
             
             if bus_listings is None and check_only:

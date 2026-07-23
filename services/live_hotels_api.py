@@ -12,11 +12,32 @@ from services.cache_logger import log_cache_event
 
 load_dotenv()
 
-def get_serpapi_key():
-    key = os.getenv("SERPAPI_HOTELS_KEY")
-    if not key:
+# API Key Rotation State
+_serpapi_usage_count = 0
+_current_serpapi_index = 0
+
+def get_serpapi_key() -> str:
+    global _serpapi_usage_count, _current_serpapi_index
+    
+    keys = [
+        "SERPAPI_HOTELS_KEY", "SERPAPI_HOTELS_KEY2", "SERPAPI_HOTELS_KEY3",
+        "SERPAPI_HOTELS_KEY4", "SERPAPI_HOTELS_KEY5", "SERPAPI_HOTELS_KEY6"
+    ]
+    
+    available_keys = [os.getenv(k) for k in keys if os.getenv(k)]
+    if not available_keys:
         raise ValueError("\n[ERROR] MISSING API KEY: Please put your SERPAPI_HOTELS_KEY in the .env file!")
-    return key
+        
+    # Rotate key after 50 calls
+    if _serpapi_usage_count >= 50:
+        _serpapi_usage_count = 0
+        _current_serpapi_index = (_current_serpapi_index + 1) % len(available_keys)
+        
+    if _current_serpapi_index >= len(available_keys):
+        _current_serpapi_index = 0
+        
+    _serpapi_usage_count += 1
+    return available_keys[_current_serpapi_index]
 
 async def search_live_hotels(city: str, check_in_date: str = None, check_out_date: str = None, check_only: bool = False) -> Optional[List[Hotel]]:
     print(f"\n[API Call] Fetching live hotels (via SerpApi) for: {city}...")

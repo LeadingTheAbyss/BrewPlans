@@ -6,7 +6,6 @@ from models.enums import TransportType, Weather, CrowdLevel
 from models.state import TripState
 
 from engines.safety_engine import calculate_safety_score
-from services.live_places_api import search_live_places
 from services.live_hotels_api import search_live_hotels
 from services.live_flights_api import search_live_flights
 from services.live_trains_api import search_live_trains

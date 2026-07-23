@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit2, LogOut, Map, History, Compass, ChevronRight, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Edit2, LogOut, Map, History, Compass, ChevronRight, MessageSquare, ChevronDown } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useTripStore } from '@/store/tripStore';
 import { useItineraryStore } from '@/store/itineraryStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { FeedbackModal } from '@/components/FeedbackModal';
+import ModernDateRangePicker from '@/components/ModernDateRangePicker';
 
 export default function ProfilePage() {
   const { user, fetchUser, isLoading, logout } = useAuthStore();
@@ -17,6 +18,9 @@ export default function ProfilePage() {
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [wrappedRange, setWrappedRange] = useState('all-time');
+  const [wrappedStartDate, setWrappedStartDate] = useState('');
+  const [wrappedEndDate, setWrappedEndDate] = useState('');
 
   useEffect(() => {
     fetchUser();
@@ -154,17 +158,53 @@ export default function ProfilePage() {
               <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
                   <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                    Planbro Wrapped <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full uppercase tracking-widest font-normal">New</span>
+                    Planbro Wrapped
                   </h3>
                   <p className="text-sm text-white/60 mt-2 max-w-md">Relive your travels, destinations, and adventures. See your journey visualized like never before.</p>
                 </div>
                 
                 <div className="flex flex-col gap-3 min-w-[200px]">
+                  <div className="relative">
+                    <select 
+                      value={wrappedRange}
+                      onChange={(e) => setWrappedRange(e.target.value)}
+                      className="w-full py-3 pl-4 pr-10 bg-white/10 text-white font-bold text-xs uppercase tracking-widest rounded-full outline-none border border-white/20 focus:border-white/50 appearance-none cursor-pointer"
+                    >
+                      <option value="today" className="text-black">Today</option>
+                      <option value="this-week" className="text-black">This Week</option>
+                      <option value="this-month" className="text-black">This Month</option>
+                      <option value="this-year" className="text-black">This Year</option>
+                      <option value="all-time" className="text-black">All Time</option>
+                      <option value="custom" className="text-black">Custom Date</option>
+                    </select>
+                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
+                  </div>
+                  
+                  {wrappedRange === 'custom' && (
+                    <div className="pt-2">
+                      <ModernDateRangePicker
+                        label="Select Custom Dates"
+                        startDate={wrappedStartDate}
+                        endDate={wrappedEndDate}
+                        onChange={(start, end) => {
+                          setWrappedStartDate(start || '');
+                          setWrappedEndDate(end || '');
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <button 
-                    onClick={() => router.push('/wrapped?range=all-time')}
-                    className="w-full py-3 px-6 bg-white text-black font-bold text-xs uppercase tracking-widest rounded-full hover:bg-white/90 transition-colors flex justify-center items-center gap-2"
+                    onClick={() => {
+                      let url = `/wrapped?range=${wrappedRange}`;
+                      if (wrappedRange === 'custom') {
+                        url += `&start=${wrappedStartDate}&end=${wrappedEndDate}`;
+                      }
+                      router.push(url);
+                    }}
+                    className="w-full py-3 px-6 bg-white text-black font-bold text-xs uppercase tracking-widest rounded-full hover:bg-white/90 transition-colors flex justify-center items-center gap-2 mt-1"
                   >
-                    View All Time <Compass size={16} />
+                    View Wrapped <Compass size={16} />
                   </button>
                 </div>
               </div>
