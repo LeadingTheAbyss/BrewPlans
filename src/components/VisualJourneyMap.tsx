@@ -409,7 +409,7 @@ export default function VisualJourneyMap({
                     {item.commuteType === 'bike' ? <Bike size={14} className="text-blue-400" /> : <Car size={14} className="text-green-400" />}
                   </div>
                   <div className="flex flex-col">
-                    <span>{isLoadingRoutes ? "Loading..." : `${formatDuration(item.travelMins)} (${item.travelDistanceStr} km)`}</span>
+                    <span>{`${formatDuration(item.travelMins)} (${item.travelDistanceStr} km)`}</span>
                     <span className="text-[10px]">Recommended: {item.commuteType === 'bike' ? 'Bike Ride' : 'Cab'}</span>
                   </div>
                 </div>

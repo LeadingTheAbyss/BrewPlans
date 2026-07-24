@@ -20,9 +20,9 @@ import LedgerView from '@/components/review/LedgerView';
 
 export default function ReviewPage() {
   const router = useRouter();
-  const trip = useTripStore();
-  const budget = useBudgetStore();
-  const itinerary = useItineraryStore();
+  const globalTrip = useTripStore();
+  const globalBudget = useBudgetStore();
+  const globalItinerary = useItineraryStore();
   const cache = useCacheStore();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -35,11 +35,18 @@ export default function ReviewPage() {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const loadedTripId = React.useRef<string | null>(null);
   const [isLoadingTrip, setIsLoadingTrip] = useState(false);
+  const [sharedTripData, setSharedTripData] = useState<any>(null);
+
+  const isReadOnly = !!sharedTripData;
+  const trip = (isReadOnly ? sharedTripData.trip : globalTrip) as typeof globalTrip;
+  const itinerary = (isReadOnly ? sharedTripData.itinerary : globalItinerary) as typeof globalItinerary;
+  const budget = (isReadOnly ? sharedTripData.budget : globalBudget) as typeof globalBudget;
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
       const tripId = searchParams.get('tripId');
+      const editMode = searchParams.get('mode') === 'edit';
       
       if (tripId && loadedTripId.current !== tripId) {
         loadedTripId.current = tripId;
@@ -51,9 +58,17 @@ export default function ReviewPage() {
               const data = await res.json();
               if (data.trip && data.trip.snapshot) {
                 const snap = data.trip.snapshot;
-                useTripStore.getState().loadSnapshot(snap, data.trip.destination);
-                useItineraryStore.getState().loadSnapshot(snap);
-                useBudgetStore.getState().loadSnapshot(snap);
+                if (editMode) {
+                  useTripStore.getState().loadSnapshot(snap, data.trip.destination);
+                  useItineraryStore.getState().loadSnapshot(snap);
+                  useBudgetStore.getState().loadSnapshot(snap);
+                } else {
+                  setSharedTripData({
+                    trip: { ...snap, destination: data.trip.destination },
+                    itinerary: { days: snap.itinerary || [], selectedPlaces: snap.selectedPlaces || [] },
+                    budget: snap.budget || { total: 0, spent: 0, remaining: 0 }
+                  });
+                }
               }
             } else {
               alert('Failed to load shared trip. You might need to log in or the trip was deleted.');
@@ -143,23 +158,23 @@ export default function ReviewPage() {
     }
   };
 
-  const handleUniversalLink = async () => {
+  const handleUniversalLink = async (isEdit: boolean = false) => {
     setShowShareMenu(false);
     setIsSaving(true);
     try {
       const snapshot = {
-        source: trip.source,
-        startDate: trip.startDate,
-        endDate: trip.endDate,
-        passengers: trip.passengers,
-        selectedTransports: trip.selectedTransports,
-        selectedHotel: trip.selectedHotel,
-        itinerary: itinerary.days,
-        selectedPlaces: itinerary.selectedPlaces,
+        source: globalTrip.source,
+        startDate: globalTrip.startDate,
+        endDate: globalTrip.endDate,
+        passengers: globalTrip.passengers,
+        selectedTransports: globalTrip.selectedTransports,
+        selectedHotel: globalTrip.selectedHotel,
+        itinerary: globalItinerary.days,
+        selectedPlaces: globalItinerary.selectedPlaces,
         budget: {
-          total: budget.totalBudget,
-          spent: budget.spentTransport + budget.spentHotels + budget.spentPlaces,
-          remaining: budget.remaining
+          total: globalBudget.totalBudget,
+          spent: globalBudget.spentTransport + globalBudget.spentHotels + globalBudget.spentPlaces,
+          remaining: globalBudget.remaining
         }
       };
 
@@ -167,16 +182,16 @@ export default function ReviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destination: trip.destination || 'Unknown Destination',
+          destination: globalTrip.destination || 'Unknown Destination',
           snapshot
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        const url = `${window.location.origin}/plan/review?tripId=${data.trip.id}`;
+        const url = `${window.location.origin}/plan/review?tripId=${data.trip.id}${isEdit ? '&mode=edit' : ''}`;
         if (navigator.share) {
-          navigator.share({ title: `Trip to ${trip.destination}`, url }).catch(() => {});
+          navigator.share({ title: `Trip to ${globalTrip.destination}`, url }).catch(() => {});
         } else {
           navigator.clipboard.writeText(url);
           alert('Share link copied to clipboard!');
@@ -260,7 +275,7 @@ export default function ReviewPage() {
   };
 
   const resolveTransport = (passengerId: string) => {
-    const selected = trip.selectedTransports.find(t => t.passengerId === passengerId);
+    const selected = trip.selectedTransports.find((t: any) => t.passengerId === passengerId);
     if (!selected) return null;
     if (selected.transport) return selected.transport;
     
@@ -274,7 +289,7 @@ export default function ReviewPage() {
     : null;
     
   const selectedDayPlaces = selectedDayObj
-    ? (selectedDayObj.placeIds.map(id => itinerary.selectedPlaces.find(p => p.id === id)).filter(Boolean) as Place[])
+    ? (selectedDayObj.placeIds.map((id: string) => itinerary.selectedPlaces.find((p: Place) => p.id === id)).filter(Boolean) as Place[])
     : [];
 
   // Group passengers by transport for UI display
@@ -326,21 +341,25 @@ export default function ReviewPage() {
               >
                 View Itinerary
               </button>
-              <button 
-                onClick={() => setViewMode('ledger')}
-                className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'ledger' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
-              >
-                Track Expenses
-              </button>
+              {/* Hide expenses tab in read-only mode since it requires store access */}
+              {!isReadOnly && (
+                <button 
+                  onClick={() => setViewMode('ledger')}
+                  className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'ledger' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  Track Expenses
+                </button>
+              )}
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  onClick={() => setShowShareMenu(!showShareMenu)}
-                  disabled={itinerary.selectedPlaces.length === 0}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
-                >
+              {!isReadOnly && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowShareMenu(!showShareMenu)}
+                    disabled={itinerary.selectedPlaces.length === 0}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
+                  >
                   <Share2 size={16} />
                   Share Plan
                   <ChevronDown size={14} />
@@ -355,11 +374,18 @@ export default function ReviewPage() {
                       className="absolute left-0 md:right-0 md:left-auto top-full mt-2 w-48 bg-[#1A1A1A] border border-[#333] rounded-xl shadow-2xl overflow-hidden z-[9999] flex flex-col p-1"
                     >
                       <button 
-                        onClick={handleUniversalLink}
+                        onClick={() => handleUniversalLink(false)}
                         className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full"
                       >
                         <LinkIcon size={16} className="text-emerald-500 shrink-0" />
-                        Share Link
+                        Copy View Link
+                      </button>
+                      <button 
+                        onClick={() => handleUniversalLink(true)}
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full"
+                      >
+                        <LinkIcon size={16} className="text-purple-500 shrink-0" />
+                        Copy Edit Link
                       </button>
                       <button 
                         onClick={handleDownloadPdf}
@@ -372,7 +398,8 @@ export default function ReviewPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+                </div>
+              )}
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#222] bg-[#111] text-sm shrink-0">
                 <Users size={16} className="text-green-500" />
                 <span className="font-medium">{trip.passengers.length} Members</span>
