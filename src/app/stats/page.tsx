@@ -219,7 +219,7 @@ export default function AdminStatsPage() {
       <AppShell>
         <div className="w-full min-h-[calc(100vh-2rem)] flex items-center justify-center flex-col gap-4 bg-[#050505]">
           <p className="text-red-500 font-mono text-sm">SYSTEM_ERR: {error}</p>
-          <button onClick={fetchStats} className="text-xs bg-white text-black px-6 py-3 font-bold uppercase rounded hover:bg-white/90">Retry Uplink</button>
+          <button onClick={() => fetchStats()} className="text-xs bg-white text-black px-6 py-3 font-bold uppercase rounded hover:bg-white/90">Retry Uplink</button>
         </div>
       </AppShell>
     );
@@ -244,7 +244,7 @@ export default function AdminStatsPage() {
                 <p className="text-xs font-mono text-white/40 uppercase tracking-widest">System Health & Telemetry</p>
               </div>
             </div>
-            <button onClick={fetchStats} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest group">
+            <button onClick={() => fetchStats()} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest group">
               <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Sync
             </button>
           </div>
