@@ -122,6 +122,19 @@ export default function AdminStatsPage() {
     }
   };
 
+  const deleteFeedback = async (id: string) => {
+    try {
+      const res = await fetch(`/api/feedback?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setFeedbacks(prev => prev.filter(fb => fb.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete feedback', err);
+    }
+  };
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -580,14 +593,14 @@ export default function AdminStatsPage() {
                             <span className="text-sm font-bold text-white">{fb.user?.name || 'Anonymous User'}</span>
                             <span className="text-xs text-white/40 ml-2 font-mono">{fb.user?.email || 'No email provided'}</span>
                           </div>
-                          <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                          <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleString()}</span>
                         </div>
                         <div className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">{fb.type}</div>
-                        <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap pr-20">{fb.content}</p>
+                        <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap pr-32">{fb.content}</p>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                         {feedbackTab === 'PENDING' ? (
                           <button 
                             onClick={() => updateFeedbackStatus(fb.id, 'RESOLVED')}
@@ -603,6 +616,12 @@ export default function AdminStatsPage() {
                             <RefreshCw size={14} /> Pending
                           </button>
                         )}
+                        <button 
+                          onClick={() => deleteFeedback(fb.id)}
+                          className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                        >
+                          <XCircle size={14} /> Remove
+                        </button>
                       </div>
                     </motion.div>
                   ))}

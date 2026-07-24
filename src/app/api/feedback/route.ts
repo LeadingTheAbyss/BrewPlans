@@ -75,3 +75,24 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to update feedback' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
+    const feedback = await prisma.feedback.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, feedback }, { status: 200 });
+  } catch (error: any) {
+    console.error('Feedback delete error:', error);
+    return NextResponse.json({ error: 'Failed to delete feedback' }, { status: 500 });
+  }
+}
+
