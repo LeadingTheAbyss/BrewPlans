@@ -92,6 +92,8 @@ export default function LandingPage() {
       
       tailOffset: THREE.Vector3 = new THREE.Vector3(10, 0, 0);
       noseOffset: THREE.Vector3 = new THREE.Vector3(-10, 0, 0);
+      e1Offset: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+      e2Offset: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
       constructor(model: THREE.Group) {
         this.views = [

@@ -28,6 +28,8 @@ interface StatsData {
     cacheHitRate: string;
     errorRate: string;
     errors: Array<{ id: string; endpoint: string; errorMessage: string; createdAt: string }>;
+    funnelStats?: { STARTED: number; DATES_SET: number; FINALIZED: number };
+    retentionStats?: { D1: number; D7: number; D30: number };
   };
   users: Array<{
     id: string;

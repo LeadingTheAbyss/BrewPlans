@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
     const rateLimit = await checkRateLimit(`feedback:${ip}`, 3, 3600); // 3 feedbacks per hour
 
     if (!rateLimit.success) {
