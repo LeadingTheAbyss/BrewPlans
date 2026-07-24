@@ -27,7 +27,7 @@ export default function ReviewPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedDayForJourney, setSelectedDayForJourney] = useState<number | null>(null);
   
   const [viewMode, setViewMode] = useState<'itinerary' | 'ledger'>('itinerary');
@@ -140,10 +140,11 @@ export default function ReviewPage() {
       });
 
       if (res.ok) {
-        trip.logTripAttempt('FINALIZED');
-        setShowToast(true);
+        setToastMessage('Trip saved successfully!');
+        
+        // Let them see the toast before redirecting
         setTimeout(() => {
-          setShowToast(false);
+          setToastMessage(null);
           router.push('/profile');
         }, 2000);
       } else {
@@ -194,7 +195,8 @@ export default function ReviewPage() {
           navigator.share({ title: `Trip to ${globalTrip.destination}`, url }).catch(() => {});
         } else {
           navigator.clipboard.writeText(url);
-          alert('Share link copied to clipboard!');
+          setToastMessage('Share link copied to clipboard!');
+          setTimeout(() => setToastMessage(null), 3000);
         }
       } else {
         alert(`Failed to generate link.`);
@@ -503,7 +505,15 @@ export default function ReviewPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="h-full min-h-[600px]"
               >
-                <LedgerView />
+                <div className="flex flex-col items-center justify-center h-[400px] bg-[#111] border border-[#222] rounded-3xl p-8 text-center mt-12">
+                  <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Upcoming Feature</h3>
+                  <p className="text-zinc-400 max-w-md mx-auto">
+                    Work on the advanced expense tracking ledger is currently in progress! We will add it later to the website.
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -578,7 +588,7 @@ export default function ReviewPage() {
       
       {/* Toast Notification */}
       <AnimatePresence>
-        {showToast && (
+        {toastMessage && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -588,7 +598,7 @@ export default function ReviewPage() {
             <div className="bg-green-500 rounded-full p-0.5">
               <CheckCircle2 size={16} className="text-[#1c1c1e]" />
             </div>
-            <span className="text-[14px] font-medium tracking-wide">Trip saved successfully!</span>
+            <span className="text-[14px] font-medium tracking-wide">{toastMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
