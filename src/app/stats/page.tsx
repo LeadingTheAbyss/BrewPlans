@@ -6,12 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-
-const ADMIN_EMAILS = [
-  'kartikeykumarsingh27jun2006@gmail.com',
-  'growwayushh@gmail.com',
-  'aawasthiapoorv@gmail.com'
-];
+import { isAdminEmail } from '@/lib/admin';
 
 interface StatsData {
   stats: {
@@ -84,13 +79,7 @@ const Counter = ({ value, prefix = "", suffix = "" }: { value: number | string, 
   return <>{prefix}{displayValue}{suffix}</>;
 };
 
-const maskEmail = (email: string) => {
-  if (!email) return '';
-  const [local, domain] = email.split('@');
-  if (!domain) return email;
-  if (local.length <= 2) return `${local}***@${domain}`;
-  return `${local.substring(0, 2)}${'*'.repeat(local.length - 2)}@${domain}`;
-};
+
 
 export default function AdminStatsPage() {
   const { user, isLoading, fetchUser } = useAuthStore();
@@ -102,6 +91,7 @@ export default function AdminStatsPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [dashboardRole, setDashboardRole] = useState<'ALL' | 'USER' | 'ADMIN'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'USER'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
@@ -139,11 +129,11 @@ export default function AdminStatsPage() {
     fetchUser();
   }, [fetchUser]);
 
-  const fetchStats = async () => {
+  const fetchStats = async (role = dashboardRole) => {
     setLoadingStats(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/stats');
+      const res = await fetch(`/api/admin/stats?role=${role}`);
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) return router.push('/profile');
         throw new Error('Failed to fetch stats');
@@ -166,10 +156,10 @@ export default function AdminStatsPage() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user || !ADMIN_EMAILS.includes(user.email)) return router.push('/');
-      fetchStats();
+      if (!isAdminEmail(user?.email)) return router.push('/');
+      fetchStats(dashboardRole);
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, dashboardRole]);
 
   const filteredUsers = useMemo(() => {
     if (!data) return [];
@@ -199,8 +189,8 @@ export default function AdminStatsPage() {
       result = result.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
     }
     
-    if (roleFilter === 'ADMIN') result = result.filter(u => ADMIN_EMAILS.includes(u.email));
-    if (roleFilter === 'USER') result = result.filter(u => !ADMIN_EMAILS.includes(u.email));
+    if (roleFilter === 'ADMIN') result = result.filter(u => isAdminEmail(u.email));
+    if (roleFilter === 'USER') result = result.filter(u => !isAdminEmail(u.email));
     
     if (statusFilter === 'ACTIVE') result = result.filter(u => u.apiCalls > 0);
     if (statusFilter === 'INACTIVE') result = result.filter(u => u.apiCalls === 0);
@@ -261,7 +251,28 @@ export default function AdminStatsPage() {
 
           {/* SECTION 1: Health & Growth (Top) */}
           <div className="mb-12">
-            <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Health & Growth</h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 border-b border-white/10 pb-2 gap-4">
+              <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest">Health & Growth</h2>
+              
+              <div className="flex bg-black/40 border border-white/10 rounded-full p-1 relative w-fit">
+                <div 
+                  className="absolute inset-y-1 bg-white/10 border border-white/20 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                  style={{
+                    left: dashboardRole === 'ALL' ? '4px' : dashboardRole === 'USER' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 2px)',
+                    width: 'calc(33.33% - 6px)'
+                  }}
+                />
+                {(['ALL', 'USER', 'ADMIN'] as const).map(role => (
+                  <button 
+                    key={role}
+                    onClick={() => setDashboardRole(role)}
+                    className={`relative z-10 px-4 py-1 text-xs font-bold uppercase tracking-widest transition-colors w-24 text-center ${dashboardRole === role ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                  >
+                    {role}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                 <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Users size={14} /> Global Users</div>
@@ -351,8 +362,10 @@ export default function AdminStatsPage() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-white/40 text-center font-mono">
-                  Calculated based on gap between user creation and last active session
+                <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-white/40 text-center font-mono flex flex-col gap-1">
+                  <span><strong>D1</strong> = Users who came back after 1 Day</span>
+                  <span><strong>D7</strong> = Users who came back after 1 Week</span>
+                  <span><strong>D30</strong> = Users who came back after 1 Month</span>
                 </div>
               </motion.div>
 
@@ -485,18 +498,24 @@ export default function AdminStatsPage() {
                                 </div>
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-white/50 font-mono text-xs">{maskEmail(u.email)}</td>
+                            <td className="py-4 px-6 text-white/50 font-mono text-xs">{u.email}</td>
                             <td className="py-4 px-6">
-                              {ADMIN_EMAILS.includes(u.email) ? (
+                              {isAdminEmail(u.email) ? (
                                 <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold uppercase tracking-widest text-blue-400">Admin</span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest text-white/40">User</span>
                               )}
                             </td>
-                            <td className="py-4 px-6 text-right font-mono text-white/80">{u._count.tripHistories}</td>
-                            <td className="py-4 px-6 text-right">
-                              <div className="font-mono text-white/80">{u.apiCalls}</div>
-                              {u.apiCalls > 0 && <div className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">{expandedUserId === u.id ? 'Hide Details' : 'View Breakdown'}</div>}
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col items-end w-full">
+                                <span className="font-mono text-white/80">{u._count.tripHistories}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col items-end w-full">
+                                <span className="font-mono text-white/80">{u.apiCalls}</span>
+                                {u.apiCalls > 0 && <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity whitespace-nowrap">{expandedUserId === u.id ? 'Hide Details' : 'View Breakdown'}</span>}
+                              </div>
                             </td>
                           </motion.tr>
                           
@@ -505,20 +524,27 @@ export default function AdminStatsPage() {
                             {expandedUserId === u.id && u.apiCalls > 0 && (
                               <motion.tr initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-black/60 border-t border-white/5 shadow-inner">
                                 <td colSpan={5} className="p-0">
-                                  <div className="px-6 py-4 flex flex-col md:flex-row gap-8 justify-end text-xs">
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/10 pb-1 mb-1">Lifetime Activity</span>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Flights:</span> <span className="font-mono text-white/80">{u.apiCallsFlights}</span></div>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Trains:</span> <span className="font-mono text-white/80">{u.apiCallsTrains}</span></div>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Buses:</span> <span className="font-mono text-white/80">{u.apiCallsBusses}</span></div>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Hotels:</span> <span className="font-mono text-white/80">{u.apiCallsHotels}</span></div>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Places:</span> <span className="font-mono text-white/80">{u.apiCallsPlaces}</span></div>
+                                  <div className="px-6 py-4 flex flex-col md:flex-row gap-8 justify-end items-end text-xs w-full">
+                                    
+                                    <div className="flex flex-col gap-2 items-end w-full md:w-auto">
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/10 pb-1 w-full text-right md:min-w-[160px]">Lifetime Activity</span>
+                                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 w-full md:min-w-[160px]">
+                                        <span className="text-white/50 text-right">Flights:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsFlights}</span>
+                                        <span className="text-white/50 text-right">Trains:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsTrains}</span>
+                                        <span className="text-white/50 text-right">Buses:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsBusses}</span>
+                                        <span className="text-white/50 text-right">Hotels:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsHotels}</span>
+                                        <span className="text-white/50 text-right">Places:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsPlaces}</span>
+                                      </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/10 pb-1 mb-1">Status</span>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Last Login:</span> <span className="font-mono text-white/80">{new Date(u.lastApiCallDate).toLocaleDateString()}</span></div>
-                                      <div className="flex gap-2 justify-between"><span className="text-white/50">Total Req:</span> <span className="font-mono text-white/80">{(u.apiCallsFlights || 0) + (u.apiCallsTrains || 0) + (u.apiCallsBusses || 0) + (u.apiCallsHotels || 0) + (u.apiCallsPlaces || 0)}</span></div>
+
+                                    <div className="flex flex-col gap-2 items-end w-full md:w-auto">
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/10 pb-1 w-full text-right md:min-w-[160px]">Status</span>
+                                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 w-full md:min-w-[160px]">
+                                        <span className="text-white/50 text-right">Last Login:</span> <span className="font-mono text-white/80 text-right">{new Date(u.lastApiCallDate).toLocaleDateString()}</span>
+                                        <span className="text-white/50 text-right">Total Req:</span> <span className="font-mono text-white/80 text-right">{(u.apiCallsFlights || 0) + (u.apiCallsTrains || 0) + (u.apiCallsBusses || 0) + (u.apiCallsHotels || 0) + (u.apiCallsPlaces || 0)}</span>
+                                      </div>
                                     </div>
+
                                   </div>
                                 </td>
                               </motion.tr>

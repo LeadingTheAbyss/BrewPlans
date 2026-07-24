@@ -1,14 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { getAdminEmails, isAdminEmail } from '@/lib/admin';
 
-const ADMIN_EMAILS = [
-  'kartikeykumarsingh27jun2006@gmail.com',
-  'growwayushh@gmail.com',
-  'aawasthiapoorv@gmail.com'
-];
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('planbro_session')?.value;
@@ -26,16 +21,31 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!ADMIN_EMAILS.includes(session.user.email)) {
+    if (!isAdminEmail(session.user.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Admin verified. Fetch stats.
+    // Admin verified. Parse role param.
+    const { searchParams } = new URL(req.url);
+    const roleParam = searchParams.get('role') || 'ALL'; // ALL, USER, ADMIN
+    
+    const adminEmails = getAdminEmails();
+    
+    let userEmailFilter: any = undefined;
+    if (roleParam === 'ADMIN') {
+      userEmailFilter = { in: adminEmails };
+    } else if (roleParam === 'USER') {
+      userEmailFilter = { notIn: adminEmails };
+    }
 
-    const totalUsers = await prisma.user.count();
+    // Fetch stats.
+    const totalUsers = await prisma.user.count({
+      where: userEmailFilter ? { email: userEmailFilter } : undefined
+    });
     
     // API Calls All Time (Sum of lifetime specific metrics)
     const apiMetricsAggr = await prisma.user.aggregate({
+      where: userEmailFilter ? { email: userEmailFilter } : undefined,
       _sum: {
         apiCallsFlights: true,
         apiCallsTrains: true,
@@ -66,11 +76,14 @@ export async function GET() {
     let apiCallsYesterday = 0;
     let activeUsersToday = 0;
 
+    const dailyStatsWhere = userEmailFilter ? { user: { email: userEmailFilter } } : {};
+
     if (prisma.dailyUserStat) {
       const dailyStatsAggr = await prisma.dailyUserStat.groupBy({
         by: ['date'],
         where: {
-          date: { in: [todayStr, yesterdayStr] }
+          date: { in: [todayStr, yesterdayStr] },
+          ...dailyStatsWhere
         },
         _sum: { apiCalls: true }
       });
@@ -79,19 +92,27 @@ export async function GET() {
       apiCallsYesterday = dailyStatsAggr.find(d => d.date === yesterdayStr)?._sum.apiCalls || 0;
       
       activeUsersToday = await prisma.dailyUserStat.count({
-        where: { date: todayStr }
+        where: { date: todayStr, ...dailyStatsWhere }
       });
     }
 
     const newSignupsToday = await prisma.user.count({
-      where: { createdAt: { gte: startOfToday } }
+      where: { 
+        createdAt: { gte: startOfToday },
+        ...(userEmailFilter ? { email: userEmailFilter } : {})
+      }
     });
 
     const tripsPlannedToday = await prisma.tripHistory.count({
-      where: { createdAt: { gte: startOfToday } }
+      where: { 
+        createdAt: { gte: startOfToday },
+        ...(userEmailFilter ? { user: { email: userEmailFilter } } : {})
+      }
     });
     
-    const totalTripsLifetime = await prisma.tripHistory.count();
+    const totalTripsLifetime = await prisma.tripHistory.count({
+      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined
+    });
 
     const apiBreakdown = {
       "Flights": apiMetricsAggr._sum.apiCallsFlights || 0,
@@ -129,12 +150,6 @@ export async function GET() {
       // Ignore if unmigrated
     }
 
-    try {
-      if ((prisma as any).auditLog) {
-         // Optionally fetch audits
-      }
-    } catch(e) {}
-
     // Fetch all users for the data table
     const users = await prisma.user.findMany({
       orderBy: {
@@ -162,6 +177,7 @@ export async function GET() {
     // FUNNEL ANALYTICS
     const funnelAggr = await prisma.tripAttempt.groupBy({
       by: ['stepReached'],
+      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined,
       _count: true
     });
     const funnelStats = {
@@ -172,7 +188,10 @@ export async function GET() {
 
     // RETENTION ANALYTICS (D1/D7/D30)
     // We'll calculate this by finding the gap between createdAt and lastApiCallDate
-    const usersList = await prisma.user.findMany({ select: { createdAt: true, lastApiCallDate: true }});
+    const usersList = await prisma.user.findMany({ 
+      where: userEmailFilter ? { email: userEmailFilter } : undefined,
+      select: { createdAt: true, lastApiCallDate: true }
+    });
     
     let d1Total = 0, d1Retained = 0;
     let d7Total = 0, d7Retained = 0;
@@ -218,3 +237,4 @@ export async function GET() {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

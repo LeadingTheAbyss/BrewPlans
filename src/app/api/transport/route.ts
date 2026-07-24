@@ -5,11 +5,7 @@ import { trackApiCall } from '@/lib/metrics';
 
 const PYTHON_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002/api';
 
-const ADMIN_EMAILS = [
-  'kartikeykumarsingh27jun2006@gmail.com',
-  'growwayushh@gmail.com',
-  'aawasthiapoorv@gmail.com'
-];
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET(req: Request) {
   try {
@@ -60,7 +56,7 @@ export async function GET(req: Request) {
         currentCalls = 0;
       }
 
-      const isAdmin = ADMIN_EMAILS.includes(user.email);
+      const isAdmin = isAdminEmail(user.email);
 
       if (!isAdmin && currentCalls >= 150) {
         return NextResponse.json(

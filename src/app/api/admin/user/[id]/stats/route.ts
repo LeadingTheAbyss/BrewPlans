@@ -2,11 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 
-const ADMIN_EMAILS = [
-  'kartikeykumarsingh27jun2006@gmail.com',
-  'growwayushh@gmail.com',
-  'aawasthiapoorv@gmail.com'
-];
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET(
   req: Request,
@@ -31,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!ADMIN_EMAILS.includes(session.user.email)) {
+    if (!isAdminEmail(session.user.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET() {
   try {
@@ -20,12 +21,8 @@ export async function GET() {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
-    const ADMIN_EMAILS = [
-      'kartikeykumarsingh27jun2006@gmail.com',
-      'growwayushh@gmail.com',
-      'aawasthiapoorv@gmail.com'
-    ];
-    const isAdmin = ADMIN_EMAILS.includes(session.user.email);
+
+    const isAdmin = isAdminEmail(session.user.email);
     return NextResponse.json({ user: { ...session.user, isAdmin } });
   } catch (error) {
     console.error('Me endpoint error:', error);
