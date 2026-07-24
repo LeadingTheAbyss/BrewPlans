@@ -143,8 +143,25 @@ export default function ModernDateRangePicker({ label, startDate, endDate, onCha
             <button onClick={prevMonth} className="p-1.5 hover:bg-muted rounded-full transition-colors text-muted-foreground">
               <ChevronLeft size={18} />
             </button>
-            <div className="font-semibold text-foreground">
-              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            <div className="font-semibold text-foreground flex items-center gap-1">
+              <select
+                value={currentMonth.getMonth()}
+                onChange={(e) => setCurrentMonth(new Date(currentMonth.getFullYear(), parseInt(e.target.value), 1))}
+                className="bg-transparent appearance-none outline-none cursor-pointer hover:text-primary transition-colors font-semibold text-center"
+              >
+                {monthNames.map((m, i) => (
+                  <option key={m} value={i} className="text-black">{m}</option>
+                ))}
+              </select>
+              <select
+                value={currentMonth.getFullYear()}
+                onChange={(e) => setCurrentMonth(new Date(parseInt(e.target.value), currentMonth.getMonth(), 1))}
+                className="bg-transparent appearance-none outline-none cursor-pointer hover:text-primary transition-colors font-semibold text-center"
+              >
+                {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                  <option key={year} value={year} className="text-black">{year}</option>
+                ))}
+              </select>
             </div>
             <button onClick={nextMonth} className="p-1.5 hover:bg-muted rounded-full transition-colors text-muted-foreground">
               <ChevronRight size={18} />

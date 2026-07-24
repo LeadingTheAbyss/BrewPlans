@@ -45,6 +45,7 @@ function isPremiumCity(name: string): boolean {
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const name = searchParams.get('name');
+  const type = searchParams.get('type') || 'city';
 
   if (!name) {
     return NextResponse.json({ error: 'Missing name' }, { status: 400 });
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const cleanName = sanitizeName(name);
-    const cacheKey = `google_img_4k_${cleanName.toLowerCase()}`;
+    const cacheKey = `google_img_4k_${type}_${cleanName.toLowerCase()}`;
     
     // Check Redis cache first
     const cachedUrl = await redis.get(cacheKey);
@@ -63,17 +64,22 @@ export async function GET(request: NextRequest) {
     } else {
       const googleKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY;
       if (googleKey) {
-        const googleRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': googleKey,
-            'X-Goog-FieldMask': 'places.photos'
-          },
-          body: JSON.stringify({
-            textQuery: `${cleanName} city landmark India`,
-            languageCode: 'en'
-          })
+          let querySuffix = 'city landmark India';
+          if (type === 'food') querySuffix = 'dish food India';
+          if (type === 'hotel') querySuffix = 'hotel resort India';
+          if (type === 'place') querySuffix = 'landmark tourist India';
+
+          const googleRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': googleKey,
+              'X-Goog-FieldMask': 'places.photos'
+            },
+            body: JSON.stringify({
+              textQuery: `${cleanName} ${querySuffix}`,
+              languageCode: 'en'
+            })
         });
 
         if (googleRes.ok) {

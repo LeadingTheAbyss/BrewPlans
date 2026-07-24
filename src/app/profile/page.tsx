@@ -151,11 +151,13 @@ export default function ProfilePage() {
           <div className="flex-1 flex flex-col">
             
             {/* Planbro Wrapped Section */}
-            <div className="mb-12 border border-white/10 rounded-2xl p-6 lg:p-8 bg-gradient-to-br from-[#121A3F] to-[#0A0E27] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FF3D7F] rounded-full blur-[100px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
-              <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-[#F5B942] rounded-full blur-[100px] opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="mb-12 border border-white/10 rounded-2xl p-6 lg:p-8 bg-gradient-to-br from-[#121A3F] to-[#0A0E27] relative group">
+              <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#FF3D7F] rounded-full blur-[100px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-[#F5B942] rounded-full blur-[100px] opacity-10 group-hover:opacity-20 transition-opacity"></div>
+              </div>
               
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div className="relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
                   <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                     Planbro Wrapped
