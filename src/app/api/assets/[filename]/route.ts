@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-export async function GET(request: Request, { params }: { params: { filename: string } }) {
-  const filename = params.filename;
+export async function GET(request: Request, { params }: { params: Promise<{ filename: string }> }) {
+  const filename = (await params).filename;
   
   // Artifact directory where generate_image saves files
   const artifactDir = "C:\\Users\\Kamlesh Singh\\.gemini\\antigravity-ide\\brain\\eb822406-b628-415d-ba30-e2ce43f87dbb";

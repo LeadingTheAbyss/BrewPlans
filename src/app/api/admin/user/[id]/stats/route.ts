@@ -10,10 +10,10 @@ const ADMIN_EMAILS = [
 
 export async function GET(
   req: Request,
-  context: { params: any }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await Promise.resolve(context.params);
+    const params = await context.params;
     const id = params.id;
     const cookieStore = await cookies();
     const token = cookieStore.get('planbro_session')?.value;
