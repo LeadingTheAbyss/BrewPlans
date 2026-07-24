@@ -27,11 +27,11 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CATEGORY_IMAGES: Record<string, string> = {
-  Food: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=600&auto=format&fit=crop',
-  Hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=600&auto=format&fit=crop',
-  Transport: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=600&auto=format&fit=crop',
-  Activity: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=600&auto=format&fit=crop',
-  Other: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=600&auto=format&fit=crop'
+  Food: '/placeholder-place.svg',
+  Hotel: '/placeholder-place.svg',
+  Transport: '/placeholder-place.svg',
+  Activity: '/placeholder-place.svg',
+  Other: '/placeholder-place.svg'
 };
 
 const AVATAR_COLORS = [

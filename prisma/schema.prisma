@@ -97,6 +97,7 @@ model User {
   savedPassengers SavedPassenger[]
   dailyStats      DailyUserStat[]
   feedbacks       Feedback[]
+  tripAttempts    TripAttempt[]
 }
 
 model DailyUserStat {
@@ -283,4 +284,41 @@ model Feedback {
   @@index([userId])
   @@index([type])
   @@index([status])
+}
+
+// Tracks abandoned vs finalized trip funnels
+model TripAttempt {
+  id             String    @id @default(cuid())
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destination    String?
+  stepReached    String    @default("STARTED") // "STARTED", "DATES_SET", "FINALIZED"
+  abandoned      Boolean   @default(false)
+  timeToComplete Int?      // Seconds from start to finalized
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([stepReached])
+}
+
+// Tracks 2σ anomalies and system alerts
+model SystemAnomaly {
+  id          String   @id @default(cuid())
+  type        String   // "COST_SPIKE", "LATENCY_SPIKE", "ERROR_RATE"
+  endpoint    String?
+  severity    String   @default("MEDIUM")
+  resolved    Boolean  @default(false)
+  details     Json     // e.g., { expected: 200ms, actual: 1200ms }
+  createdAt   DateTime @default(now())
+}
+
+// Tracks detailed unit economics
+model CostAnalysis {
+  id             String   @id @default(cuid())
+  date           String   @unique // YYYY-MM-DD
+  costPerUser    Float    @default(0.0)
+  costPerTrip    Float    @default(0.0)
+  apiBreakdown   Json     // { "Places": 1.20, "Flights": 0.40 }
+  createdAt      DateTime @default(now())
 }

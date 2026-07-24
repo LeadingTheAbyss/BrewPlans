@@ -13,6 +13,7 @@ interface TripState {
   passengers: Passenger[];
   selectedTransports: { passengerId: string; transportOptionId: string; cost: number; transport?: any }[];
   selectedHotel: Hotel | null;
+  attemptId: string | null;
 
   // Actions
   setTripDetails: (details: Partial<Pick<TripState, 'mode' | 'source' | 'destination' | 'startDate' | 'endDate' | 'selectedTransports' | 'selectedHotel'>>) => void;
@@ -25,110 +26,132 @@ interface TripState {
   deselectTransport: (passengerId: string) => void;
   setHotel: (hotel: Hotel | null) => void;
   loadSnapshot: (snapshot: any, destination: string) => void;
+  logTripAttempt: (stepReached: string) => void;
   reset: () => void;
 }
 
 export const useTripStore = create<TripState>()(
   persist(
-    (set) => ({
-  mode: null,
-  source: '',
-  destination: '',
-  startDate: null,
-  endDate: null,
-  
-  passengers: [],
-  selectedTransports: [],
-  selectedHotel: null,
+    (set, get) => ({
+      mode: null,
+      source: '',
+      destination: '',
+      startDate: null,
+      endDate: null,
+      
+      passengers: [],
+      selectedTransports: [],
+      selectedHotel: null,
+      attemptId: null,
 
-  setTripDetails: (details) => set((state) => {
-    let clearSelections = false;
+      setTripDetails: (details) => set((state) => {
+        let clearSelections = false;
 
-    // Invalidate previous selections if core trip parameters change
-    if (details.source && details.source !== state.source) clearSelections = true;
-    if (details.destination && details.destination !== state.destination) clearSelections = true;
-    if (details.startDate && details.startDate !== state.startDate) clearSelections = true;
-    if (details.endDate && details.endDate !== state.endDate) clearSelections = true;
+        // Invalidate previous selections if core trip parameters change
+        if (details.source && details.source !== state.source) clearSelections = true;
+        if (details.destination && details.destination !== state.destination) clearSelections = true;
+        if (details.startDate && details.startDate !== state.startDate) clearSelections = true;
+        if (details.endDate && details.endDate !== state.endDate) clearSelections = true;
 
-    const newState = { ...state, ...details };
-    
-    if (clearSelections) {
-      if (details.selectedTransports === undefined) newState.selectedTransports = [];
-      if (details.selectedHotel === undefined) newState.selectedHotel = null;
+        const newState = { ...state, ...details };
+        
+        if (clearSelections) {
+          if (details.selectedTransports === undefined) newState.selectedTransports = [];
+          if (details.selectedHotel === undefined) newState.selectedHotel = null;
+        }
+
+        return newState;
+      }),
+
+      addPassenger: (passenger) => set((state) => ({
+        passengers: [...state.passengers, passenger]
+      })),
+
+      removePassenger: (id) => set((state) => ({
+        passengers: state.passengers.filter(p => p.id !== id),
+        selectedTransports: state.selectedTransports.filter(t => t.passengerId !== id)
+      })),
+
+      updatePassenger: (id, updates) => set((state) => ({
+        passengers: state.passengers.map(p => (p.id === id ? { ...p, ...updates } : p))
+      })),
+
+      duplicatePassenger: (id, newId) => set((state) => {
+        const existing = state.passengers.find(p => p.id === id);
+        if (!existing) return state;
+        
+        const clone: Passenger = { 
+          ...existing, 
+          id: newId, 
+          name: `${existing.name} (Copy)` 
+        };
+        return { passengers: [...state.passengers, clone] };
+      }),
+
+      selectTransport: (passengerId, option) => set((state) => {
+        const newSelection = {
+          passengerId,
+          transportOptionId: option.id,
+          cost: option.price,
+          transport: option
+        };
+        return {
+          selectedTransports: [
+            ...state.selectedTransports.filter(t => t.passengerId !== passengerId),
+            newSelection
+          ]
+        };
+      }),
+
+      deselectTransport: (passengerId) => set((state) => ({
+        selectedTransports: state.selectedTransports.filter(t => t.passengerId !== passengerId)
+      })),
+
+      setHotel: (hotel) => set({ selectedHotel: hotel }),
+
+      loadSnapshot: (snapshot, destination) => set({
+        ...snapshot,
+        destination
+      }),
+
+      logTripAttempt: async (stepReached: string) => {
+        const state = get();
+        try {
+          const res = await fetch('/api/trip-attempt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              attemptId: state.attemptId,
+              destination: state.destination,
+              stepReached
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.attemptId && data.attemptId !== state.attemptId) {
+              set({ attemptId: data.attemptId });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to log trip attempt', e);
+        }
+      },
+
+      reset: () => set({
+        mode: null,
+        source: '',
+        destination: '',
+        startDate: null,
+        endDate: null,
+        passengers: [],
+        selectedTransports: [],
+        selectedHotel: null,
+        attemptId: null
+      })
+    }),
+    {
+      name: 'trip-store', // name of the item in the storage (must be unique)
+      storage: createJSONStorage(() => dbStorage),
     }
-
-    return newState;
-  }),
-
-  addPassenger: (passenger) => set((state) => ({
-    passengers: [...state.passengers, passenger]
-  })),
-
-  removePassenger: (id) => set((state) => ({
-    passengers: state.passengers.filter(p => p.id !== id),
-    selectedTransports: state.selectedTransports.filter(t => t.passengerId !== id)
-  })),
-
-  updatePassenger: (id, updates) => set((state) => ({
-    passengers: state.passengers.map(p => (p.id === id ? { ...p, ...updates } : p))
-  })),
-
-  duplicatePassenger: (id, newId) => set((state) => {
-    const existing = state.passengers.find(p => p.id === id);
-    if (!existing) return state;
-    
-    const clone: Passenger = { 
-      ...existing, 
-      id: newId, 
-      name: `${existing.name} (Copy)` 
-    };
-    return { passengers: [...state.passengers, clone] };
-  }),
-
-  selectTransport: (passengerId, option) => set((state) => {
-    const newSelection = {
-      passengerId,
-      transportOptionId: option.id,
-      cost: option.price,
-      transport: option
-    };
-    return {
-      selectedTransports: [
-        ...state.selectedTransports.filter(t => t.passengerId !== passengerId),
-        newSelection
-      ]
-    };
-  }),
-
-  deselectTransport: (passengerId) => set((state) => ({
-    selectedTransports: state.selectedTransports.filter(t => t.passengerId !== passengerId)
-  })),
-
-  setHotel: (hotel) => set({ selectedHotel: hotel }),
-
-  loadSnapshot: (snapshot, destination) => set({
-    destination,
-    source: snapshot.source || '',
-    startDate: snapshot.startDate || null,
-    endDate: snapshot.endDate || null,
-    passengers: snapshot.passengers || [],
-    selectedTransports: snapshot.selectedTransports || [],
-    selectedHotel: snapshot.selectedHotel || null,
-  }),
-
-  reset: () => set({
-    mode: null,
-    source: '',
-    destination: '',
-    startDate: null,
-    endDate: null,
-    passengers: [],
-    selectedTransports: [],
-    selectedHotel: null
-  })
-  }),
-  {
-    name: 'trip-store', // name of the item in the storage (must be unique)
-    storage: createJSONStorage(() => dbStorage),
-  }
-));
+  )
+);

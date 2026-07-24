@@ -9,7 +9,16 @@ import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X, MessageSquare } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X, MessageSquare, Plane, Navigation, Clock, Cloud, Activity } from 'lucide-react';
+import { ContrailCanvas } from '@/components/ContrailCanvas';
+
+const INDIAN_CITIES = [
+  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 
+  'Pune', 'Jaipur', 'Agra', 'Varanasi', 'Srinagar', 'Udaipur', 
+  'Jodhpur', 'Mysore', 'Kochi', 'Goa', 'Ladakh', 'Hampi', 
+  'Munnar', 'Madurai', 'Rishikesh', 'Darjeeling', 'Shimla', 
+  'Ooty', 'Amritsar', 'Manali', 'Pondicherry'
+];
 
 export default function LandingPage() {
   const router = useRouter();
@@ -18,6 +27,19 @@ export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [bgImages, setBgImages] = useState<string[]>([
+    '/landing_1.png', 
+    '/landing_2.png', 
+    '/landing_3.png', 
+    '/landing_4.jpg', 
+    '/landing_5.jpg'
+  ]);
+
+  useEffect(() => {
+    const shuffled = [...INDIAN_CITIES].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 5);
+    setBgImages(selected.map(city => `/api/destination-photo?name=${encodeURIComponent(city)}&redirect=true&v=${Date.now()}`));
+  }, []);
 
   const handleNavigation = (path: string) => {
     if (!user) {
@@ -48,6 +70,7 @@ export default function LandingPage() {
 
 
 
+    let mounted = true;
     let renderer: THREE.WebGLRenderer;
     let sceneObj: any;
 
@@ -60,6 +83,15 @@ export default function LandingPage() {
       modelGroup: THREE.Group;
       w: number = window.innerWidth;
       h: number = window.innerHeight;
+      
+      currentPlaneX: number = 50;
+      currentPlaneY: number = 50;
+      currentPlaneVx: number = 0;
+      currentPlaneVy: number = 0;
+      planeSpeed: number = 0;
+      
+      tailOffset: THREE.Vector3 = new THREE.Vector3(10, 0, 0);
+      noseOffset: THREE.Vector3 = new THREE.Vector3(-10, 0, 0);
 
       constructor(model: THREE.Group) {
         this.views = [
@@ -98,6 +130,8 @@ export default function LandingPage() {
         this.softLight = new THREE.AmbientLight(0xffffff, 1.5);
         this.scene.add(this.softLight);
 
+        // Contrails are now handled by ContrailSVG in 2D space
+
         this.onResize();
         window.addEventListener('resize', this.onResize, false);
 
@@ -115,9 +149,84 @@ export default function LandingPage() {
         this.modelGroup.add(model);
         this.modelGroup.add(line);
         this.scene.add(this.modelGroup);
+        
+        // Compute precise tail and nose local coordinates based on the model's bounding box
+        const box = new THREE.Box3().setFromObject(this.modelGroup);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        
+        // APU / Tail exhaust is at the very back (-Z), centered on X, slightly above vertical center
+        this.tailOffset = new THREE.Vector3(center.x, box.min.y + size.y * 0.45, box.min.z + size.z * 0.05);
+        // Nose tip
+        this.noseOffset = new THREE.Vector3(center.x, box.min.y + size.y * 0.4, box.max.z);
+        // Engines (approximate positions on wings)
+        this.e1Offset = new THREE.Vector3(center.x - size.x * 0.25, box.min.y + size.y * 0.4, box.min.z + size.z * 0.45);
+        this.e2Offset = new THREE.Vector3(center.x + size.x * 0.25, box.min.y + size.y * 0.4, box.min.z + size.z * 0.45);
       }
 
       render = () => {
+        let screenX = 50;
+        let screenY = 50;
+
+        if (this.modelGroup && this.views[0].camera) {
+          const planeWorldPos = new THREE.Vector3();
+          this.modelGroup.getWorldPosition(planeWorldPos);
+          
+          const tailWorldPos = this.tailOffset.clone().applyMatrix4(this.modelGroup.matrixWorld);
+          const noseWorldPos = this.noseOffset.clone().applyMatrix4(this.modelGroup.matrixWorld);
+
+          const vectorCenter = planeWorldPos.clone();
+          vectorCenter.project(this.views[0].camera);
+
+          const vectorTail = tailWorldPos.clone();
+          vectorTail.project(this.views[0].camera);
+
+          const vectorNose = noseWorldPos.clone();
+          vectorNose.project(this.views[0].camera);
+          
+          const vectorE1 = this.e1Offset.clone().applyMatrix4(this.modelGroup.matrixWorld);
+          vectorE1.project(this.views[0].camera);
+          
+          const vectorE2 = this.e2Offset.clone().applyMatrix4(this.modelGroup.matrixWorld);
+          vectorE2.project(this.views[0].camera);
+
+          screenX = (vectorCenter.x * 0.5 + 0.5) * 100;
+          screenY = (-(vectorCenter.y * 0.5) + 0.5) * 100;
+          
+          const e1X = (vectorE1.x * 0.5 + 0.5) * 100;
+          const e1Y = (-(vectorE1.y * 0.5) + 0.5) * 100;
+          
+          const e2X = (vectorE2.x * 0.5 + 0.5) * 100;
+          const e2Y = (-(vectorE2.y * 0.5) + 0.5) * 100;
+          
+          document.documentElement.style.setProperty('--e1-x', `${e1X}%`);
+          document.documentElement.style.setProperty('--e1-y', `${e1Y}%`);
+          document.documentElement.style.setProperty('--e2-x', `${e2X}%`);
+          document.documentElement.style.setProperty('--e2-y', `${e2Y}%`);
+        }
+
+        // Calculate velocity before applying inertia
+        const vx = screenX - this.currentPlaneX;
+        const vy = screenY - this.currentPlaneY;
+        
+        // Apply smooth inertia to coordinates
+        this.currentPlaneX += vx * 0.08;
+        this.currentPlaneY += vy * 0.08;
+        
+        // Smooth velocity
+        this.currentPlaneVx += (vx - this.currentPlaneVx) * 0.1;
+        this.currentPlaneVy += (vy - this.currentPlaneVy) * 0.1;
+        
+        // Calculate speed magnitude
+        this.planeSpeed = Math.sqrt(this.currentPlaneVx**2 + this.currentPlaneVy**2);
+        
+        // Update CSS Variables
+        document.documentElement.style.setProperty('--plane-x', `${this.currentPlaneX}%`);
+        document.documentElement.style.setProperty('--plane-y', `${this.currentPlaneY}%`);
+        document.documentElement.style.setProperty('--plane-vx', `${this.currentPlaneVx}`);
+        document.documentElement.style.setProperty('--plane-vy', `${this.currentPlaneVy}`);
+        document.documentElement.style.setProperty('--plane-speed', `${this.planeSpeed}`);
+
         for (let ii = 0; ii < this.views.length; ++ii) {
           const view = this.views[ii];
           const camera = view.camera;
@@ -175,32 +284,18 @@ export default function LandingPage() {
 
       const sectionDuration = 1;
 
-      // Animate background layers independently over the full scroll duration
-      gsap.to('.particles-takeoff', {
-        backgroundPosition: "0 500px", // parallax scroll
-        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
-      });
-      gsap.to('.volumetric-clouds', {
-        y: "-15%", // parallax
-        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
-      });
-      gsap.to('.nav-grid', {
-        rotation: 15, scale: 1.1,
-        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
-      });
-      gsap.to('.mountain-silhouettes', {
-        y: "20vh", // Parallax mountains down as we fly over them
-        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
-      });
-      gsap.to('.city-skyline', {
-        y: "10vh",
-        scrollTrigger: { trigger: ".content", scrub: true, start: "top top", end: "bottom bottom" }
+      // Animate background layers using GPU-accelerated transforms instead of CPU-bound backgroundPosition
+      gsap.set('.atmosphere-layer', { scale: 1.15 }); // Oversize slightly so we have room to move
+      gsap.to('.atmosphere-layer', {
+        yPercent: -8, // Move up by 8% (parallax)
+        ease: 'none',
+        scrollTrigger: { trigger: ".content", scrub: 1, start: "top top", end: "bottom bottom" }
       });
 
       gsap.fromTo('.silhouette-back', 
         { opacity: 0, y: "20vh" },
         {
-          opacity: 0.8,
+          opacity: 0, // Kept invisible
           y: "0vh",
           scrollTrigger: {
             trigger: ".sunset",
@@ -214,7 +309,7 @@ export default function LandingPage() {
       gsap.fromTo('.silhouette-front', 
         { opacity: 0, y: "30vh" },
         {
-          opacity: 1,
+          opacity: 0, // Kept invisible
           y: "0vh",
           scrollTrigger: {
             trigger: ".sunset",
@@ -226,12 +321,47 @@ export default function LandingPage() {
       );
 
       const tl = gsap.timeline({
-        onUpdate: scene.render,
         scrollTrigger: {
           trigger: ".content",
-          scrub: true,
+          scrub: 1, // Smooth interpolation! Eliminates lag and stutter from mouse wheels.
           start: "top top",
-          end: "bottom bottom"
+          end: "bottom bottom",
+          onUpdate: (self) => {
+            const p = self.progress;
+            
+            // Altitude: curve up, stay, curve down
+            let alt = 0;
+            if (p < 0.2) alt = (p / 0.2) * 36000;
+            else if (p > 0.8) alt = ((1 - p) / 0.2) * 36000;
+            else alt = 36000 + Math.sin(p * 10) * 200;
+            
+            // Speed
+            let speed = 0;
+            if (p < 0.1) speed = (p / 0.1) * 520;
+            else if (p > 0.9) speed = ((1 - p) / 0.1) * 520;
+            else speed = 520 + Math.sin(p * 20) * 5;
+
+            const elAlt = document.querySelector('.flight-stat-alt');
+            if(elAlt) elAlt.textContent = `${Math.floor(Math.max(0, alt)).toLocaleString()} ft`;
+            
+            const elSpeed = document.querySelector('.flight-stat-speed');
+            if(elSpeed) elSpeed.textContent = `${Math.floor(Math.max(0, speed))} mph`;
+
+            const elEta = document.querySelector('.flight-stat-eta');
+            if(elEta) {
+               const totalMins = Math.floor((1 - p) * 120);
+               const hrs = Math.floor(totalMins / 60).toString().padStart(2, '0');
+               const mins = (totalMins % 60).toString().padStart(2, '0');
+               elEta.textContent = `${hrs}:${mins}`;
+            }
+
+            const elWeather = document.querySelector('.flight-stat-weather');
+            if(elWeather) {
+               if(p < 0.2) elWeather.textContent = "Stormy";
+               else if(p > 0.8) elWeather.textContent = "Foggy";
+               else elWeather.textContent = "Clear Skies";
+            }
+          }
         },
         defaults: { duration: sectionDuration, ease: 'power2.inOut' }
       });
@@ -291,9 +421,15 @@ export default function LandingPage() {
       tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: isMobile ? 40 : 0, z: 320, ease: 'power1.in' }, delay);
       
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
-    }
 
-    let mounted = true;
+      // Start continuous render loop for live tracking and contrails
+      const renderLoop = () => {
+        if (!mounted) return;
+        scene.render();
+        requestAnimationFrame(renderLoop);
+      };
+      renderLoop();
+    }
 
     function addWindows(planeGroup: THREE.Group, planeMesh: THREE.Mesh) {
       const box = new THREE.Box3().setFromObject(planeMesh);
@@ -539,41 +675,56 @@ export default function LandingPage() {
 
   return (
     <div className="landing-body bg-[#0b0f19] text-white" ref={containerRef}>
+      <ContrailCanvas />
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-30" />
+      
       <div className="cinematic-bg">
         <div className="cinematic-bg-noise"></div>
         
         {/* Stage 1: TAKEOFF */}
-        <div className="atmosphere-layer atmosphere-takeoff takeoff-layer">
-          <div className="runway-glow"></div>
-          <div className="particles-takeoff"></div>
-        </div>
+        <div 
+          className="atmosphere-layer atmosphere-takeoff takeoff-layer" 
+          style={{ backgroundImage: `url('${bgImages[0]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        ></div>
 
         {/* Stage 2: HIGH ALTITUDE */}
-        <div className="atmosphere-layer atmosphere-altitude altitude-layer">
-          <div className="volumetric-clouds"></div>
-          <div className="sun-rays"></div>
+        <div 
+          className="atmosphere-layer atmosphere-altitude altitude-layer" 
+          style={{ backgroundImage: `url('${bgImages[1]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
+          <div className="interactive-stars"></div>
         </div>
 
         {/* Stage 3: GLOBAL NAVIGATION */}
-        <div className="atmosphere-layer atmosphere-nav nav-layer">
-          <div className="nav-grid"></div>
-          <div className="nav-lines"></div>
-          <div className="nav-nodes"></div>
+        <div 
+          className="atmosphere-layer atmosphere-nav nav-layer"
+          style={{ backgroundImage: `url('${bgImages[2]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
         </div>
 
         {/* Stage 4: GOLDEN HOUR DESCENT */}
-        <div className="atmosphere-layer atmosphere-descent descent-layer">
-          <div className="mountain-silhouettes"></div>
-          <div className="atmospheric-haze"></div>
-        </div>
+        <div 
+          className="atmosphere-layer atmosphere-descent descent-layer"
+          style={{ backgroundImage: `url('${bgImages[3]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        ></div>
 
         {/* Stage 5: ARRIVAL */}
-        <div className="atmosphere-layer atmosphere-arrival arrival-layer">
-          <div className="arrival-fog"></div>
-          <div className="city-lights"></div>
-          <div className="city-skyline"></div>
+        <div 
+          className="atmosphere-layer atmosphere-arrival arrival-layer"
+          style={{ 
+            backgroundImage: `url('${bgImages[4]}')`, 
+            backgroundSize: 'cover', 
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
         </div>
+        
+        {/* Global Vignette Overlay for Text Readability */}
+        <div className="fixed inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50 z-0 pointer-events-none"></div>
       </div>
+      
+
       <nav className="absolute top-0 left-0 w-full z-[100] flex items-center justify-between px-6 py-4 bg-[#282828] border-b border-[#3e3e3e] text-white font-sans transition-all duration-300">
         
         {/* Left: Logos and Links */}
@@ -672,7 +823,6 @@ export default function LandingPage() {
       )}
       </nav>
 
-      <canvas ref={canvasRef} />
       <div className="content relative z-10">
         <div className="loading">Loading Engine...</div>
         <div className="trigger"></div>
@@ -681,11 +831,10 @@ export default function LandingPage() {
           
           <div className="section relative z-50 max-md:!px-6 max-md:!w-full max-md:!mx-0">
             <div className="pt-[8vh] md:pt-[12vh] max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
-              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[1] text-white mb-6 drop-shadow-sm">
+              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[1] text-white mb-6 drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
                 We plan the trip.<br/>
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">You pack your bags.</span>
+                <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-md">You pack your bags.</span>
               </h1>
-
             </div>
 
             <div className="scroll-cta absolute bottom-[10vh] left-6 md:left-0 flex flex-col items-start gap-3">
@@ -695,36 +844,36 @@ export default function LandingPage() {
           </div>
           
           <div className="section right relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl">
-              <h2 className="!text-white">Trip planning shouldn't feel like a part-time job.</h2>
+            <div className="inline-block max-w-[500px] backdrop-blur-xl bg-black/40 p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight text-balance">Trip planning shouldn't feel like a part-time job.</h2>
             </div>
           </div>
 
           <div className="section relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl text-left">
-              <h2 className="!text-white">Leave the details to us.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">No tabs. No spreadsheets. No back-and-forth over budgets.</p>
+            <div className="inline-block max-w-[500px] backdrop-blur-xl bg-black/40 p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight text-balance">Leave the details to us.</h2>
+              <p className="text-lg md:text-xl text-white/80 font-medium mt-3 text-balance">No tabs. No spreadsheets. No back-and-forth over budgets.</p>
             </div>
           </div>
 
           <div className="section right relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl">
-              <h2 className="!text-white">We find the way there.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">Flights, trains, and buses, quietly compared until only the best remains.</p>
+            <div className="inline-block max-w-[500px] backdrop-blur-xl bg-black/40 p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight text-balance">We find the way there.</h2>
+              <p className="text-lg md:text-xl text-white/80 font-medium mt-3 text-balance">Flights, trains, and buses, quietly compared until only the best remains.</p>
             </div>
           </div>
 
           <div className="section relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl text-left">
-              <h2 className="!text-white">Your whole trip, stitched together.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">Stays, experiences, and timing, all laid out in one clean plan.</p>
+            <div className="inline-block max-w-[500px] backdrop-blur-xl bg-black/40 p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight text-balance">Your whole trip, stitched together.</h2>
+              <p className="text-lg md:text-xl text-white/80 font-medium mt-3 text-balance">Stays, experiences, and timing, all laid out in one clean plan.</p>
             </div>
           </div>
           
           <div className="section right relative z-50">
-            <div className="inline-block max-w-2xl backdrop-blur-xl bg-black/20 p-8 md:p-12 rounded-3xl border border-white/10 shadow-xl">
-              <h2 className="!text-white">Less planning. More going.</h2>
-              <p className="text-xl md:text-2xl inline-block w-fit bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-bold mt-2">Stop juggling logistics. Start the trip.</p>
+            <div className="inline-block max-w-[500px] backdrop-blur-xl bg-black/40 p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight text-balance">Less planning. More going.</h2>
+              <p className="text-lg md:text-xl text-white/80 font-medium mt-3 text-balance">Stop juggling logistics. Start the trip.</p>
             </div>
           </div>
           <div className="parallax clouds"></div>
@@ -737,11 +886,11 @@ export default function LandingPage() {
         </div>
 
         <div className="sunset">
-          <div className="silhouette-back"></div>
-          <div className="silhouette-front"></div>
+          <div className="silhouette-back hidden opacity-0"></div>
+          <div className="silhouette-front hidden opacity-0"></div>
           <div className="section"></div>
-          <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white !w-full !px-3 md:!px-10" style={{ height: 'auto', minHeight: '100vh' }}>
-            <h2 className="mb-8 md:mb-12">Let's go.</h2>
+          <div className="section end flex flex-col items-center justify-center pt-24 md:pt-32 pb-12 text-white !w-full !px-3 md:!px-10 relative z-10" style={{ height: 'auto', minHeight: '100vh' }}>
+            <h2 className="mb-8 md:mb-12 drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)] text-white">Let's go.</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 w-full max-w-5xl mx-auto relative z-10">
               {/* Card 1: Recommend Mode */}

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
-import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning, MessageSquare } from 'lucide-react';
+import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 const ADMIN_EMAILS = [
@@ -103,6 +103,22 @@ export default function AdminStatsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'USER'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [feedbackTab, setFeedbackTab] = useState<'PENDING' | 'RESOLVED'>('PENDING');
+
+  const updateFeedbackStatus = async (id: string, newStatus: string) => {
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      if (res.ok) {
+        setFeedbacks(prev => prev.map(fb => fb.id === id ? { ...fb, status: newStatus } : fb));
+      }
+    } catch (err) {
+      console.error('Failed to update feedback', err);
+    }
+  };
 
   useEffect(() => {
     fetchUser();
@@ -265,6 +281,66 @@ export default function AdminStatsPage() {
                 <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><DollarSign size={14} /> Est. API Cost</div>
                 <div className="text-4xl font-light text-amber-400">${data.stats.costEstimateToday}</div>
               </motion.div>
+            </div>
+          </div>
+
+          {/* SECTION 1.5: Advanced Analytics (Retention & Funnel) */}
+          <div className="mb-12">
+            <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">Advanced Analytics Engine</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Funnel Drop-off */}
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden">
+                <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-6 flex items-center gap-2"><Filter size={14} /> Trip Funnel Drop-off</h3>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Trip Started', value: data.stats.funnelStats?.STARTED || 0, color: 'bg-blue-500' },
+                    { label: 'Dates Added', value: data.stats.funnelStats?.DATES_SET || 0, color: 'bg-indigo-500' },
+                    { label: 'Finalized & Saved', value: data.stats.funnelStats?.FINALIZED || 0, color: 'bg-emerald-500' }
+                  ].map((step, i, arr) => {
+                    const max = Math.max(arr[0].value, 1);
+                    const percent = (step.value / max) * 100;
+                    return (
+                      <div key={step.label} className="relative">
+                        <div className="flex justify-between text-xs mb-1.5">
+                          <span className="text-white/80">{step.label}</span>
+                          <span className="font-mono text-white/60">{step.value} users ({Math.round(percent)}%)</span>
+                        </div>
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }} 
+                            animate={{ width: `${percent}%` }} 
+                            transition={{ duration: 1, delay: i * 0.2 }} 
+                            className={`h-full ${step.color} rounded-full`} 
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+
+              {/* Cohort Retention */}
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden">
+                <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-6 flex items-center gap-2"><Users size={14} /> Cohort Retention</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { label: 'D1 Retention', value: data.stats.retentionStats?.D1 || 0, timeframe: '> 24 hrs' },
+                    { label: 'D7 Retention', value: data.stats.retentionStats?.D7 || 0, timeframe: '> 7 days' },
+                    { label: 'D30 Retention', value: data.stats.retentionStats?.D30 || 0, timeframe: '> 30 days' }
+                  ].map((cohort, i) => (
+                    <div key={cohort.label} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">{cohort.label}</div>
+                      <div className="text-2xl font-light text-white mb-1">{cohort.value.toFixed(1)}%</div>
+                      <div className="text-[9px] text-white/30 font-mono">{cohort.timeframe}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-white/40 text-center font-mono">
+                  Calculated based on gap between user creation and last active session
+                </div>
+              </motion.div>
+
             </div>
           </div>
 
@@ -452,33 +528,97 @@ export default function AdminStatsPage() {
 
         {/* SECTION 4: Feedbacks */}
         <div className="mt-12 max-w-7xl mx-auto relative z-10">
-          <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4 border-b border-white/10 pb-2">User Feedback</h2>
+          <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+            <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest">User Feedback</h2>
+            
+            <div className="flex bg-black/40 border border-white/10 rounded-full p-1 relative">
+              <div 
+                className="absolute inset-y-1 bg-white/10 border border-white/20 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                style={{
+                  left: feedbackTab === 'PENDING' ? '4px' : 'calc(50% + 2px)',
+                  width: 'calc(50% - 6px)'
+                }}
+              />
+              <button 
+                onClick={() => setFeedbackTab('PENDING')}
+                className={`relative z-10 px-4 py-1 text-xs font-bold uppercase tracking-widest transition-colors ${feedbackTab === 'PENDING' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+              >
+                Pending
+              </button>
+              <button 
+                onClick={() => setFeedbackTab('RESOLVED')}
+                className={`relative z-10 px-4 py-1 text-xs font-bold uppercase tracking-widest transition-colors ${feedbackTab === 'RESOLVED' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+              >
+                Solved
+              </button>
+            </div>
+          </div>
+          
           <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden">
-            {feedbacks.length > 0 ? (
+            {feedbacks.filter(fb => (feedbackTab === 'PENDING' ? fb.status !== 'RESOLVED' : fb.status === 'RESOLVED')).length > 0 ? (
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                {feedbacks.map((fb) => (
-                  <div key={fb.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex gap-4 items-start">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
-                      <MessageSquare size={16} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-1">
-                        <div>
-                          <span className="text-sm font-bold text-white">{fb.user?.name || 'Anonymous User'}</span>
-                          <span className="text-xs text-white/40 ml-2 font-mono">{fb.user?.email || 'No email provided'}</span>
-                        </div>
-                        <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                <AnimatePresence>
+                  {feedbacks
+                    .filter(fb => (feedbackTab === 'PENDING' ? fb.status !== 'RESOLVED' : fb.status === 'RESOLVED'))
+                    .map((fb) => (
+                    <motion.div 
+                      key={fb.id} 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white/5 border border-white/10 rounded-xl p-4 flex gap-4 items-start relative group overflow-hidden"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                        <MessageSquare size={16} />
                       </div>
-                      <div className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">{fb.type}</div>
-                      <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{fb.content}</p>
-                    </div>
-                  </div>
-                ))}
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-1">
+                          <div>
+                            <span className="text-sm font-bold text-white">{fb.user?.name || 'Anonymous User'}</span>
+                            <span className="text-xs text-white/40 ml-2 font-mono">{fb.user?.email || 'No email provided'}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">{fb.type}</div>
+                        <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap pr-20">{fb.content}</p>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {feedbackTab === 'PENDING' ? (
+                          <button 
+                            onClick={() => updateFeedbackStatus(fb.id, 'RESOLVED')}
+                            className="flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                          >
+                            <CheckCircle size={14} /> Solved
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => updateFeedbackStatus(fb.id, 'NEW')}
+                            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 border border-white/10 hover:border-white/20 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                          >
+                            <RefreshCw size={14} /> Pending
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             ) : (
               <div className="py-12 flex flex-col items-center justify-center text-white/30 gap-3">
-                <MessageSquare size={24} className="opacity-50" />
-                <span className="font-mono uppercase tracking-widest text-xs">No feedback received yet</span>
+                {feedbackTab === 'PENDING' ? (
+                  <>
+                    <ShieldCheck size={32} className="opacity-50 text-emerald-500/50 mb-2" />
+                    <span className="font-mono uppercase tracking-widest text-xs">All caught up! No pending feedback.</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare size={24} className="opacity-50 mb-2" />
+                    <span className="font-mono uppercase tracking-widest text-xs">No resolved feedback yet.</span>
+                  </>
+                )}
               </div>
             )}
           </motion.div>

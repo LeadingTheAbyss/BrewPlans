@@ -159,6 +159,40 @@ export async function GET() {
       }
     });
 
+    // FUNNEL ANALYTICS
+    const funnelAggr = await prisma.tripAttempt.groupBy({
+      by: ['stepReached'],
+      _count: true
+    });
+    const funnelStats = {
+      STARTED: funnelAggr.find(f => f.stepReached === 'STARTED')?._count || 0,
+      DATES_SET: funnelAggr.find(f => f.stepReached === 'DATES_SET')?._count || 0,
+      FINALIZED: funnelAggr.find(f => f.stepReached === 'FINALIZED')?._count || 0,
+    };
+
+    // RETENTION ANALYTICS (D1/D7/D30)
+    // We'll calculate this by finding the gap between createdAt and lastApiCallDate
+    const usersList = await prisma.user.findMany({ select: { createdAt: true, lastApiCallDate: true }});
+    
+    let d1Total = 0, d1Retained = 0;
+    let d7Total = 0, d7Retained = 0;
+    let d30Total = 0, d30Retained = 0;
+
+    usersList.forEach(u => {
+      const daysSinceCreation = (now.getTime() - u.createdAt.getTime()) / (1000 * 3600 * 24);
+      const daysRetained = (u.lastApiCallDate.getTime() - u.createdAt.getTime()) / (1000 * 3600 * 24);
+
+      if (daysSinceCreation >= 1) { d1Total++; if (daysRetained >= 1) d1Retained++; }
+      if (daysSinceCreation >= 7) { d7Total++; if (daysRetained >= 7) d7Retained++; }
+      if (daysSinceCreation >= 30) { d30Total++; if (daysRetained >= 30) d30Retained++; }
+    });
+
+    const retentionStats = {
+      D1: d1Total > 0 ? (d1Retained / d1Total) * 100 : 0,
+      D7: d7Total > 0 ? (d7Retained / d7Total) * 100 : 0,
+      D30: d30Total > 0 ? (d30Retained / d30Total) * 100 : 0,
+    };
+
     return NextResponse.json({
       stats: {
         totalUsers,
@@ -173,7 +207,9 @@ export async function GET() {
         costEstimateToday,
         cacheHitRate,
         errorRate,
-        errors
+        errors,
+        funnelStats,
+        retentionStats
       },
       users
     });

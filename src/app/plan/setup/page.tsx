@@ -141,6 +141,7 @@ export default function TripSetupPage() {
                         useCacheStore.getState().clearCache();
                         useFetchQueue.getState().clearQueue();
                         trip.setTripDetails({ destination: val, selectedTransports: [], selectedHotel: null });
+                        trip.logTripAttempt('STARTED');
                       }
                     }} 
                   />
@@ -160,7 +161,12 @@ export default function TripSetupPage() {
                     label=""
                     startDate={trip.startDate}
                     endDate={trip.endDate}
-                    onChange={(start, end) => trip.setTripDetails({ startDate: start, endDate: end })}
+                    onChange={(start, end) => {
+                      trip.setTripDetails({ startDate: start, endDate: end });
+                      if (start && end) {
+                        trip.logTripAttempt('DATES_SET');
+                      }
+                    }}
                     minDate={new Date().toISOString().split('T')[0]}
                   />
                 </div>

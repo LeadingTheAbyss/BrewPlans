@@ -27,6 +27,21 @@ function sanitizeName(raw: string): string {
     .trim();
 }
 
+const PREMIUM_CITIES = [
+  'delhi', 'new delhi', 'mumbai', 'pune', 'jaipur', 'lucknow', 'hyderabad', 'bangalore', 'bengaluru',
+  'chennai', 'kolkata', 'agra', 'udaipur', 'goa', 'kochi', 'varanasi', 'srinagar', 'jnk',
+  'jammu', 'kashmir', 'amritsar', 'chandigarh', 'ahmedabad', 'surat', 'mysore', 'mysuru',
+  'jodhpur', 'jaisalmer', 'rishikesh', 'haridwar', 'shimla', 'manali', 'darjeeling',
+  'gangtok', 'shillong', 'guwahati', 'bhubaneswar', 'puri', 'madurai', 'coimbatore',
+  'ooty', 'munnar', 'wayanad', 'hampi', 'gokarna', 'pondicherry', 'puducherry', 'andaman',
+  'leh', 'ladakh'
+];
+
+function isPremiumCity(name: string): boolean {
+  const lower = name.toLowerCase();
+  return PREMIUM_CITIES.some(city => lower.includes(city));
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const name = searchParams.get('name');
@@ -37,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const cleanName = sanitizeName(name);
-    const cacheKey = `wiki_img_${cleanName.toLowerCase()}`;
+    const cacheKey = `google_img_4k_${cleanName.toLowerCase()}`;
     
     // Check Redis cache first
     const cachedUrl = await redis.get(cacheKey);
@@ -46,35 +61,27 @@ export async function GET(request: NextRequest) {
     if (cachedUrl && typeof cachedUrl === 'string') {
       bestUrl = cachedUrl;
     } else {
-      const headers = { 'User-Agent': 'TripeasyApp/1.0 (travel@example.com)' };
+      const googleKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY;
+      if (googleKey) {
+        const googleRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleKey,
+            'X-Goog-FieldMask': 'places.photos'
+          },
+          body: JSON.stringify({
+            textQuery: `${cleanName} city landmark India`,
+            languageCode: 'en'
+          })
+        });
 
-      const wikiGet = async (url: string) => {
-        const res = await fetch(url, { headers, cache: 'no-store' });
-        if (!res.ok) return null;
-        try {
-          const json = await res.json();
-          return json.error ? null : json;
-        } catch {
-          return null;
-        }
-      };
-
-      // Perform a combined search and pageimage lookup for the top 5 results
-      const imgData = await wikiGet(
-        `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(cleanName + ' India')}&gsrlimit=5&prop=pageimages&pithumbsize=1200&format=json&origin=*`
-      );
-
-      const pages = Object.values(imgData?.query?.pages ?? {}) as any[];
-      
-      // Sort by search relevance index (1 = most relevant)
-      pages.sort((a, b) => (a.index || 99) - (b.index || 99));
-
-      // Iterate through the top results to find the first one with a valid, non-blacklisted image
-      for (const page of pages) {
-        const url = page?.thumbnail?.source;
-        if (url && !isLikelyBadImage(url)) {
-          bestUrl = url;
-          break; // Found the best match
+        if (googleRes.ok) {
+          const data = await googleRes.json();
+          const photoName = data.places?.[0]?.photos?.[0]?.name;
+          if (photoName) {
+            bestUrl = `https://places.googleapis.com/v1/${photoName}/media?key=${googleKey}&maxWidthPx=1920`;
+          }
         }
       }
       
@@ -88,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     if (!bestUrl) {
       if (isRedirect) {
-        return NextResponse.redirect('https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&q=80', {
+        return NextResponse.redirect('/placeholder-place.svg', {
           status: 302,
           headers: { 'Cache-Control': 'public, max-age=86400' }
         });
@@ -110,7 +117,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('[destination-photo] Error:', err);
     if (searchParams.get('redirect') === 'true') {
-      return NextResponse.redirect('https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&q=80', { status: 302 });
+      return NextResponse.redirect('/placeholder-place.svg', { status: 302 });
     }
     return NextResponse.json({ url: null });
   }

@@ -125,6 +125,7 @@ export default function ReviewPage() {
       });
 
       if (res.ok) {
+        trip.logTripAttempt('FINALIZED');
         setShowToast(true);
         setTimeout(() => {
           setShowToast(false);
