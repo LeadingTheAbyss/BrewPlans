@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const name = searchParams.get('name');
   const type = searchParams.get('type') || 'city';
+  const width = searchParams.get('width') || '1920';
 
   if (!name) {
     return NextResponse.json({ error: 'Missing name' }, { status: 400 });
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const cleanName = sanitizeName(name);
-    const cacheKey = `google_img_4k_${type}_${cleanName.toLowerCase()}`;
+    const cacheKey = `google_img_hq_${type}_${cleanName.toLowerCase()}_w${width}`;
     
     // Check Redis cache first
     const cachedUrl = await redis.get(cacheKey);
@@ -84,9 +85,21 @@ export async function GET(request: NextRequest) {
 
         if (googleRes.ok) {
           const data = await googleRes.json();
-          const photoName = data.places?.[0]?.photos?.[0]?.name;
-          if (photoName) {
-            bestUrl = `https://places.googleapis.com/v1/${photoName}/media?key=${googleKey}&maxWidthPx=1920`;
+          const photos = data.places?.[0]?.photos || [];
+          let bestPhoto = photos[0];
+          
+          // Try to find a high-quality landscape photo
+          for (const photo of photos) {
+            if (photo.widthPx && photo.heightPx) {
+              if (photo.widthPx >= 1920 && photo.widthPx > photo.heightPx) {
+                bestPhoto = photo;
+                break;
+              }
+            }
+          }
+          
+          if (bestPhoto?.name) {
+            bestUrl = `https://places.googleapis.com/v1/${bestPhoto.name}/media?key=${googleKey}&maxWidthPx=${width}`;
           }
         }
       }

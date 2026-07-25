@@ -158,10 +158,24 @@ export function ContrailCanvas() {
       animationFrameId = requestAnimationFrame(render);
     };
 
+    let isVisible = true;
+    const handleVisibilityChange = () => {
+      isVisible = !document.hidden;
+      if (isVisible) {
+        // Reset reference points so we don't draw a massive line connecting where the plane was vs is
+        firstFrame = true;
+        render();
+      } else {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     render();
 
     return () => {
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

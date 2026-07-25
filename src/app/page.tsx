@@ -12,12 +12,19 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X, MessageSquare, Plane, Navigation, Clock, Cloud, Activity } from 'lucide-react';
 import { ContrailCanvas } from '@/components/ContrailCanvas';
 
-const INDIAN_CITIES = [
-  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 
-  'Pune', 'Jaipur', 'Agra', 'Varanasi', 'Srinagar', 'Udaipur', 
-  'Jodhpur', 'Mysore', 'Kochi', 'Goa', 'Ladakh', 'Hampi', 
-  'Munnar', 'Madurai', 'Rishikesh', 'Darjeeling', 'Shimla', 
-  'Ooty', 'Amritsar', 'Manali', 'Pondicherry'
+const TOURIST_ATTRACTIONS = [
+  'Taj Mahal, Agra', 
+  'Hawa Mahal, Jaipur', 
+  'Mysore Palace', 
+  'Golden Temple, Amritsar', 
+  'Gateway of India', 
+  'Victoria Memorial, Kolkata', 
+  'Pangong Lake, Ladakh', 
+  'Munnar Tea Gardens', 
+  'Meenakshi Temple, Madurai', 
+  'Qutub Minar, Delhi', 
+  'Amer Fort, Jaipur', 
+  'Varanasi Ghats'
 ];
 
 export default function LandingPage() {
@@ -36,10 +43,13 @@ export default function LandingPage() {
   ]);
 
   useEffect(() => {
-    const shuffled = [...INDIAN_CITIES].sort(() => 0.5 - Math.random());
+    const imgWidth = window.innerWidth < 768 ? 800 : 1920;
+    const shuffled = [...TOURIST_ATTRACTIONS].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 5);
-    setBgImages(selected.map(city => `/api/destination-photo?name=${encodeURIComponent(city)}&redirect=true&v=${Date.now()}`));
+    setBgImages(selected.map(place => `/api/destination-photo?name=${encodeURIComponent(place)}&type=place&redirect=true&width=${imgWidth}`));
   }, []);
+
+
 
   const handleNavigation = (path: string) => {
     if (!user) {
@@ -57,14 +67,22 @@ export default function LandingPage() {
     // Register GSAP Plugin
     gsap.registerPlugin(ScrollTrigger);
 
+    let mouseMoveScheduled = false;
+    let lastMouseX = 0;
     const handleMouseMove = (e: MouseEvent) => {
-      // Calculate normalized X position (-0.5 to 0.5) and invert it for natural parallax
-      const xPos = (e.clientX / window.innerWidth - 0.5) * -100; 
-      gsap.to('.clouds', {
-        x: xPos,
-        duration: 1.5,
-        ease: 'power2.out'
-      });
+      lastMouseX = e.clientX;
+      if (!mouseMoveScheduled) {
+        mouseMoveScheduled = true;
+        requestAnimationFrame(() => {
+          const xPos = (lastMouseX / window.innerWidth - 0.5) * -100; 
+          gsap.to('.clouds', {
+            x: xPos,
+            duration: 1.5,
+            ease: 'power2.out'
+          });
+          mouseMoveScheduled = false;
+        });
+      }
     };
     window.addEventListener('mousemove', handleMouseMove);
 
@@ -108,9 +126,9 @@ export default function LandingPage() {
         });
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.shadowMap.enabled = false;
+        const isMobile = window.innerWidth < 768;
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
         renderer = this.renderer; // Save reference for cleanup
 
         this.scene = new THREE.Scene();
@@ -425,9 +443,29 @@ export default function LandingPage() {
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
 
       // Start continuous render loop for live tracking and contrails
+      let isVisible = true;
+      let isIntersecting = true;
+      
+      const handleVisibilityChange = () => {
+        isVisible = !document.hidden;
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      const observer = new IntersectionObserver((entries) => {
+        isIntersecting = entries[0].isIntersecting;
+      });
+      const landingBody = document.querySelector('.landing-body');
+      if (landingBody) observer.observe(landingBody);
+
       const renderLoop = () => {
-        if (!mounted) return;
-        scene.render();
+        if (!mounted) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          observer.disconnect();
+          return;
+        }
+        if (isVisible && isIntersecting) {
+          scene.render();
+        }
         requestAnimationFrame(renderLoop);
       };
       renderLoop();
@@ -686,13 +724,13 @@ export default function LandingPage() {
         {/* Stage 1: TAKEOFF */}
         <div 
           className="atmosphere-layer atmosphere-takeoff takeoff-layer" 
-          style={{ backgroundImage: `url('${bgImages[0]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url('${bgImages[0]}')`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }}
         ></div>
 
         {/* Stage 2: HIGH ALTITUDE */}
         <div 
           className="atmosphere-layer atmosphere-altitude altitude-layer" 
-          style={{ backgroundImage: `url('${bgImages[1]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url('${bgImages[1]}')`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }}
         >
           <div className="interactive-stars"></div>
         </div>
@@ -700,14 +738,14 @@ export default function LandingPage() {
         {/* Stage 3: GLOBAL NAVIGATION */}
         <div 
           className="atmosphere-layer atmosphere-nav nav-layer"
-          style={{ backgroundImage: `url('${bgImages[2]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url('${bgImages[2]}')`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }}
         >
         </div>
 
         {/* Stage 4: GOLDEN HOUR DESCENT */}
         <div 
           className="atmosphere-layer atmosphere-descent descent-layer"
-          style={{ backgroundImage: `url('${bgImages[3]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url('${bgImages[3]}')`, backgroundSize: 'cover', backgroundPosition: 'center 20%' }}
         ></div>
 
         {/* Stage 5: ARRIVAL */}
@@ -716,7 +754,7 @@ export default function LandingPage() {
           style={{ 
             backgroundImage: `url('${bgImages[4]}')`, 
             backgroundSize: 'cover', 
-            backgroundPosition: 'center',
+            backgroundPosition: 'center 20%',
             backgroundRepeat: 'no-repeat'
           }}
         >
