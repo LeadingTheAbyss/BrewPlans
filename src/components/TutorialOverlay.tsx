@@ -25,7 +25,8 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
   useEffect(() => {
     setMounted(true);
     const hasCompleted = localStorage.getItem(`tutorial-completed-${tutorialKey}`);
-    if (!hasCompleted) {
+    // Temporarily always load tutorial for plan-itinerary
+    if (!hasCompleted || tutorialKey === 'plan-itinerary') {
       setIsVisible(true);
     }
   }, [tutorialKey]);
@@ -117,11 +118,16 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
       tooltipTop = 20;
     }
 
+    const isStep5 = currentStepIndex === 4 && tutorialKey === 'plan-itinerary';
+    const tooltipWidth = isStep5 ? 400 : 272;
+
     tooltipLeft = targetRect.left;
-    if (tooltipLeft + 340 > windowSize.width - 20) {
-      tooltipLeft = Math.max(20, windowSize.width - 340 - 20);
+    if (tooltipLeft + tooltipWidth > windowSize.width - 20) {
+      tooltipLeft = Math.max(20, windowSize.width - tooltipWidth - 20);
     }
   }
+
+  const isStep5 = currentStepIndex === 4 && tutorialKey === 'plan-itinerary';
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden font-sans">
@@ -170,7 +176,7 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
                 top: tooltipTop,
                 left: tooltipLeft,
               }}
-              className="absolute w-[272px] pointer-events-auto"
+              className={`absolute pointer-events-auto ${isStep5 ? 'w-[400px]' : 'w-[272px]'}`}
             >
               <div className="relative rounded-[18px] p-[18px_20px_16px] backdrop-blur-[24px] saturate-[180%] border border-[rgba(255,255,255,0.14)] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] bg-gradient-to-br from-[rgba(255,255,255,0.10)] to-[rgba(255,255,255,0.02)]">
                 
@@ -207,12 +213,26 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
                   </div>
 
                   {/* Copy Text */}
-                  <div className="mb-4">
+                  <div className="mb-4 flex flex-col gap-2">
                     {currentStep.title && (
-                      <h3 className={`font-sans text-[15px] font-semibold leading-[1.35] tracking-[-0.01em] text-[#f4f4f7] ${currentStep.text ? 'mb-1.5' : ''}`}>
+                      <h3 className={`font-sans text-[15px] font-semibold leading-[1.35] tracking-[-0.01em] text-[#f4f4f7]`}>
                         {currentStep.title}
                       </h3>
                     )}
+
+                    {currentStepIndex === 4 && tutorialKey === 'plan-itinerary' && (
+                      <div className="rounded-xl overflow-hidden border border-[rgba(255,255,255,0.14)] shadow-lg my-1 bg-black/20 relative">
+                        <video 
+                          src="/itinerary_5.mp4" 
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline 
+                          className="w-full h-auto block"
+                        />
+                      </div>
+                    )}
+
                     {currentStep.text && (
                       <p className="font-sans text-[13px] leading-[1.5] text-[rgba(244,244,247,0.72)]">
                         {currentStep.text}

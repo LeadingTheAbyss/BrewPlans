@@ -25,6 +25,12 @@ interface StatsData {
     errors: Array<{ id: string; endpoint: string; errorMessage: string; createdAt: string }>;
     funnelStats?: { STARTED: number; DATES_SET: number; FINALIZED: number };
     retentionStats?: { D1: number; D7: number; D30: number };
+    detailedStats?: {
+      ALL: { tripsPlanned: number; quickTripsPlanned: number; recommendationsUsed: number };
+      MONTHLY: { tripsPlanned: number; quickTripsPlanned: number; recommendationsUsed: number };
+      WEEKLY: { tripsPlanned: number; quickTripsPlanned: number; recommendationsUsed: number };
+      DAILY: { tripsPlanned: number; quickTripsPlanned: number; recommendationsUsed: number };
+    };
   };
   users: Array<{
     id: string;
@@ -37,8 +43,11 @@ interface StatsData {
     apiCallsBusses: number;
     apiCallsHotels: number;
     apiCallsPlaces: number;
+    apiCallsRecommendations: number;
     lastApiCallDate: string;
     createdAt: string;
+    tripsPlanned: number;
+    quickTripsPlanned: number;
     _count: {
       tripHistories: number;
     };
@@ -92,6 +101,7 @@ export default function AdminStatsPage() {
   
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [dashboardRole, setDashboardRole] = useState<'ALL' | 'USER' | 'ADMIN'>('ALL');
+  const [timeframe, setTimeframe] = useState<'ALL' | 'MONTHLY' | 'WEEKLY' | 'DAILY'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'USER'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
@@ -171,6 +181,9 @@ export default function AdminStatsPage() {
         const existing = uniqueUsersMap.get(u.email);
         existing.apiCalls += u.apiCalls;
         existing._count.tripHistories += u._count.tripHistories;
+        existing.tripsPlanned += u.tripsPlanned || 0;
+        existing.quickTripsPlanned += u.quickTripsPlanned || 0;
+        existing.apiCallsRecommendations += u.apiCallsRecommendations || 0;
         // Merge breakdown
         existing.apiCallsFlights += u.apiCallsFlights;
         existing.apiCallsTrains += u.apiCallsTrains;
@@ -254,26 +267,47 @@ export default function AdminStatsPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 border-b border-white/10 pb-2 gap-4">
               <h2 className="text-sm font-bold text-white/40 uppercase tracking-widest">Health & Growth</h2>
               
-              <div className="flex bg-black/40 border border-white/10 rounded-full p-1 relative w-fit">
-                <div 
-                  className="absolute inset-y-1 bg-white/10 border border-white/20 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
-                  style={{
-                    left: dashboardRole === 'ALL' ? '4px' : dashboardRole === 'USER' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 2px)',
-                    width: 'calc(33.33% - 6px)'
-                  }}
-                />
-                {(['ALL', 'USER', 'ADMIN'] as const).map(role => (
-                  <button 
-                    key={role}
-                    onClick={() => setDashboardRole(role)}
-                    className={`relative z-10 px-4 py-1 text-xs font-bold uppercase tracking-widest transition-colors w-24 text-center ${dashboardRole === role ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
-                  >
-                    {role}
-                  </button>
-                ))}
+              <div className="flex items-center gap-4">
+                <div className="flex bg-black/40 border border-white/10 rounded-full p-1 relative w-fit">
+                  <div 
+                    className="absolute inset-y-1 bg-white/10 border border-white/20 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                    style={{
+                      left: timeframe === 'ALL' ? '4px' : timeframe === 'MONTHLY' ? 'calc(25% + 2px)' : timeframe === 'WEEKLY' ? 'calc(50% + 2px)' : 'calc(75% + 2px)',
+                      width: 'calc(25% - 4px)'
+                    }}
+                  />
+                  {(['ALL', 'MONTHLY', 'WEEKLY', 'DAILY'] as const).map(tf => (
+                    <button 
+                      key={tf}
+                      onClick={() => setTimeframe(tf)}
+                      className={`relative z-10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors w-20 text-center ${timeframe === tf ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex bg-black/40 border border-white/10 rounded-full p-1 relative w-fit">
+                  <div 
+                    className="absolute inset-y-1 bg-white/10 border border-white/20 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                    style={{
+                      left: dashboardRole === 'ALL' ? '4px' : dashboardRole === 'USER' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 2px)',
+                      width: 'calc(33.33% - 6px)'
+                    }}
+                  />
+                  {(['ALL', 'USER', 'ADMIN'] as const).map(role => (
+                    <button 
+                      key={role}
+                      onClick={() => setDashboardRole(role)}
+                      className={`relative z-10 px-4 py-1 text-xs font-bold uppercase tracking-widest transition-colors w-24 text-center ${dashboardRole === role ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                    >
+                      {role}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                 <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Users size={14} /> Global Users</div>
                 <div className="text-4xl font-light text-white"><Counter value={data.stats.totalUsers} /></div>
@@ -283,8 +317,16 @@ export default function AdminStatsPage() {
                 <div className="text-4xl font-light text-white"><Counter value={data.stats.activeUsersToday} /></div>
               </motion.div>
               <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
-                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Compass size={14} /> Trips Planned Today</div>
-                <div className="text-4xl font-light text-emerald-400"><Counter value={data.stats.tripsPlannedToday} /></div>
+                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Compass size={14} /> Trips ({timeframe})</div>
+                <div className="text-4xl font-light text-emerald-400"><Counter value={data.stats.detailedStats?.[timeframe]?.tripsPlanned || 0} /></div>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Compass size={14} /> Quick Trips ({timeframe})</div>
+                <div className="text-4xl font-light text-purple-400"><Counter value={data.stats.detailedStats?.[timeframe]?.quickTripsPlanned || 0} /></div>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Compass size={14} /> Recommend ({timeframe})</div>
+                <div className="text-4xl font-light text-blue-400"><Counter value={data.stats.detailedStats?.[timeframe]?.recommendationsUsed || 0} /></div>
               </motion.div>
               <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                 <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><TrendingUp size={14} /> API Calls Today</div>
@@ -456,8 +498,10 @@ export default function AdminStatsPage() {
                       <th className="py-4 px-6 font-medium">User</th>
                       <th className="py-4 px-6 font-medium">Contact</th>
                       <th className="py-4 px-6 font-medium">Role</th>
-                      <th className="py-4 px-6 font-medium text-right">Saved Trips</th>
-                      <th className="py-4 px-6 font-medium text-right">Requests Today</th>
+                      <th className="py-4 px-6 font-medium text-right">Trips</th>
+                      <th className="py-4 px-6 font-medium text-right">Quick Trips</th>
+                      <th className="py-4 px-6 font-medium text-right">Recommend Usages</th>
+                      <th className="py-4 px-6 font-medium text-right">Total Requests</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm divide-y divide-white/5">
@@ -508,7 +552,17 @@ export default function AdminStatsPage() {
                             </td>
                             <td className="py-4 px-6">
                               <div className="flex flex-col items-end w-full">
-                                <span className="font-mono text-white/80">{u._count.tripHistories}</span>
+                                <span className="font-mono text-white/80">{u.tripsPlanned || 0}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col items-end w-full">
+                                <span className="font-mono text-white/80">{u.quickTripsPlanned || 0}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col items-end w-full">
+                                <span className="font-mono text-white/80">{u.apiCallsRecommendations || 0}</span>
                               </div>
                             </td>
                             <td className="py-4 px-6">

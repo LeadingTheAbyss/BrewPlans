@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
-import { CinematicLoader } from '@/components/CinematicLoader';
+import { CinematicLoader, preloadCinematicImages } from '@/components/CinematicLoader';
 import TutorialOverlay from '@/components/TutorialOverlay';
 
 function getDefaultDuration(category?: string): number {
@@ -378,6 +378,11 @@ export default function PlacesPage() {
       fetchQueue.bumpPriority('places-main');
     }
   }, [trip.destination, places.length, task?.status]);
+
+  useEffect(() => {
+    // Preload cinematic images for the /food loading screen asynchronously
+    preloadCinematicImages('food');
+  }, []);
 
   const handleTogglePlace = (place: Place) => {
     const isSelected = itinerary.selectedPlaces.some(p => p.id === place.id);

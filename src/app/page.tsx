@@ -735,7 +735,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 md:gap-4 cursor-pointer hover:opacity-80 transition-opacity">
             <div className="hidden md:block relative w-28 h-10 flex-shrink-0">
               <img 
-                src="/large_logo.png" 
+                src="/large_logo_2.png" 
                 alt="PlanBro Logo" 
                 className="absolute -top-3 -left-2 h-16 w-auto max-w-none object-contain" 
               />

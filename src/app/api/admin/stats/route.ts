@@ -103,16 +103,61 @@ export async function GET(req: Request) {
       }
     });
 
-    const tripsPlannedToday = await prisma.tripHistory.count({
-      where: { 
-        createdAt: { gte: startOfToday },
-        ...(userEmailFilter ? { user: { email: userEmailFilter } } : {})
+    // Time-bucketed Trip Stats (All, Monthly, Weekly, Daily)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const allTrips = await prisma.tripHistory.findMany({
+      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined,
+      select: { snapshot: true, createdAt: true, userId: true }
+    });
+
+    const detailedStats = {
+      ALL: { tripsPlanned: 0, quickTripsPlanned: 0, recommendationsUsed: 0 },
+      MONTHLY: { tripsPlanned: 0, quickTripsPlanned: 0, recommendationsUsed: 0 },
+      WEEKLY: { tripsPlanned: 0, quickTripsPlanned: 0, recommendationsUsed: 0 },
+      DAILY: { tripsPlanned: 0, quickTripsPlanned: 0, recommendationsUsed: 0 },
+    };
+
+    allTrips.forEach(trip => {
+      const isQuickTrip = trip.snapshot && typeof trip.snapshot === 'object' && (trip.snapshot as any).type === 'quick-trip';
+      
+      const buckets = ['ALL'];
+      if (trip.createdAt >= thirtyDaysAgo) buckets.push('MONTHLY');
+      if (trip.createdAt >= sevenDaysAgo) buckets.push('WEEKLY');
+      if (trip.createdAt >= oneDayAgo) buckets.push('DAILY');
+
+      buckets.forEach(b => {
+        if (isQuickTrip) detailedStats[b as keyof typeof detailedStats].quickTripsPlanned++;
+        else detailedStats[b as keyof typeof detailedStats].tripsPlanned++;
+      });
+    });
+
+    // We also need Recommendations usage from DailyUserStat and Users
+    const allUsers = await prisma.user.findMany({
+      where: userEmailFilter ? { email: userEmailFilter } : undefined,
+      select: { id: true, apiCallsRecommendations: true }
+    });
+    const allDailyStats = prisma.dailyUserStat ? await prisma.dailyUserStat.findMany({
+      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined,
+    }) : [];
+
+    // All time recommendations
+    detailedStats.ALL.recommendationsUsed = allUsers.reduce((sum, u) => sum + (u.apiCallsRecommendations || 0), 0);
+    
+    // For smaller buckets, use DailyUserStat dates
+    allDailyStats.forEach(stat => {
+      const statDate = new Date(stat.date); // e.g. "2023-10-15"
+      if (stat.apiCallsRecommendations) {
+        if (statDate >= thirtyDaysAgo) detailedStats.MONTHLY.recommendationsUsed += stat.apiCallsRecommendations;
+        if (statDate >= sevenDaysAgo) detailedStats.WEEKLY.recommendationsUsed += stat.apiCallsRecommendations;
+        if (statDate >= oneDayAgo) detailedStats.DAILY.recommendationsUsed += stat.apiCallsRecommendations;
       }
     });
-    
-    const totalTripsLifetime = await prisma.tripHistory.count({
-      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined
-    });
+
+    const tripsPlannedToday = detailedStats.DAILY.tripsPlanned + detailedStats.DAILY.quickTripsPlanned;
+    const totalTripsLifetime = detailedStats.ALL.tripsPlanned + detailedStats.ALL.quickTripsPlanned;
 
     const apiBreakdown = {
       "Flights": apiMetricsAggr._sum.apiCallsFlights || 0,
@@ -166,12 +211,36 @@ export async function GET(req: Request) {
         apiCallsBusses: true,
         apiCallsHotels: true,
         apiCallsPlaces: true,
+        apiCallsRecommendations: true,
         lastApiCallDate: true,
         createdAt: true,
+        tripHistories: {
+          select: { snapshot: true }
+        },
         _count: {
           select: { tripHistories: true }
         }
       }
+    });
+
+    // Transform user data to include granular trip types
+    const transformedUsers = users.map(u => {
+      let tripsPlanned = 0;
+      let quickTripsPlanned = 0;
+      u.tripHistories.forEach(th => {
+        if (th.snapshot && typeof th.snapshot === 'object' && (th.snapshot as any).type === 'quick-trip') {
+          quickTripsPlanned++;
+        } else {
+          tripsPlanned++;
+        }
+      });
+      // Omit full trip history array to save bandwidth
+      const { tripHistories, ...rest } = u;
+      return {
+        ...rest,
+        tripsPlanned,
+        quickTripsPlanned
+      };
     });
 
     // FUNNEL ANALYTICS
@@ -228,9 +297,10 @@ export async function GET(req: Request) {
         errorRate,
         errors,
         funnelStats,
-        retentionStats
+        retentionStats,
+        detailedStats
       },
-      users
+      users: transformedUsers
     });
   } catch (error) {
     console.error('Admin stats endpoint error:', error);

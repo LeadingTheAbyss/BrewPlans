@@ -88,6 +88,7 @@ model User {
   apiCallsBusses  Int           @default(0)
   apiCallsHotels  Int           @default(0)
   apiCallsPlaces  Int           @default(0)
+  apiCallsRecommendations Int   @default(0)
   lastApiCallDate DateTime      @default(now())
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -107,6 +108,7 @@ model DailyUserStat {
   date        String   // YYYY-MM-DD
   loginCount  Int      @default(0)
   apiCalls    Int      @default(0)
+  apiCallsRecommendations Int @default(0)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

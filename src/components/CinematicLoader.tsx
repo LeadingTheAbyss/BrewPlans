@@ -98,6 +98,29 @@ const CATEGORY_CONFIG = {
   },
 };
 
+// Preload images asynchronously
+export function preloadCinematicImages(category: 'places' | 'food' | 'hotels') {
+  if (typeof window === 'undefined') return;
+  const images = IMAGE_POOLS[category];
+  
+  // We use setTimeout to push this to the end of the event queue so it doesn't block
+  setTimeout(() => {
+    // We could use requestIdleCallback if available, but a simple small delay is often enough
+    const loadImages = () => {
+      images.forEach(img => {
+        const image = new Image();
+        image.src = img.url;
+      });
+    };
+    
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(loadImages);
+    } else {
+      loadImages();
+    }
+  }, 1000);
+}
+
 // ─── Fisher-Yates shuffle ─────────────────────────────────────────────────────
 function shuffled<T>(arr: T[]): T[] {
   const a = [...arr];

@@ -13,6 +13,7 @@ import { useFetchQueue } from '@/store/fetchQueueStore';
 import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/components/ui/TrainModals';
 import AnimatedGlobe from '@/components/AnimatedGlobe';
 import TutorialOverlay from '@/components/TutorialOverlay';
+import { preloadCinematicImages } from '@/components/CinematicLoader';
 
 const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -245,6 +246,11 @@ export default function TransportPage() {
       setActivePassengerId(trip.passengers[0].id);
     }
   }, [trip.passengers, activePassengerId]);
+
+  useEffect(() => {
+    // Preload cinematic images for the /places loading screen asynchronously
+    preloadCinematicImages('places');
+  }, []);
 
   const handleAccordionClick = (pax: Passenger, type: string) => {
     if (!pax.city) {

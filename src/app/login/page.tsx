@@ -96,8 +96,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white/90 backdrop-blur-xl shadow-2xl rounded-3xl p-6 md:p-10 flex flex-col items-center text-center relative z-10 border border-white/50 mx-auto my-auto shrink-0">
         
         {/* Logo area */}
-        <div className="mb-6 flex items-center justify-center">
-          <img src="/large_logo.png" alt="PlanBro Logo" className="w-48 h-auto object-contain" />
+        <div className="mb-8 relative w-48 h-16 flex items-center justify-center -ml-6 -mt-2">
+          <img src="/large_logo_2.png" alt="PlanBro Logo" className="w-48 h-auto object-contain" />
         </div>
         
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-3">Welcome Back</h1>
