@@ -110,13 +110,13 @@ def call_ollama(prompt: str) -> str:
     
     url = "https://api.groq.com/openai/v1/chat/completions"
     payload = {
-        "model": "llama-3.3-70b-versatile", # Updated to a valid Groq model (Llama 3.3 70b)
+        "model": "llama-3.1-8b-instant", # Switched to faster 8B model for speed
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.4,
-        "max_tokens": 6000,
+        "max_tokens": 4000,
         "response_format": {"type": "json_object"}
     }
     
@@ -138,7 +138,7 @@ def call_ollama(prompt: str) -> str:
         }
         
         try:
-            res = requests.post(url, headers=headers, json=payload, timeout=180)
+            res = requests.post(url, headers=headers, json=payload, timeout=60)
             res.raise_for_status()
             data = res.json()
             return data["choices"][0]["message"]["content"]
@@ -147,6 +147,7 @@ def call_ollama(prompt: str) -> str:
                 print(f"[Groq] ⚠️ Key {CURRENT_GROQ_KEY_INDEX} rate-limited (429). Switching to next key...")
                 CURRENT_GROQ_KEY_INDEX = (CURRENT_GROQ_KEY_INDEX % 9) + 1
                 keys_tried += 1
+                continue
             else:
                 print(f"[Error] Groq API call failed: {http_err}")
                 return f"EXCEPTION: {str(http_err)}"

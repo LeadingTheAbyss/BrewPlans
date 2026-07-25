@@ -84,18 +84,16 @@ export const api = {
   },
 
   getRecommendations: async (preferences: any): Promise<any[]> => {
-    try {
-      const response = await fetch(`/api/recommendations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preferences)
-      });
-      if (!response.ok) throw new Error('Network response was not ok');
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
-      return [];
+    const response = await fetch(`/api/recommendations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(preferences)
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Network response was not ok');
     }
+    return await response.json();
   },
 
   searchCity: async (query: string): Promise<{ name: string; state: string; formatted_name: string; osrm_coords: string }[]> => {

@@ -124,17 +124,22 @@ export default function RecommendPage() {
     setDestPhotos({});
     fetchedNames.current.clear();
 
-    const data = await api.getRecommendations({
-      passengers: validPassengers,
-      total_budget: form.budget,
-      days: form.days,
-      group_size: form.groupSize,
-      preference: finalPreferences.join(' and '),
-      constraints: constraints.trim()
-    });
-    setFormCollapsed(true);
-    setRawResults(data);
-    setLoading(false);
+    try {
+      const data = await api.getRecommendations({
+        passengers: validPassengers,
+        total_budget: form.budget,
+        days: form.days,
+        group_size: form.groupSize,
+        preference: finalPreferences.join(' and '),
+        constraints: constraints.trim()
+      });
+      setFormCollapsed(true);
+      setRawResults(data);
+    } catch (e: any) {
+      setError(e.message || 'Failed to fetch recommendations. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelectDestination = (destName: string) => {

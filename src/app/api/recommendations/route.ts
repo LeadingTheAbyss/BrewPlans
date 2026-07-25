@@ -29,7 +29,7 @@ export async function POST(req: Request) {
           });
 
           const isAdmin = isAdminEmail(session.user.email);
-          if (dailyStat && dailyStat.apiCallsRecommendations >= 10 && !isAdmin) {
+          if (dailyStat && dailyStat.apiCallsRecommendations >= 50 && !isAdmin) {
             rateLimitExceeded = true;
           } else {
             await prisma.user.update({
