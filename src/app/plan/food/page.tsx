@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
-import { CinematicLoader } from '@/components/CinematicLoader';
+import { CinematicLoader, preloadCinematicImages } from '@/components/CinematicLoader';
 
 function getDefaultDuration(category?: string): number {
   if (!category) return 1.5;
@@ -47,7 +47,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
       const fetchReviews = async () => {
         setLoadingReviews(true);
         try {
-          const res = await fetch(`http://localhost:8002/api/places/reviews?location_id=${place.id}`);
+          const res = await fetch(`/api/places/reviews?location_id=${place.id}`);
           const data = await res.json();
           setReviews(data);
         } catch (e) {
@@ -343,6 +343,11 @@ export default function FoodPage() {
       fetchQueue.bumpPriority('food-main');
     }
   }, [trip.destination, places.length, task?.status]);
+
+  // Preload hotels cinematic images while user is on food page
+  useEffect(() => {
+    preloadCinematicImages('hotels');
+  }, []);
 
   const handleTogglePlace = (place: Place) => {
     const isSelected = itinerary.selectedPlaces.some(p => p.id === place.id);

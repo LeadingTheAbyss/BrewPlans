@@ -51,13 +51,33 @@ export async function GET(req: Request) {
       currentCalls = 0;
     }
 
+    const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+    const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
+    
+    let dailyStat = null;
+    if (prisma.dailyUserStat) {
+      dailyStat = await prisma.dailyUserStat.findUnique({
+        where: { userId_date: { userId: user.id, date: todayString } }
+      });
+    }
+
     const isAdmin = isAdminEmail(user.email);
 
-    if (!isAdmin && currentCalls >= 150) {
-      return NextResponse.json(
-        { error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, 
-        { status: 429 }
-      );
+    if (!isAdmin) {
+      if (currentCalls >= 150) {
+        return NextResponse.json(
+          { error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, 
+          { status: 429 }
+        );
+      }
+      
+      // Places Limit (20/day)
+      if ((dailyStat?.apiCallsPlaces || 0) >= 20) {
+        return NextResponse.json(
+          { error: 'Daily limit reached for Place searches. Pro upgrade available soon.' }, 
+          { status: 429 }
+        );
+      }
     }
 
     // Update user call count
@@ -70,13 +90,19 @@ export async function GET(req: Request) {
       }
     });
 
-    const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-    const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
     if (prisma.dailyUserStat) {
       await prisma.dailyUserStat.upsert({
         where: { userId_date: { userId: user.id, date: todayString } },
-        update: { apiCalls: { increment: 1 } },
-        create: { userId: user.id, date: todayString, apiCalls: 1 }
+        update: { 
+          apiCalls: { increment: 1 },
+          apiCallsPlaces: { increment: 1 }
+        },
+        create: { 
+          userId: user.id, 
+          date: todayString, 
+          apiCalls: 1,
+          apiCallsPlaces: 1
+        }
       });
     }
 

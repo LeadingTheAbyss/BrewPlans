@@ -56,13 +56,39 @@ export async function GET(req: Request) {
         currentCalls = 0;
       }
 
+      // Fetch daily stat for granular limits
+      const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+      const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
+      let dailyStat = null;
+      if (prisma.dailyUserStat) {
+        dailyStat = await prisma.dailyUserStat.findUnique({
+          where: { userId_date: { userId: user.id, date: todayString } }
+        });
+      }
+
       const isAdmin = isAdminEmail(user.email);
 
-      if (!isAdmin && currentCalls >= 150) {
-        return NextResponse.json(
-          { error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, 
-          { status: 429 }
-        );
+      if (!isAdmin) {
+        if (currentCalls >= 150) {
+          return NextResponse.json(
+            { error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, 
+            { status: 429 }
+          );
+        }
+        
+        // Granular limits for Trains (10/day) and Buses (5/day)
+        if ((mode === 'train' || mode === 'all') && (dailyStat?.apiCallsTrains || 0) >= 10) {
+          return NextResponse.json(
+            { error: 'Daily limit reached for Trains. Pro upgrade available soon.' }, 
+            { status: 429 }
+          );
+        }
+        if ((mode === 'bus' || mode === 'all') && (dailyStat?.apiCallsBuses || 0) >= 5) {
+          return NextResponse.json(
+            { error: 'Daily limit reached for Buses. Pro upgrade available soon.' }, 
+            { status: 429 }
+          );
+        }
       }
 
       if (mode === 'flight' || mode === 'all') flightsCalls++;
@@ -86,8 +112,18 @@ export async function GET(req: Request) {
         }),
         prisma.dailyUserStat ? prisma.dailyUserStat.upsert({
           where: { userId_date: { userId: user.id, date: todayString } },
-          update: { apiCalls: { increment: 1 } },
-          create: { userId: user.id, date: todayString, apiCalls: 1 }
+          update: { 
+            apiCalls: { increment: 1 },
+            ...(mode === 'train' || mode === 'all' ? { apiCallsTrains: { increment: 1 } } : {}),
+            ...(mode === 'bus' || mode === 'all' ? { apiCallsBuses: { increment: 1 } } : {})
+          },
+          create: { 
+            userId: user.id, 
+            date: todayString, 
+            apiCalls: 1,
+            apiCallsTrains: mode === 'train' || mode === 'all' ? 1 : 0,
+            apiCallsBuses: mode === 'bus' || mode === 'all' ? 1 : 0
+          }
         }) : Promise.resolve()
       ]).catch(err => console.error("Async DB update error:", err));
 

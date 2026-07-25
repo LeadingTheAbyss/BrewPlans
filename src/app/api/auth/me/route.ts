@@ -22,8 +22,32 @@ export async function GET() {
     }
 
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const trips = await prisma.tripHistory.findMany({
+      where: {
+        userId: session.user.id,
+        createdAt: {
+          gte: today,
+        }
+      },
+      select: { snapshot: true }
+    });
+
+    let planTripsToday = 0;
+    let quickTripsToday = 0;
+    trips.forEach(t => {
+      const snap = t.snapshot as any;
+      if (snap && snap.type === 'quick-trip') {
+        quickTripsToday++;
+      } else {
+        planTripsToday++;
+      }
+    });
+
     const isAdmin = isAdminEmail(session.user.email);
-    return NextResponse.json({ user: { ...session.user, isAdmin } });
+    return NextResponse.json({ user: { ...session.user, isAdmin, tripsToday: planTripsToday, quickTripsToday } });
   } catch (error) {
     console.error('Me endpoint error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

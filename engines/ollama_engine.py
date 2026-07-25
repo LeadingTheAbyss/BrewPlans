@@ -99,23 +99,16 @@ Rules:
 - DO NOT use any emojis.
 """
 
+CURRENT_GROQ_KEY_INDEX = 1
+
 def call_ollama(prompt: str) -> str:
+    global CURRENT_GROQ_KEY_INDEX
     system_prompt = "You are an expert Indian travel planner. Respond ONLY with valid JSON."
     
     # Re-read .env on every call so key changes are picked up without restarting the server
     load_dotenv(override=True)
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    fallback_api_key = os.getenv("GROQ_FALLBACK_API_KEY")
     
-    print(f"[Groq] Using key: {groq_api_key[:8] if groq_api_key else 'NONE'}...")
-    if not groq_api_key or groq_api_key == "your_groq_api_key_here":
-        return '{"error": "Groq API Key is missing. Please add GROQ_API_KEY to the .env file."}'
-        
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {groq_api_key}",
-        "Content-Type": "application/json"
-    }
     payload = {
         "model": "llama-3.3-70b-versatile", # Updated to a valid Groq model (Llama 3.3 70b)
         "messages": [
@@ -127,30 +120,41 @@ def call_ollama(prompt: str) -> str:
         "response_format": {"type": "json_object"}
     }
     
-    try:
-        res = requests.post(url, headers=headers, json=payload, timeout=180)
-        res.raise_for_status()
-        data = res.json()
-        return data["choices"][0]["message"]["content"]
-    except requests.exceptions.HTTPError as http_err:
-        if http_err.response.status_code == 429 and fallback_api_key and fallback_api_key != groq_api_key:
-            print("[Groq] ⚠️ Primary key rate-limited (429). Retrying with fallback API key...")
-            headers["Authorization"] = f"Bearer {fallback_api_key}"
-            try:
-                res_fallback = requests.post(url, headers=headers, json=payload, timeout=180)
-                res_fallback.raise_for_status()
-                data_fallback = res_fallback.json()
-                print("[Groq] ✅ Fallback key succeeded.")
-                return data_fallback["choices"][0]["message"]["content"]
-            except Exception as fallback_e:
-                print(f"[Error] Groq fallback API call failed: {fallback_e}")
-                return f"EXCEPTION: {str(fallback_e)}"
-        else:
-            print(f"[Error] Groq API call failed: {http_err}")
-            return f"EXCEPTION: {str(http_err)}"
-    except Exception as e:
-        print(f"[Error] Groq API call failed: {e}")
-        return f"EXCEPTION: {str(e)}"
+    keys_tried = 0
+    while keys_tried < 9:
+        groq_api_key = os.getenv(f"GROQ_API_KEY_{CURRENT_GROQ_KEY_INDEX}")
+        
+        if not groq_api_key or groq_api_key == "your_groq_api_key_here":
+            print(f"[Groq] Key GROQ_API_KEY_{CURRENT_GROQ_KEY_INDEX} missing, skipping...")
+            CURRENT_GROQ_KEY_INDEX = (CURRENT_GROQ_KEY_INDEX % 9) + 1
+            keys_tried += 1
+            continue
+            
+        print(f"[Groq] Using key index {CURRENT_GROQ_KEY_INDEX}: {groq_api_key[:8]}...")
+        
+        headers = {
+            "Authorization": f"Bearer {groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            res = requests.post(url, headers=headers, json=payload, timeout=180)
+            res.raise_for_status()
+            data = res.json()
+            return data["choices"][0]["message"]["content"]
+        except requests.exceptions.HTTPError as http_err:
+            if http_err.response.status_code == 429:
+                print(f"[Groq] ⚠️ Key {CURRENT_GROQ_KEY_INDEX} rate-limited (429). Switching to next key...")
+                CURRENT_GROQ_KEY_INDEX = (CURRENT_GROQ_KEY_INDEX % 9) + 1
+                keys_tried += 1
+            else:
+                print(f"[Error] Groq API call failed: {http_err}")
+                return f"EXCEPTION: {str(http_err)}"
+        except Exception as e:
+            print(f"[Error] Groq API call failed: {e}")
+            return f"EXCEPTION: {str(e)}"
+            
+    return '{"error": "All Groq API Keys are missing or exhausted (429) for the day."}'
 
 
 def parse_response(raw: str) -> list:

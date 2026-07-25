@@ -245,7 +245,7 @@ export default function ItineraryPage() {
     return places;
   }, [itinerary.selectedPlaces, searchQuery, vaultFilter]);
   
-  const vaultItemIds = React.useMemo(() => vaultPlaces.map(p => p.id), [vaultPlaces]);
+  const vaultItemIds = React.useMemo(() => vaultPlaces.map(p => assignedPlaceIds.has(p.id) ? `vault-assigned-${p.id}` : p.id), [vaultPlaces, assignedPlaceIds]);
 
   // Summary Metrics
   const totalScheduledHours = React.useMemo(() => itinerary.days.reduce((sum, d) => sum + d.totalTimeHours, 0), [itinerary.days]);
@@ -512,19 +512,26 @@ export default function ItineraryPage() {
           </div>
           
           <DroppableList id="unassigned" items={vaultItemIds} className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 custom-scrollbar w-[320px]">
-            {vaultPlaces.map(place => (
-              <SortablePlaceCard 
-                key={place.id} 
-                place={place} 
-                compact 
-                isSelected={selectedVaultPlaces.has(place.id)}
-                isAssigned={assignedPlaceIds.has(place.id)}
-                dragUser={remoteDragStates[place.id]}
-                onSelectToggle={() => handleToggleSelect(place.id)}
-                onQuickAdd={handleQuickAdd}
-                onClickContainer={() => setGamifiedPlace(place)}
-              />
-            ))}
+            {vaultPlaces.map(place => {
+              const isAssigned = assignedPlaceIds.has(place.id);
+              return (
+                <SortablePlaceCard 
+                  key={`vault-${place.id}`}
+                  sortableId={isAssigned ? `vault-assigned-${place.id}` : place.id}
+                  place={place} 
+                  compact 
+                  isSelected={selectedVaultPlaces.has(place.id)}
+                  isAssigned={isAssigned}
+                  onSelectToggle={() => handleToggleSelect(place.id)}
+                  onQuickAdd={() => handleQuickAdd(place.id)}
+                  onClickContainer={() => {
+                    if (!isAssigned) {
+                      setGamifiedPlace(place);
+                    }
+                  }}
+                />
+              );
+            })}
             
             {itinerary.selectedPlaces.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-zinc-600 px-4 text-center">

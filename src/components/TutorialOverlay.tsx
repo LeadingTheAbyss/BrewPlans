@@ -113,34 +113,40 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
   let tooltipLeft = 0;
   
   if (targetRect) {
-    const spaceBelow = windowSize.height - targetRect.bottom;
-    const spaceAbove = targetRect.top;
-    const tooltipHeight = 220; // approx height
-    
-    if (spaceBelow < tooltipHeight + 30 && spaceAbove >= tooltipHeight + 30) {
-      tooltipTop = targetRect.top - 20 - tooltipHeight; // Place above
+    const isWideStep = (currentStepIndex === 4 || currentStepIndex === 0) && tutorialKey === 'plan-itinerary';
+    const tooltipWidth = isWideStep ? 400 : 272;
+    const tooltipHeight = isWideStep ? 350 : 220; // Approx height with video
+
+    if (currentStepIndex === 0 && tutorialKey === 'plan-itinerary') {
+      // Step 1: Place it to the right of the vault and higher up
+      tooltipTop = targetRect.top + 100;
+      tooltipLeft = targetRect.right + 30;
     } else {
-      tooltipTop = targetRect.bottom + 20; // Place below
+      // Default positioning
+      const spaceBelow = windowSize.height - targetRect.bottom;
+      const spaceAbove = targetRect.top;
+      
+      if (spaceBelow < tooltipHeight + 30 && spaceAbove >= tooltipHeight + 30) {
+        tooltipTop = targetRect.top - 20 - tooltipHeight; // Place above
+      } else {
+        tooltipTop = targetRect.bottom + 20; // Place below
+      }
+      tooltipLeft = targetRect.left;
     }
 
-    // Failsafe clamps to guarantee it stays on screen vertically
+    // Failsafe clamps to guarantee it stays on screen vertically and horizontally
     if (tooltipTop + tooltipHeight > windowSize.height - 20) {
       tooltipTop = windowSize.height - tooltipHeight - 20;
     }
     if (tooltipTop < 20) {
       tooltipTop = 20;
     }
-
-    const isStep5 = currentStepIndex === 4 && tutorialKey === 'plan-itinerary';
-    const tooltipWidth = isStep5 ? 400 : 272;
-
-    tooltipLeft = targetRect.left;
     if (tooltipLeft + tooltipWidth > windowSize.width - 20) {
       tooltipLeft = Math.max(20, windowSize.width - tooltipWidth - 20);
     }
   }
 
-  const isStep5 = currentStepIndex === 4 && tutorialKey === 'plan-itinerary';
+  const isWideStep = (currentStepIndex === 4 || currentStepIndex === 0) && tutorialKey === 'plan-itinerary';
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden font-sans">
@@ -189,7 +195,7 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
                 top: tooltipTop,
                 left: tooltipLeft,
               }}
-              className={`absolute pointer-events-auto ${isStep5 ? 'w-[400px]' : 'w-[272px]'}`}
+              className={`absolute pointer-events-auto ${isWideStep ? 'w-[400px]' : 'w-[272px]'}`}
             >
               <div className="relative rounded-[18px] p-[18px_20px_16px] backdrop-blur-[24px] saturate-[180%] border border-[rgba(255,255,255,0.14)] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] bg-gradient-to-br from-[rgba(255,255,255,0.10)] to-[rgba(255,255,255,0.02)]">
                 
@@ -237,6 +243,19 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
                       <div className="rounded-xl overflow-hidden border border-[rgba(255,255,255,0.14)] shadow-lg my-1 bg-black/20 relative">
                         <video 
                           src="/itinerary_5.mp4" 
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline 
+                          className="w-full h-auto block"
+                        />
+                      </div>
+                    )}
+                    
+                    {currentStepIndex === 0 && tutorialKey === 'plan-itinerary' && (
+                      <div className="rounded-xl overflow-hidden border border-[rgba(255,255,255,0.14)] shadow-lg my-1 bg-black/20 relative">
+                        <video 
+                          src="/itinerary_1.mp4" 
                           autoPlay 
                           loop 
                           muted 

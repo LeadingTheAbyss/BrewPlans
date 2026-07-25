@@ -70,6 +70,13 @@ export default function TripSetupPage() {
 
   const handleContinue = async () => {
     setError('');
+    
+    // Check trip planning limit
+    if (user && !user.isAdmin && (user.tripsToday || 0) >= 10) {
+      setError('You have reached the limit for Plan a Trip feature today, higher limits will be available for Pro users soon.');
+      return;
+    }
+
     const validPassengers = trip.passengers.filter(p => p.name.trim() !== '');
     if (validPassengers.length === 0) {
       setError('Please add at least one passenger.');

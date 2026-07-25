@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 
 interface SortablePlaceCardProps {
   place: Place;
+  sortableId?: string;
   isOverlay?: boolean;
   compact?: boolean;
   isSelected?: boolean;
@@ -21,6 +22,7 @@ interface SortablePlaceCardProps {
 
 export function SortablePlaceCard({ 
   place, 
+  sortableId,
   isOverlay = false, 
   compact = false,
   isSelected = false,
@@ -32,7 +34,7 @@ export function SortablePlaceCard({
   onRemoveFromDay,
   onClickContainer
 }: SortablePlaceCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: place.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortableId || place.id });
   const [showWallet, setShowWallet] = useState(false);
 
   const style = {
@@ -68,10 +70,12 @@ export function SortablePlaceCard({
       ref={setNodeRef}
       style={style}
       onClick={onClickContainer}
-      className={`relative group bg-[#111111] border rounded-xl flex items-stretch transition-[border-color,background-color,box-shadow,opacity] duration-300
+      {...(!isAssigned ? attributes : {})}
+      {...(!isAssigned ? listeners : {})}
+      className={`relative group bg-[#111111] border rounded-xl flex items-stretch transition-[border-color,background-color,box-shadow,opacity] duration-300 touch-none
         ${isOverlay ? 'shadow-[0_0_30px_rgba(34,197,94,0.15)] border-green-500/50 scale-[1.02] z-50' : (dayBorder || 'border-[#222222] hover:border-[#333] hover:shadow-lg')}
         ${isSelected ? 'border-emerald-500/50 bg-emerald-500/5' : ''}
-        ${onClickContainer && !isAssigned ? 'cursor-pointer' : ''}
+        ${!isAssigned ? 'cursor-grab active:cursor-grabbing' : ''}
         ${compact ? 'p-3' : 'p-4'}
       `}
     >
@@ -106,10 +110,8 @@ export function SortablePlaceCard({
 
       {/* Minimal Drag Handle */}
       <div 
-        {...attributes} 
-        {...listeners} 
-        className={`w-6 flex items-center justify-center shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300 touch-none
-          ${isAssigned ? 'opacity-10 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100'}
+        className={`w-6 flex items-center justify-center shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300
+          ${isAssigned ? 'opacity-10' : 'opacity-40 group-hover:opacity-100'}
           ${compact && !isAssigned ? 'lg:opacity-0 lg:group-hover:opacity-100' : ''}
         `}
       >

@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     if (rateLimitExceeded) {
-      return NextResponse.json({ error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, { status: 429 });
+      return NextResponse.json({ error: 'You have reached the limit for Recommend a Trip feature today, higher limits will be available for Pro users soon.' }, { status: 429 });
     }
 
     const response = await fetch(`${PYTHON_API_URL}/recommendations`, {

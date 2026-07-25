@@ -301,6 +301,14 @@ export default function QuickTripPage() {
     }
   }, [user, router]);
 
+  // Check Quick Trip limit
+  useEffect(() => {
+    if (user && !user.isAdmin && (user.quickTripsToday || 0) >= 10) {
+      alert('You have reached the limit for Quick Trip feature today, higher limits will be available for Pro users soon.');
+      router.push('/');
+    }
+  }, [user, router]);
+
   // ── State ──
   const [city, setCity] = useState('');
   const [cityQuery, setCityQuery] = useState('');

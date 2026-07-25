@@ -7,6 +7,8 @@ export interface User {
   picture: string | null;
   apiCalls: number;
   isAdmin?: boolean;
+  tripsToday?: number;
+  quickTripsToday?: number;
 }
 
 interface AuthState {

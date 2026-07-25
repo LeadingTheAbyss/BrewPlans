@@ -109,6 +109,13 @@ model DailyUserStat {
   loginCount  Int      @default(0)
   apiCalls    Int      @default(0)
   apiCallsRecommendations Int @default(0)
+  apiCallsTrains      Int @default(0)
+  apiCallsBuses       Int @default(0)
+  apiCallsPlaces      Int @default(0)
+  apiCallsImages      Int @default(0)
+  apiCallsReviews     Int @default(0)
+  apiCallsETA         Int @default(0)
+  apiCallsAutocomplete Int @default(0)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

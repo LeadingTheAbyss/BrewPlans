@@ -62,6 +62,19 @@ export default function HotelsPage() {
     }
   }, [trip.destination, hotels.length, task?.status]);
 
+  // Preload itinerary tutorial videos
+  useEffect(() => {
+    const preloadVideo = (url: string) => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'video';
+      link.href = url;
+      document.head.appendChild(link);
+    };
+    preloadVideo('/itinerary_1.mp4');
+    preloadVideo('/itinerary_5.mp4');
+  }, []);
+
   const handleSelectHotel = (hotel: Hotel) => {
     const rooms = Math.ceil(trip.passengers.length / 3);
 

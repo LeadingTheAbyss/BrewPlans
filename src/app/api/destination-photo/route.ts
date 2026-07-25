@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { redis } from '@/lib/redis';
+import prisma from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { isAdminEmail } from '@/lib/admin';
 
 // Only block obvious non-photo file names.
 // Keep this list MINIMAL — bad blacklists cause false positives.
@@ -58,6 +61,49 @@ export async function GET(request: NextRequest) {
     
     // Check Redis cache first
     const cachedUrl = await redis.get(cacheKey);
+
+    let userToTrack = null;
+    let todayString = '';
+
+    // Only apply rate limit if it's NOT a cache hit
+    if (!cachedUrl) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get('brewplans_session')?.value;
+      
+      if (!token) {
+        return NextResponse.json({ error: 'Unauthorized: You must be logged in to view images' }, { status: 401 });
+      }
+
+      const session = await prisma.session.findUnique({
+        where: { token },
+        include: { user: true }
+      });
+
+      if (!session || session.expiresAt < new Date()) {
+        return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
+      }
+
+      const user = session.user;
+      userToTrack = user;
+      
+      const now = new Date();
+      const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+      todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
+      
+      let dailyStat = null;
+      if (prisma.dailyUserStat) {
+        dailyStat = await prisma.dailyUserStat.findUnique({
+          where: { userId_date: { userId: user.id, date: todayString } }
+        });
+      }
+
+      const isAdmin = isAdminEmail(user.email);
+      if (!isAdmin) {
+        if ((dailyStat?.apiCallsImages || 0) >= 250) {
+          return NextResponse.redirect(new URL('/placeholder.jpg', request.url)); // Return a placeholder image if limit reached so frontend doesn't break
+        }
+      }
+    }
     let bestUrl: string | null = null;
     
     if (cachedUrl && typeof cachedUrl === 'string') {
@@ -107,6 +153,20 @@ export async function GET(request: NextRequest) {
       if (bestUrl) {
         // Save to Redis (cache for 30 days)
         await redis.set(cacheKey, bestUrl, { ex: 2592000 });
+        
+        if (userToTrack && todayString) {
+          if (prisma.dailyUserStat) {
+             await prisma.dailyUserStat.upsert({
+               where: { userId_date: { userId: userToTrack.id, date: todayString } },
+               update: { apiCalls: { increment: 1 }, apiCallsImages: { increment: 1 } },
+               create: { userId: userToTrack.id, date: todayString, apiCalls: 1, apiCallsImages: 1 }
+             });
+          }
+          await prisma.user.update({
+            where: { id: userToTrack.id },
+            data: { apiCalls: { increment: 1 }, lastApiCallDate: new Date() }
+          });
+        }
       }
     }
 
