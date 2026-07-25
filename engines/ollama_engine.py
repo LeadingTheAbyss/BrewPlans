@@ -110,7 +110,7 @@ def call_ollama(prompt: str) -> str:
     
     url = "https://api.groq.com/openai/v1/chat/completions"
     payload = {
-        "model": "llama-3.1-8b-instant", # Switched to faster 8B model for speed
+        "model": "llama-3.3-70b-versatile", # Switched back to 70B for strict JSON compliance
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -223,7 +223,24 @@ def recommend(passengers: list, total_budget: int, days: int, preference: str, g
         if name_key and name_key not in seen_names:
             seen_names.add(name_key)
             unique_destinations.append(dest)
+            
     destinations = unique_destinations
+    
+    if not destinations:
+        return [
+            {
+                "id": "fallback_error",
+                "name": "Service Unavailable",
+                "state": "N/A",
+                "category": preference,
+                "tags": ["Error"],
+                "why": "Ollama failed to generate valid destinations. Please try again.",
+                "budgetEstimate": 0,
+                "perPersonEstimate": 0,
+                "matchScore": 0,
+                "isPrimaryMatch": False
+            }
+        ]
 
     # --- Realistic budget calculation ---
     # We now trust the LLM's estimate since we use a high-quality model,
