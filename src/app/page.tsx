@@ -1050,9 +1050,10 @@ export default function LandingPage() {
             </div>
 
             {/* Footer Links */}
-            <div className="mt-16 mb-8 flex gap-4 relative z-10">
+            <div className="mt-16 mb-8 flex flex-wrap gap-4 justify-center relative z-10">
               <a href="/terms" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Terms of Service</a>
               <a href="/privacy" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Privacy Policy</a>
+              <a href="mailto:support@brewplans.com" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Contact Us : support@brewplans.com</a>
             </div>
 
           </div>
