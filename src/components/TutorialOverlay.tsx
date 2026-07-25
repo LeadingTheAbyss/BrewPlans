@@ -25,8 +25,7 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
   useEffect(() => {
     setMounted(true);
     const hasCompleted = localStorage.getItem(`tutorial-completed-${tutorialKey}`);
-    // Temporarily always load tutorial for plan-itinerary
-    if (!hasCompleted || tutorialKey === 'plan-itinerary') {
+    if (!hasCompleted) {
       setIsVisible(true);
     }
   }, [tutorialKey]);
