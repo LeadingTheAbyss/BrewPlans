@@ -34,6 +34,8 @@ export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  // Lazy initializer runs synchronously on first render — prevents ContrailCanvas flashing on mobile
+  const [isMobileDevice] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [bgImages, setBgImages] = useState<string[]>([
     '/landing_1.png', 
     '/landing_2.png', 
@@ -43,7 +45,8 @@ export default function LandingPage() {
   ]);
 
   useEffect(() => {
-    const imgWidth = window.innerWidth < 768 ? 800 : 1920;
+    const mobile = window.innerWidth < 768;
+    const imgWidth = mobile ? 800 : 1920;
     const shuffled = [...TOURIST_ATTRACTIONS].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 5);
     setBgImages(selected.map(place => `/api/destination-photo?name=${encodeURIComponent(place)}&type=place&redirect=true&width=${imgWidth}`));
@@ -67,6 +70,8 @@ export default function LandingPage() {
     // Register GSAP Plugin
     gsap.registerPlugin(ScrollTrigger);
 
+    const isMobile = window.innerWidth < 768;
+
     let mouseMoveScheduled = false;
     let lastMouseX = 0;
     const handleMouseMove = (e: MouseEvent) => {
@@ -84,7 +89,10 @@ export default function LandingPage() {
         });
       }
     };
-    window.addEventListener('mousemove', handleMouseMove);
+    // No mouse events on touch devices
+    if (!isMobile) {
+      window.addEventListener('mousemove', handleMouseMove);
+    }
 
 
 
@@ -114,20 +122,20 @@ export default function LandingPage() {
       e2Offset: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
       constructor(model: THREE.Group) {
-        this.views = [
-          { bottom: 0, height: 1 },
-          { bottom: 0, height: 0 }
-        ];
+        // On mobile, only one view needed — wireframe view is disabled
+        const isMobile = window.innerWidth < 768;
+        this.views = isMobile
+          ? [{ bottom: 0, height: 1 }]
+          : [{ bottom: 0, height: 1 }, { bottom: 0, height: 0 }];
 
         this.renderer = new THREE.WebGLRenderer({
-          antialias: true,
+          antialias: !isMobile, // Antialias is expensive on mobile GPUs
           alpha: true,
           canvas: canvasRef.current!
         });
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = false;
-        const isMobile = window.innerWidth < 768;
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
         renderer = this.renderer; // Save reference for cleanup
 
@@ -155,19 +163,21 @@ export default function LandingPage() {
         this.onResize();
         window.addEventListener('resize', this.onResize, false);
 
-        const edges = new THREE.EdgesGeometry((model.children[0] as THREE.Mesh).geometry);
-        const line = new THREE.LineSegments(edges);
-        (line.material as THREE.LineBasicMaterial).depthTest = false;
-        (line.material as THREE.LineBasicMaterial).opacity = 0.5;
-        (line.material as THREE.LineBasicMaterial).transparent = true;
-        line.position.set(0.5, 0.2, -1);
-
         this.modelGroup = new THREE.Group();
         model.layers.set(0);
-        line.layers.set(1);
-
         this.modelGroup.add(model);
-        this.modelGroup.add(line);
+
+        // EdgesGeometry (wireframe) is expensive — skip on mobile
+        if (!isMobile) {
+          const edges = new THREE.EdgesGeometry((model.children[0] as THREE.Mesh).geometry);
+          const line = new THREE.LineSegments(edges);
+          (line.material as THREE.LineBasicMaterial).depthTest = false;
+          (line.material as THREE.LineBasicMaterial).opacity = 0.5;
+          (line.material as THREE.LineBasicMaterial).transparent = true;
+          line.position.set(0.5, 0.2, -1);
+          line.layers.set(1);
+          this.modelGroup.add(line);
+        }
         this.scene.add(this.modelGroup);
         
         // Compute precise tail and nose local coordinates based on the model's bounding box
@@ -304,13 +314,16 @@ export default function LandingPage() {
 
       const sectionDuration = 1;
 
-      // Animate background layers using GPU-accelerated transforms instead of CPU-bound backgroundPosition
-      gsap.set('.atmosphere-layer', { scale: 1.15 }); // Oversize slightly so we have room to move
-      gsap.to('.atmosphere-layer', {
-        yPercent: -8, // Move up by 8% (parallax)
-        ease: 'none',
-        scrollTrigger: { trigger: ".content", scrub: 1, start: "top top", end: "bottom bottom" }
-      });
+      // Animate background layers using GPU-accelerated transforms
+      // Skip parallax on mobile — compositing 5 large textures continuously kills mobile GPUs
+      if (!isMobile) {
+        gsap.set('.atmosphere-layer', { scale: 1.15 }); // Oversize slightly so we have room to move
+        gsap.to('.atmosphere-layer', {
+          yPercent: -8,
+          ease: 'none',
+          scrollTrigger: { trigger: ".content", scrub: 1, start: "top top", end: "bottom bottom" }
+        });
+      }
 
       gsap.fromTo('.silhouette-back', 
         { opacity: 0, y: "20vh" },
@@ -393,8 +406,8 @@ export default function LandingPage() {
       tl.to('.scroll-cta', { duration: 0.25, opacity: 0 }, delay);
       tl.to(plane.position, { x: xOffset, ease: 'power1.in' }, delay);
       // Atmosphere transition 1 -> 2
-      tl.to('.takeoff-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
-      tl.to('.altitude-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.takeoff-layer', { autoAlpha: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.altitude-layer', { autoAlpha: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 2. "Destination" (Right text) -> Plane Left
@@ -406,8 +419,8 @@ export default function LandingPage() {
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: xOffset, y: 0, z: -60, ease: 'power2.inOut' }, delay);
       // Atmosphere transition 2 -> 3
-      tl.to('.altitude-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
-      tl.to('.nav-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.altitude-layer', { autoAlpha: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.nav-layer', { autoAlpha: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 4. "Tabs" (Right text) -> Plane Left
@@ -419,8 +432,8 @@ export default function LandingPage() {
       tl.to(plane.rotation, { x: tau * .25, y: 0, z: tau * 0.05 * m, ease: 'power3.inOut' }, delay);
       tl.to(plane.position, { x: xOffset, y: 0, z: -30, ease: 'power2.inOut' }, delay);
       // Atmosphere transition 3 -> 4
-      tl.to('.nav-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
-      tl.to('.descent-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.nav-layer', { autoAlpha: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.descent-layer', { autoAlpha: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
       // 6. "Defying" (Right text) -> Plane Left
@@ -432,15 +445,20 @@ export default function LandingPage() {
       tl.to(plane.rotation, { x: tau * 0.15, y: tau * .85 * m, z: -tau * 0, ease: 'power1.in' }, delay);
       tl.to(plane.position, { z: -150, x: 0, y: 0, ease: 'power1.inOut' }, delay);
       // Atmosphere transition 4 -> 5
-      tl.to('.descent-layer', { opacity: 0, ease: 'power1.inOut' }, delay + 0.5);
-      tl.to('.arrival-layer', { opacity: 1, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.descent-layer', { autoAlpha: 0, ease: 'power1.inOut' }, delay + 0.5);
+      tl.to('.arrival-layer', { autoAlpha: 1, ease: 'power1.inOut' }, delay + 0.5);
 
       delay += sectionDuration;
-      // 8. Sunset end -> Rotate outwards and fly to a balanced Y position on mobile
+      // 8. Sunset end -> Rotate outwards and fly away completely
       tl.to(plane.rotation, { duration: sectionDuration * 3, x: -tau * 0.05, y: tau * m, z: -tau * 0.1 * m, ease: 'power1.inOut' }, delay);
-      tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: isMobile ? 40 : 0, z: 320, ease: 'power1.in' }, delay);
+      // On mobile camera is at z:340 so push plane to z:500 to get it off-screen
+      tl.to(plane.position, { duration: sectionDuration * 3, x: 0, y: isMobile ? 40 : 0, z: isMobile ? 500 : 320, ease: 'power1.in' }, delay);
       
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
+
+      // Fade the entire WebGL canvas to zero once the plane has flown away
+      // This ensures nothing bleeds through into the content sections below
+      tl.to(canvasRef.current!, { autoAlpha: 0, duration: sectionDuration * 0.8, ease: 'power1.in' }, delay + sectionDuration * 2.5);
 
       // Start continuous render loop for live tracking and contrails
       let isVisible = true;
@@ -584,6 +602,52 @@ export default function LandingPage() {
       });
     }
 
+    // Lightweight window function for mobile — 12 raycasts, MeshBasicMaterial (zero lighting cost)
+    function addMobileWindows(planeGroup: THREE.Group, planeMesh: THREE.Mesh) {
+      const box = new THREE.Box3().setFromObject(planeMesh);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const raycaster = new THREE.Raycaster();
+
+      function raycastSide(zPos: number, yPos: number, fromRight: boolean) {
+        const origin = new THREE.Vector3(
+          fromRight ? center.x + size.x * 2 : center.x - size.x * 2,
+          yPos, zPos
+        );
+        const dir = new THREE.Vector3(fromRight ? -1 : 1, 0, 0);
+        raycaster.set(origin, dir);
+        const hits = raycaster.intersectObject(planeMesh, false)
+          .filter(h => Math.abs(h.point.x - center.x) < size.x * 0.25);
+        return hits.length > 0 ? hits[0] : null;
+      }
+
+      const windowRadius = Math.max(size.x, size.z) * 0.0075;
+      // MeshBasicMaterial: no lighting calculation at all — cheapest possible material
+      const windowMat = new THREE.MeshBasicMaterial({ color: 0x111122 });
+      // Lower-segment circle (8 segments vs 16) — half the vertex count
+      const windowGeo = new THREE.CylinderGeometry(windowRadius, windowRadius, 0.5, 8);
+      windowGeo.rotateX(Math.PI / 2);
+
+      const numWindows = 12; // 12 instead of 28 — only 24 raycasts total (vs 56)
+      const startZ = box.min.z + size.z * 0.24;
+      const endZ = box.max.z - size.z * 0.14;
+      const winY = box.min.y + size.y * 0.35;
+
+      for (let i = 0; i < numWindows; i++) {
+        const z = startZ + (endZ - startZ) * (i / (numWindows - 1));
+        [true, false].forEach(fromRight => {
+          const hit = raycastSide(z, winY, fromRight);
+          if (hit) {
+            const m = new THREE.Mesh(windowGeo, windowMat);
+            m.position.copy(hit.point);
+            m.position.addScaledVector(hit.face!.normal, 0.08);
+            m.lookAt(hit.point.clone().add(hit.face!.normal));
+            planeGroup.add(m);
+          }
+        });
+      }
+    }
+
     function onModelLoaded(loadedObject: THREE.Group) {
       if (!mounted) return;
       
@@ -655,22 +719,25 @@ export default function LandingPage() {
           planeMesh.geometry.computeVertexNormals();
           
           // Realistic glossy white plane paint
-          const mat = new THREE.MeshPhysicalMaterial({ 
-            color: 0xf4f4f5, 
-            metalness: 0.2, 
-            roughness: 0.3,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1,
-            flatShading: false,
-            vertexColors: true // Enable vertex coloring for the engines
-          });
+          // MeshPhysicalMaterial requires a double shading pass for clearcoat — too expensive on mobile
+          const isMobile = window.innerWidth < 768;
+          const mat = isMobile
+            ? new THREE.MeshStandardMaterial({ color: 0xf4f4f5, metalness: 0.2, roughness: 0.3, vertexColors: true })
+            : new THREE.MeshPhysicalMaterial({ color: 0xf4f4f5, metalness: 0.2, roughness: 0.3, clearcoat: 1.0, clearcoatRoughness: 0.1, flatShading: false, vertexColors: true });
           planeMesh.material = mat;
         }
       });
 
+      // Desktop: full 56-raycast, MeshPhysicalMaterial windows
+      // Mobile: lightweight 24-raycast, MeshBasicMaterial windows only
+      const isMobileForWindows = window.innerWidth < 768;
       if (planeMesh) {
         try {
-          addWindows(loadedObject, planeMesh);
+          if (isMobileForWindows) {
+            addMobileWindows(loadedObject, planeMesh);
+          } else {
+            addWindows(loadedObject, planeMesh);
+          }
         } catch (e) { console.error("Failed to add windows", e); }
       }
 
@@ -702,7 +769,7 @@ export default function LandingPage() {
     // Cleanup
     return () => {
       mounted = false;
-      window.removeEventListener('mousemove', handleMouseMove);
+      if (!isMobile) window.removeEventListener('mousemove', handleMouseMove);
       ScrollTrigger.getAll().forEach(t => t.kill());
       if (sceneObj) {
         window.removeEventListener('resize', sceneObj.onResize);
@@ -715,7 +782,8 @@ export default function LandingPage() {
 
   return (
     <div className="landing-body bg-[#0b0f19] text-white" ref={containerRef}>
-      <ContrailCanvas />
+      {/* ContrailCanvas is a continuous 2D canvas draw loop — too expensive on mobile */}
+      {!isMobileDevice && <ContrailCanvas />}
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-30" />
       
       <div className="cinematic-bg">
@@ -981,9 +1049,9 @@ export default function LandingPage() {
             </div>
 
             {/* Footer Links */}
-            <div className="mt-16 mb-8 flex gap-8 text-sm text-white/60 font-medium relative z-10">
-              <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <div className="mt-16 mb-8 flex gap-4 relative z-10">
+              <a href="/terms" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Terms of Service</a>
+              <a href="/privacy" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Privacy Policy</a>
             </div>
 
           </div>

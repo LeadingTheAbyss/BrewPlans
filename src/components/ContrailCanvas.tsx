@@ -183,7 +183,7 @@ export function ContrailCanvas() {
   return (
     <canvas 
       ref={canvasRef} 
-      className="fixed inset-0 z-[50] pointer-events-none mix-blend-screen"
+      className="fixed inset-0 z-[50] pointer-events-none"
     />
   );
 }
