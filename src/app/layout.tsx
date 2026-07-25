@@ -30,7 +30,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} font-sans h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-hidden">
+      <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <ClientOnly>
             <BackgroundFetcher />

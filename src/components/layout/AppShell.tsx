@@ -208,7 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className={`flex-1 flex flex-col relative ${pathname === '/' ? '' : 'h-[calc(100vh-3.5rem)] overflow-hidden'}`}>
-        <div id="main-scroll-container" className={`flex-1 bg-transparent ${pathname === '/' ? '' : 'overflow-y-scroll'}`}>
+        <div id="main-scroll-container" className={`flex-1 bg-transparent ${pathname === '/' ? '' : 'overflow-y-auto'}`}>
           {children}
         </div>
 

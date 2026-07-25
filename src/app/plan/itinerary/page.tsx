@@ -813,7 +813,7 @@ export default function ItineraryPage() {
 
         {/* PANE 3: Right Summary (Trip Overview) */}
         <div className={`transition-all duration-300 ease-in-out bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-l border-t lg:border-t-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl overflow-hidden ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <div className="w-[300px] flex flex-col h-full overflow-y-auto">
+          <div className="w-[300px] flex flex-col h-full">
             <div className="px-6 py-8 border-b border-[#1a1a1a] shrink-0">
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-300 mb-6">
               Trip Overview
