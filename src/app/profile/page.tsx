@@ -140,10 +140,11 @@ export default function ProfilePage() {
           <div className="hidden sm:flex items-center gap-4 shrink-0">
             <button
               onClick={() => setIsFeedbackOpen(true)}
-              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center text-white shrink-0"
+              className="h-8 px-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center gap-2 text-white shrink-0"
               title="Send us Feedback"
             >
               <MessageSquare size={14} />
+              <span className="text-xs font-bold uppercase tracking-widest">Send Feedback</span>
             </button>
             <button 
               onClick={handleLogout} 

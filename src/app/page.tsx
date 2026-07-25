@@ -884,10 +884,11 @@ export default function LandingPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsFeedbackOpen(true)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all flex items-center justify-center text-white shrink-0"
+                className="h-8 px-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all flex items-center gap-2 text-white shrink-0"
                 title="Send us Feedback"
               >
                 <MessageSquare size={14} />
+                <span className="text-xs font-bold uppercase tracking-widest">Send Feedback</span>
               </button>
               <button 
                 onClick={() => router.push('/profile')}
