@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="650" height="400" alt="BrewPlans" src="/large_logo_2.png" />
+<img width="550" height="500" alt="BrewPlans" src="/public/large_logo_2.png" />
 
 # BrewPlans : A Unified Trip Planner
 
