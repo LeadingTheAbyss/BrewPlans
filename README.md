@@ -1,17 +1,21 @@
 <div align="center">
 
-<img width="650" height="400" alt="PlanBro" src="https://github.com/user-attachments/assets/4bf144e8-8335-425f-b339-fb8f732a6214" />
+<img width="650" height="400" alt="BrewPlans" src="https://github.com/user-attachments/assets/4bf144e8-8335-425f-b339-fb8f732a6214" />
 
-# PlanBro : A Unified Trip Planner
+# BrewPlans : A Unified Trip Planner
+
+**Are you someone who struggles to keep track of a million tabs just to plan a single trip?**
+
+I used to face this issue every time I tried to organize a trip with my friends. We had separate tabs open for IRCTC, Goibibo, MMT, MakeMyTrip, Agoda, and various Google searches just to figure out what places to visit at our destination. 
 
 </div>
 
 
-![PlanBro Overview](https://cdn.hashnode.com/uploads/covers/69f3be97909e64ad072b030d/efb248bf-c40c-4be0-849f-4c31c39f7081.png)
+![BrewPlans Overview](https://cdn.hashnode.com/uploads/covers/69f3be97909e64ad072b030d/efb248bf-c40c-4be0-849f-4c31c39f7081.png)
 
-PlanBro is a platform which helps users in three different categorical ways.
+BrewPlans is a platform which helps users in three different categorical ways.
 
-1. **If the destination is known:** If the user knows the destination that they want to travel to then they can use PlanBro to decide what all places they should visit, best options to get to the destination, what would be the best hotel options and it helps them create a seamless schedule with keeping their comfort in mind. It also helps create a final high level review using which the user can share it among other fellow travellers which is very easy to read and highly visual to pick up on with little to none effort.
+1. **If the destination is known:** If the user knows the destination that they want to travel to then they can use BrewPlans to decide what all places they should visit, best options to get to the destination, what would be the best hotel options and it helps them create a seamless schedule with keeping their comfort in mind. It also helps create a final high level review using which the user can share it among other fellow travellers which is very easy to read and highly visual to pick up on with little to none effort.
 
 2. **If the destination is not known:** If the user is looking for advices on what places they can visit, we've an option using which if the user enters the Vibe that they're looking for (eg. Mountains, Beaches, Rainy etc.) then based on that we recommend the best places that they can travel to.
 
@@ -30,7 +34,7 @@ My friends and I used to often make plans but were faced with some issues like:
 - Having unplanned clustered schedules that we were all unsure of and unable to agree upon.
 - And finally, lots of miscommunication due to no concrete plan.
 
-This was also the reason why we were continuously putting off our plans. Therefore, we decided to create a platform to solve this real world problem that we were facing, and named it as **PlanBro**.
+This was also the reason why we were continuously putting off our plans. Therefore, we decided to create a platform to solve this real world problem that we were facing, and named it as **BrewPlans**.
 
 ---
 
@@ -283,7 +287,7 @@ The real tiresome work for this project undoubtedly lied in the backend.
 
 * Using raw JWTs might be slightly faster but I feel using Stateful Database Tokens is the better approach here to prioritize Security, Control and Privacy.
 
-* Finally the backend sets an HTTP-only secure cookie named `planbro_session` which contains that UUID and sends it to the browser.
+* Finally the backend sets an HTTP-only secure cookie named `brewplans_session` which contains that UUID and sends it to the browser.
 
 ![Session Cookie](https://cdn.hashnode.com/uploads/covers/69f3be97909e64ad072b030d/8a41c2b5-684d-4891-96f9-52473a511595.png)
 

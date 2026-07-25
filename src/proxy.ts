@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
   // Check if the user has an active session cookie
-  const sessionCookie = request.cookies.get('planbro_session');
+  const sessionCookie = request.cookies.get('brewplans_session');
   
   console.log('[Middleware] Path:', request.nextUrl.pathname);
   console.log('[Middleware] Cookies:', request.cookies.getAll());

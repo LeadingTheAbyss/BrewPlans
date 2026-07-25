@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
     // 1. Authenticate user
     const cookieStore = await cookies();
-    const token = cookieStore.get('planbro_session')?.value;
+    const token = cookieStore.get('brewplans_session')?.value;
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized: You must be logged in to search for transport' }, { status: 401 });
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
 
       if (!isAdmin && currentCalls >= 150) {
         return NextResponse.json(
-          { error: 'Rate limit exceeded: You have reached your 150 API calls limit for today.' }, 
+          { error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, 
           { status: 429 }
         );
       }

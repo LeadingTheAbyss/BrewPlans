@@ -395,7 +395,10 @@ export default function ReviewPage() {
                         className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full disabled:opacity-50"
                       >
                         <Download size={16} className="text-blue-500 shrink-0" />
-                        {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                        <div className="flex flex-col items-start gap-1">
+                          <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
+                          <span className="text-[9px] uppercase tracking-wider font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-sm">Premium • Free for 1st week</span>
+                        </div>
                       </button>
                     </motion.div>
                   )}

@@ -45,15 +45,6 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
       setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
-    // Auto-scroll to element when step changes
-    const step = steps[currentStepIndex];
-    if (step) {
-      const el = document.getElementById(step.targetId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-
     updateRect();
 
     window.addEventListener('resize', updateRect);
@@ -82,14 +73,29 @@ export default function TutorialOverlay({ steps, tutorialKey }: TutorialOverlayP
     }
   };
 
+  const forceScrollToTop = () => {
+    // Scroll window and document elements
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (document.body) document.body.scrollTo({ top: 0, behavior: 'smooth' });
+    if (document.documentElement) document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Scroll main container if it exists
+    const scrollContainer = document.getElementById('main-scroll-container');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleComplete = () => {
     setIsVisible(false);
     localStorage.setItem(`tutorial-completed-${tutorialKey}`, 'true');
+    forceScrollToTop();
   };
 
   const handleSkip = () => {
     setIsVisible(false);
     localStorage.setItem(`tutorial-completed-${tutorialKey}`, 'true');
+    forceScrollToTop();
   };
 
   if (!mounted || !isVisible) return null;

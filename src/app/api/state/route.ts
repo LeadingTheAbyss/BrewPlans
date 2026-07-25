@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 async function getUserId() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('planbro_session')?.value;
+    const token = cookieStore.get('brewplans_session')?.value;
     if (!token) return null;
     const session = await prisma.session.findUnique({ where: { token } });
     if (!session || session.expiresAt < new Date()) return null;

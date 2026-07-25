@@ -549,7 +549,7 @@ export default function ItineraryPage() {
           {/* Toggle Left Sidebar */}
           <button 
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
           >
             {isLeftSidebarOpen ? '<' : '>'}
           </button>
@@ -557,7 +557,7 @@ export default function ItineraryPage() {
           {/* Toggle Right Sidebar */}
           <button 
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
           >
             {isRightSidebarOpen ? '>' : '<'}
           </button>
@@ -813,7 +813,7 @@ export default function ItineraryPage() {
 
         {/* PANE 3: Right Summary (Trip Overview) */}
         <div className={`transition-all duration-300 ease-in-out bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-l border-t lg:border-t-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl overflow-hidden ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <div className="w-[300px] flex flex-col h-full">
+          <div className="w-[300px] flex flex-col h-full overflow-y-auto">
             <div className="px-6 py-8 border-b border-[#1a1a1a] shrink-0">
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-300 mb-6">
               Trip Overview

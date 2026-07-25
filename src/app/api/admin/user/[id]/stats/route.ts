@@ -12,7 +12,7 @@ export async function GET(
     const params = await context.params;
     const id = params.id;
     const cookieStore = await cookies();
-    const token = cookieStore.get('planbro_session')?.value;
+    const token = cookieStore.get('brewplans_session')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

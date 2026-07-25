@@ -177,7 +177,7 @@ async def get_city_coords(city_name: str) -> dict:
     # Fallback to Nominatim
     encoded_query = urllib.parse.quote(f"{city_name}, India")
     url = f"https://nominatim.openstreetmap.org/search?q={encoded_query}&format=json&limit=1"
-    headers = {"User-Agent": "PlanBroTravelApp/1.0 (contact@planbro.com)"}
+    headers = {"User-Agent": "BrewPlansTravelApp/1.0 (contact@brewplans.com)"}
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=10.0)

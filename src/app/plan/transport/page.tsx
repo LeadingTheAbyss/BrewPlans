@@ -51,7 +51,7 @@ const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComp
       {/* Title Header (Top Right style alignment) */}
       <div className="absolute top-12 right-12 text-right z-50">
         <h1 className="text-4xl md:text-5xl font-black text-white tracking-wider drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] uppercase">
-          PlanBro
+          BrewPlans
         </h1>
       </div>
 

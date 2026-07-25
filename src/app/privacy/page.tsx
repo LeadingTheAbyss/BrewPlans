@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             <Link href="/" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <span className="font-bold text-lg tracking-tight">PlanBro <span className="text-zinc-400 font-normal">Legal</span></span>
+            <span className="font-bold text-lg tracking-tight">BrewPlans <span className="text-zinc-400 font-normal">Legal</span></span>
           </div>
         </div>
       </nav>
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
           <div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-600">
             <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 mb-10">
-              At PlanBro, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trip planning service.
+              At BrewPlans, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trip planning service.
             </p>
 
             <section id="info" className="mb-12 scroll-mt-28">
@@ -120,7 +120,7 @@ export default function PrivacyPage() {
             <section id="rights" className="mb-12 scroll-mt-28">
               <h2 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white">5. Your Privacy Rights</h2>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300">
-                Depending on your location, you may have the right to request access to the personal information we collect from you, change that information, or delete it in some circumstances. You can delete your entire trip history and account data directly from the PlanBro profile settings.
+                Depending on your location, you may have the right to request access to the personal information we collect from you, change that information, or delete it in some circumstances. You can delete your entire trip history and account data directly from the BrewPlans profile settings.
               </p>
             </section>
             

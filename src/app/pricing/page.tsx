@@ -24,8 +24,8 @@ export default function PricingPage() {
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center">
         
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-light tracking-tighter text-white mb-6">Upgrade to Planbro Pro</h1>
-          <p className="text-lg text-white/60 max-w-xl mx-auto">Get exclusive features like custom Planbro Wrapped timeframes, high-res PDF exports, and priority support.</p>
+          <h1 className="text-4xl md:text-6xl font-light tracking-tighter text-white mb-6">Upgrade to BrewPlans Pro</h1>
+          <p className="text-lg text-white/60 max-w-xl mx-auto">Get exclusive features like custom BrewPlans Wrapped timeframes, high-res PDF exports, and priority support.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 w-full max-w-3xl">
@@ -64,7 +64,7 @@ export default function PricingPage() {
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-[#F5B942] rounded-full blur-[80px] opacity-20"></div>
             
             <div className="flex justify-between items-start mb-2 relative z-10">
-              <h3 className="text-2xl font-bold text-[#F5B942] flex items-center gap-2">Planbro Pro</h3>
+              <h3 className="text-2xl font-bold text-[#F5B942] flex items-center gap-2">BrewPlans Pro</h3>
             </div>
             
             <p className="text-white/60 text-sm mb-6 relative z-10">Unlock the full potential of your travels.</p>

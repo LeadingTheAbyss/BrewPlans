@@ -1,9 +1,9 @@
-# 📄 Project Documentation: PlanBro (Tripal)
+# 📄 Project Documentation: BrewPlans (Tripal)
 
 ## 1. Executive Summary
 
-**Project Name:** PlanBro (Tripal)  
-**Project Summary:** PlanBro is a premium, full-stack travel itinerary planner designed to remove the friction from planning trips. By consolidating flights, trains, buses, cabs, hotels, and attractions into one unified platform, it provides an optimized, fully ranked itinerary. The platform intelligently calculates transport modes, discovers real-time places of interest, and delivers AI-driven recommendations based on group profiles and budgets.  
+**Project Name:** BrewPlans (Tripal)  
+**Project Summary:** BrewPlans is a premium, full-stack travel itinerary planner designed to remove the friction from planning trips. By consolidating flights, trains, buses, cabs, hotels, and attractions into one unified platform, it provides an optimized, fully ranked itinerary. The platform intelligently calculates transport modes, discovers real-time places of interest, and delivers AI-driven recommendations based on group profiles and budgets.  
 **Tech Stack:**  
 - **Frontend:** Next.js (v16.2.9) App Router, React 19, TypeScript, Tailwind CSS v4, Shadcn UI, GSAP, Three.js, Zustand, React Query, @dnd-kit.
 - **Backend:** FastAPI (Python), Uvicorn, Asyncio.
@@ -219,7 +219,7 @@ Robust fault tolerance is critical as third-party APIs are volatile:
 ## 12. Conclusion & Review
 
 ### Summary of Architecture
-PlanBro successfully decouples a highly interactive, state-heavy React frontend from a concurrent, I/O bound Python backend. By utilizing Zustand for transient state and Prisma/Redis for persistent caching, it achieves near-instantaneous UI feedback even when relying on slow external APIs.
+BrewPlans successfully decouples a highly interactive, state-heavy React frontend from a concurrent, I/O bound Python backend. By utilizing Zustand for transient state and Prisma/Redis for persistent caching, it achieves near-instantaneous UI feedback even when relying on slow external APIs.
 
 ### Technical Strengths
 - **Fan-Out Concurrency:** `asyncio.gather()` drastically reduces wait times for parallel data streams.
@@ -233,4 +233,4 @@ PlanBro successfully decouples a highly interactive, state-heavy React frontend 
 - **Message Queue:** Integrate Redis Queue (RQ) or Celery for extremely long-running tasks like bulk itinerary PDF generation.
 
 ### What Makes This Project Strong
-PlanBro is exceptionally strong because it prioritizes **graceful degradation**. It recognizes that external travel APIs are inherently flaky. Instead of passing errors to the user, it implements robust caching, intelligent proxying, and mathematical fallbacks to guarantee a seamless, premium experience regardless of upstream network conditions.
+BrewPlans is exceptionally strong because it prioritizes **graceful degradation**. It recognizes that external travel APIs are inherently flaky. Instead of passing errors to the user, it implements robust caching, intelligent proxying, and mathematical fallbacks to guarantee a seamless, premium experience regardless of upstream network conditions.

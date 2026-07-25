@@ -621,7 +621,7 @@ function WrappedContent() {
               </div>
               
               <div className="brandbar">
-                <div className="logo">PLANBRO</div>
+                <div className="logo">BREWPLANS</div>
                 <div className="pnr" id="pnrlabel">SCREEN {current}/{total}</div>
               </div>
 
@@ -632,7 +632,7 @@ function WrappedContent() {
 
                 {/* 1 INTRO */}
                 <div className={`screen ${current === 1 ? 'active' : ''}`} id="s1">
-                  <div className="wordmark">PLANBRO PRESENTS</div>
+                  <div className="wordmark">BREWPLANS PRESENTS</div>
                   <div className="display">Your 2026,<br/>in motion<span>.</span></div>
                   <div className="subcopy">Every city you chased, every km you clocked, every plate you didn't finish. We tracked it all so you don't have to remember it.</div>
                   <div className="cta" onClick={handleNext} style={{cursor: 'pointer'}}>Tap to begin <div className="arrow">&rarr;</div></div>
@@ -767,7 +767,7 @@ function WrappedContent() {
                     </div>
                   </div>
                   <button className="share-btn" onClick={triggerToast}>&#10548; Share your Wrapped</button>
-                  <div className="share-sub">planbro.app/wrapped</div>
+                  <div className="share-sub">brewplans.app/wrapped</div>
                 </div>
 
               </div>

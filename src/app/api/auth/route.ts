@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
     // Set cookie
     const response = NextResponse.json({ user });
-    response.cookies.set('planbro_session', sessionToken, {
+    response.cookies.set('brewplans_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

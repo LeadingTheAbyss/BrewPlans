@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { isAdminEmail } from '@/lib/admin';
 
 const PYTHON_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002/api';
 
@@ -8,10 +9,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Track recommendation usage
+    let rateLimitExceeded = false;
+    // Track recommendation usage & apply rate limits
     try {
       const cookieStore = await cookies();
-      const token = cookieStore.get('planbro_session')?.value;
+      const token = cookieStore.get('brewplans_session')?.value;
       if (token) {
         const session = await prisma.session.findUnique({
           where: { token },
@@ -22,32 +24,45 @@ export async function POST(req: Request) {
           const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
           const todayStr = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
 
-          await prisma.user.update({
-            where: { id: session.userId },
-            data: {
-              apiCalls: { increment: 1 },
-              apiCallsRecommendations: { increment: 1 },
-              lastApiCallDate: new Date()
-            }
+          const dailyStat = await prisma.dailyUserStat.findUnique({
+            where: { userId_date: { userId: session.userId, date: todayStr } }
           });
 
-          await prisma.dailyUserStat.upsert({
-            where: { userId_date: { userId: session.userId, date: todayStr } },
-            update: { 
-              apiCalls: { increment: 1 },
-              apiCallsRecommendations: { increment: 1 }
-            },
-            create: {
-              userId: session.userId,
-              date: todayStr,
-              apiCalls: 1,
-              apiCallsRecommendations: 1
-            }
-          });
+          const isAdmin = isAdminEmail(session.user.email);
+          if (dailyStat && dailyStat.apiCallsRecommendations >= 10 && !isAdmin) {
+            rateLimitExceeded = true;
+          } else {
+            await prisma.user.update({
+              where: { id: session.userId },
+              data: {
+                apiCalls: { increment: 1 },
+                apiCallsRecommendations: { increment: 1 },
+                lastApiCallDate: new Date()
+              }
+            });
+
+            await prisma.dailyUserStat.upsert({
+              where: { userId_date: { userId: session.userId, date: todayStr } },
+              update: { 
+                apiCalls: { increment: 1 },
+                apiCallsRecommendations: { increment: 1 }
+              },
+              create: {
+                userId: session.userId,
+                date: todayStr,
+                apiCalls: 1,
+                apiCallsRecommendations: 1
+              }
+            });
+          }
         }
       }
     } catch (e) {
       console.error('Failed to track recommendation API call:', e);
+    }
+
+    if (rateLimitExceeded) {
+      return NextResponse.json({ error: 'You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.' }, { status: 429 });
     }
 
     const response = await fetch(`${PYTHON_API_URL}/recommendations`, {

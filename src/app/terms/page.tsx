@@ -18,7 +18,7 @@ export default function TermsPage() {
             <Link href="/" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <span className="font-bold text-lg tracking-tight">PlanBro <span className="text-zinc-400 font-normal">Legal</span></span>
+            <span className="font-bold text-lg tracking-tight">BrewPlans <span className="text-zinc-400 font-normal">Legal</span></span>
           </div>
         </div>
       </nav>
@@ -73,7 +73,7 @@ export default function TermsPage() {
 
           <div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-600">
             <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 mb-10">
-              Welcome to PlanBro! These Terms of Service ("Terms") govern your access to and use of our website, services, and applications. Please read these Terms carefully before using our trip planning platform.
+              Welcome to BrewPlans! These Terms of Service ("Terms") govern your access to and use of our website, services, and applications. Please read these Terms carefully before using our trip planning platform.
             </p>
 
             <section id="acceptance" className="mb-12 scroll-mt-28">
@@ -86,14 +86,14 @@ export default function TermsPage() {
             <section id="use" className="mb-12 scroll-mt-28">
               <h2 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white">2. Use of the Service</h2>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300">
-                You must provide accurate and complete information when creating an account or planning a trip. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer or device. PlanBro is intended for personal, non-commercial use only. Our Service integrates with several third-party data providers, transport operators, and booking aggregators to provide live data. Your use of the Service is also subject to the terms and conditions of these respective third-party providers.
+                You must provide accurate and complete information when creating an account or planning a trip. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer or device. BrewPlans is intended for personal, non-commercial use only. Our Service integrates with several third-party data providers, transport operators, and booking aggregators to provide live data. Your use of the Service is also subject to the terms and conditions of these respective third-party providers.
               </p>
             </section>
 
             <section id="content" className="mb-12 scroll-mt-28">
               <h2 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-white">3. User Content</h2>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300 mb-4">
-                Our Service allows you to plan itineraries, add passengers, and share travel plans. You retain all rights to any information you submit, but you grant PlanBro a non-exclusive, worldwide, royalty-free license to use, store, and display that content solely for the purpose of providing the Service.
+                Our Service allows you to plan itineraries, add passengers, and share travel plans. You retain all rights to any information you submit, but you grant BrewPlans a non-exclusive, worldwide, royalty-free license to use, store, and display that content solely for the purpose of providing the Service.
               </p>
             </section>
 
@@ -104,11 +104,11 @@ export default function TermsPage() {
                   <AlertTriangle size={18} /> Important Disclaimer
                 </h4>
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  PlanBro acts as a planning tool and aggregator. We do not guarantee the real-time accuracy of transport availability, live train status, prices, or hotel bookings. Because we rely on various third-party data sources and aggregators, information such as photos, ratings, and fares may change without notice. Always verify critical travel information directly with the official service providers.
+                  BrewPlans acts as a planning tool and aggregator. We do not guarantee the real-time accuracy of transport availability, live train status, prices, or hotel bookings. Because we rely on various third-party data sources and aggregators, information such as photos, ratings, and fares may change without notice. Always verify critical travel information directly with the official service providers.
                 </p>
               </div>
               <p className="leading-relaxed text-zinc-600 dark:text-zinc-300">
-                To the maximum extent permitted by law, PlanBro shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including missed flights, bad hotel experiences, financial losses, or ruined vacations resulting from your use of the Service.
+                To the maximum extent permitted by law, BrewPlans shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including missed flights, bad hotel experiences, financial losses, or ruined vacations resulting from your use of the Service.
               </p>
             </section>
 

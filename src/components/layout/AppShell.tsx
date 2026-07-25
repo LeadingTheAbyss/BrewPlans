@@ -70,8 +70,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 md:gap-3 shrink-0">
-              <img src="/icon.png" alt="PlanBro Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-              <h1 className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-black dark:text-white hidden sm:block">PlanBro</h1>
+              <img src="/icon.png" alt="BrewPlans Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+              <h1 className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-black dark:text-white hidden sm:block">BrewPlans</h1>
             </Link>
             
             {pathname !== '/stats' && pathname !== '/recommend' && (
@@ -207,7 +207,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className={`flex-1 flex flex-col relative ${pathname === '/' ? '' : 'h-[calc(100vh-3.5rem)] overflow-hidden'}`}>
-        <div className={`flex-1 bg-transparent ${pathname === '/' ? '' : 'overflow-y-auto'}`}>
+        <div id="main-scroll-container" className={`flex-1 bg-transparent ${pathname === '/' ? '' : 'overflow-y-scroll'}`}>
           {children}
         </div>
 

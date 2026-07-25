@@ -6,7 +6,7 @@ import { isAdminEmail } from '@/lib/admin';
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('planbro_session')?.value;
+    const token = cookieStore.get('brewplans_session')?.value;
 
     if (!token) {
       return NextResponse.json({ user: null }, { status: 401 });
@@ -33,7 +33,7 @@ export async function GET() {
 export async function PUT(req: Request) {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('planbro_session')?.value;
+    const token = cookieStore.get('brewplans_session')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

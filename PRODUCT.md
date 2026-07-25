@@ -8,7 +8,7 @@ product
 Travelers looking to consolidate their trip planning across flights, trains, hotels, and attractions. They are overwhelmed by managing a million open tabs and want a frictionless, centralized hub.
 
 ## Product Purpose
-PlanBro (Tripal) removes the friction from travel planning by aggregating transport, places, and hotels into one visually stunning experience. It ranks options in real-time based on comfort, safety, and budget, providing a seamless itinerary builder and live budget tracking ("The Purse"). Success is a seamless end-to-end trip booking flow.
+BrewPlans (Tripal) removes the friction from travel planning by aggregating transport, places, and hotels into one visually stunning experience. It ranks options in real-time based on comfort, safety, and budget, providing a seamless itinerary builder and live budget tracking ("The Purse"). Success is a seamless end-to-end trip booking flow.
 
 ## Brand Personality
 The landing page feels premium, high-tech, and adventurous (smooth 3D motion). The app/dashboard feels calm and effortless to use, yet vibrant, energetic, and playful enough to feel alive.

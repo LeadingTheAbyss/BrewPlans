@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PlanBro",
+  title: "BrewPlans",
   description: "Plan your trip with real-time flight, train, and hotel data.",
   icons: {
     icon: '/icon.png',
@@ -30,7 +30,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} font-sans h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col overflow-hidden">
         <ThemeProvider>
           <ClientOnly>
             <BackgroundFetcher />

@@ -7,7 +7,7 @@ export const api = {
       const response = await fetch(`/api/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}&check_only=${checkOnly}`);
       if (!response.ok) {
         if (response.status === 429) {
-          alert('Daily API limit of 150 calls exceeded. Please try again tomorrow or upgrade your plan.');
+          alert('You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.');
         } else if (response.status === 401) {
           alert('You must be logged in to search for transport.');
         }
@@ -28,7 +28,7 @@ export const api = {
     try {
       const response = await fetch(`/api/places?destination=${encodeURIComponent(destination)}&check_only=${checkOnly}`);
       if (!response.ok) {
-        if (response.status === 429) alert('Daily API limit of 150 calls exceeded. Please try again tomorrow or upgrade your plan.');
+        if (response.status === 429) alert('You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.');
         else if (response.status === 401) alert('You must be logged in.');
         throw new Error('Network response was not ok');
       }
@@ -44,7 +44,7 @@ export const api = {
     try {
       const response = await fetch(`/api/food?destination=${encodeURIComponent(destination)}&check_only=${checkOnly}`);
       if (!response.ok) {
-        if (response.status === 429) alert('Daily API limit of 150 calls exceeded. Please try again tomorrow or upgrade your plan.');
+        if (response.status === 429) alert('You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.');
         else if (response.status === 401) alert('You must be logged in.');
         throw new Error('Network response was not ok');
       }
@@ -60,7 +60,7 @@ export const api = {
     try {
       const response = await fetch(`/api/hotels?destination=${encodeURIComponent(destination)}&check_only=${checkOnly}`);
       if (!response.ok) {
-        if (response.status === 429) alert('Daily API limit of 150 calls exceeded. Please try again tomorrow or upgrade your plan.');
+        if (response.status === 429) alert('You have reached API Calls limit, higher API limits will be available for BrewPlans Pro users from next week onwards.');
         else if (response.status === 401) alert('You must be logged in.');
         throw new Error('Network response was not ok');
       }

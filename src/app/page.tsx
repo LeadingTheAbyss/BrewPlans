@@ -774,11 +774,11 @@ export default function LandingPage() {
             <div className="hidden md:block relative w-28 h-10 flex-shrink-0">
               <img 
                 src="/large_logo_2.png" 
-                alt="PlanBro Logo" 
+                alt="BrewPlans Logo" 
                 className="absolute -top-3 -left-2 h-16 w-auto max-w-none object-contain" 
               />
             </div>
-            <span className="font-extrabold text-2xl tracking-tight text-white drop-shadow-md z-10 relative">PlanBro</span>
+            <span className="font-extrabold text-2xl tracking-tight text-white drop-shadow-md z-10 relative">BrewPlans</span>
           </div>
 
           {/* Links */}

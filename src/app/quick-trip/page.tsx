@@ -844,7 +844,10 @@ export default function QuickTripPage() {
                   className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[#1a1a1a] transition-colors text-zinc-300 hover:text-white border-b border-[#222]"
                 >
                   <Download size={14} />
-                  Download PDF
+                  <div className="flex flex-col items-start gap-1">
+                    <span>Download PDF</span>
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-sm">Premium • Free for 1st week</span>
+                  </div>
                 </button>
                 <button
                   onClick={() => { setShowShareMenu(false); handleShareGoogleMaps(); }}
