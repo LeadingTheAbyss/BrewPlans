@@ -16,7 +16,6 @@ import MemberTravelCard from '@/components/review/MemberTravelCard';
 import StayDetailsCard from '@/components/review/StayDetailsCard';
 import DayCard from '@/components/review/DayCard';
 import VisualJourneyMap from '@/components/VisualJourneyMap';
-import LedgerView from '@/components/review/LedgerView';
 
 export default function ReviewPage() {
   const router = useRouter();

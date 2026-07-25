@@ -96,8 +96,6 @@ export async function GET(req: Request) {
       if (mode === 'bus' || mode === 'all') bussesCalls++;
 
       // Fire DB writes without awaiting them to block the Python proxy request
-      const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-      const todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
       
       Promise.all([
         prisma.user.update({
