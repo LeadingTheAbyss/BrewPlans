@@ -140,7 +140,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 {isSubmitting ? (
                   <span className="opacity-70">Sending...</span>
                 ) : (
-                  <>Send Feedback <Send size={14} /></>
+                  <>Send Us Feedback <Send size={14} /></>
                 )}
               </button>
             </form>

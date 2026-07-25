@@ -39,12 +39,12 @@ const FOOD_IMAGES = [
   { url: '/api/destination-photo?name=Dal+Makhani&type=food&redirect=true', label: 'Dal Makhani', tag: 'Comfort' },
   { url: '/api/destination-photo?name=Palak+Paneer&type=food&redirect=true', label: 'Palak Paneer', tag: 'Healthy' },
   { url: '/api/destination-photo?name=Malai+Kofta&type=food&redirect=true', label: 'Malai Kofta', tag: 'Gourmet' },
-  { url: '/api/destination-photo?name=Gulab+Jamun&type=food&redirect=true', label: 'Gulab Jamun', tag: 'Dessert' },
+  { url: '/api/destination-photo?name=Rajma+Chawal&type=food&redirect=true', label: 'Rajma Chawal', tag: 'Comfort' },
   { url: '/api/destination-photo?name=Jalebi&type=food&redirect=true', label: 'Jalebi', tag: 'Sweet' },
   { url: '/api/destination-photo?name=Thali&type=food&redirect=true', label: 'Thali', tag: 'Feast' },
   { url: '/api/destination-photo?name=Rogan+Josh&type=food&redirect=true', label: 'Rogan Josh', tag: 'Kashmiri' },
   { url: '/api/destination-photo?name=Tandoori+Chicken&type=food&redirect=true', label: 'Tandoori Chicken', tag: 'Grilled' },
-  { url: '/api/destination-photo?name=Lassi&type=food&redirect=true', label: 'Lassi', tag: 'Beverage' },
+  { url: '/api/destination-photo?name=Pani+Puri&type=food&redirect=true', label: 'Pani Puri', tag: 'Street Food' },
 ];
 
 const HOTELS_IMAGES = [
