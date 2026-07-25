@@ -5,6 +5,8 @@ import { isAdminEmail } from '@/lib/admin';
 
 const PYTHON_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002/api';
 
+export const maxDuration = 60; // Allow Vercel to run up to 60s for slow AI responses
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
