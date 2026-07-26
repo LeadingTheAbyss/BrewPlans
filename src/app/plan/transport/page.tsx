@@ -259,7 +259,7 @@ export default function TransportPage() {
     }
     
     const destination = trip.destination || 'Unknown';
-    const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
+    const key = `${pax.id}-${pax.city}-${destination}-${type}-v7`;
     const isActive = activeTabs[pax.id] === type;
 
     // Toggle tab
@@ -507,7 +507,7 @@ export default function TransportPage() {
                       <div id="tutorial-transport-options" className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto no-scrollbar items-center gap-2.5 pb-2">
                         {['flight', 'train', 'bus', 'cab'].map((type) => {
                           const destination = trip.destination || 'Unknown';
-                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
+                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v7`;
                           const isFetched = cachedData[key] !== undefined;
                           const task = fetchQueue.tasks.find(t => t.id === key);
                           const isLoading = task?.status === 'loading';
@@ -518,7 +518,9 @@ export default function TransportPage() {
                           
                           const currentActive = activeTabs[pax.id] ?? '';
                           const isActive = currentActive === type && (isFetched ? typeOptionsRaw.length > 0 : true);
-                          const isDisabled = isFetched && typeOptionsRaw.length === 0;
+                          const hasError = task?.status === 'error';
+                          // Only permanently disable if we got real data back and it was truly empty
+                          const isDisabled = isFetched && typeOptionsRaw.length === 0 && !hasError;
 
                           const typeColors: Record<string, string> = {
                             flight: 'text-blue-500 bg-blue-500/10 border-blue-500/30 data-[active=true]:bg-blue-500/20 data-[active=true]:border-blue-500',
@@ -547,7 +549,7 @@ export default function TransportPage() {
                               <span className={`text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap truncate w-full text-center ${
                                 isLoading ? 'text-primary animate-pulse' : isDisabled ? 'text-muted-foreground/40' : isActive ? 'opacity-80' : 'text-muted-foreground'
                               }`}>
-                                {isLoading ? '⟳ Loading...' : (!isFetched ? 'Tap to search' : (typeOptionsRaw.length === 0 ? 'Not available' : `${typeOptionsRaw.length} options`))}
+                                {isLoading ? '⟳ Loading...' : (!isFetched || hasError ? 'Tap to search' : (typeOptionsRaw.length === 0 ? 'Not available' : `${typeOptionsRaw.length} options`))}
                               </span>
                             </button>
                           );
@@ -559,7 +561,7 @@ export default function TransportPage() {
                         <AnimatePresence mode="wait">
                           {['flight', 'train', 'bus', 'cab'].map((type) => {
                             const destination = trip.destination || 'Unknown';
-                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v6`;
+                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v7`;
                             const isFetched = cachedData[key] !== undefined;
                             const task = fetchQueue.tasks.find(t => t.id === key);
                             const isLoading = task?.status === 'loading';

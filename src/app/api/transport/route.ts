@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const source = searchParams.get('source');
     const destination = searchParams.get('destination');
     const mode = searchParams.get('mode') || 'all';
+    const checkOnly = searchParams.get('check_only') === 'true';
 
     if (!source || !destination) {
       return NextResponse.json({ error: 'Source and destination are required' }, { status: 400 });
@@ -130,7 +131,7 @@ export async function GET(req: Request) {
     }
 
     // 3. Proxy to Python Backend
-    const response = await fetch(`${PYTHON_API_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}`, {
+    const response = await fetch(`${PYTHON_API_URL}/transport?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&mode=${mode}&check_only=${checkOnly}`, {
       cache: 'no-store'
     });
     

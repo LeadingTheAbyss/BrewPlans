@@ -66,25 +66,34 @@ export function BackgroundFetcher() {
         }
 
         // Evaluate result
-        if (!result) {
+        if (!result || result.error) {
           queue.updateTaskStatus(nextTask.id, 'error');
-        } else if (Array.isArray(result) || (result && !result.status)) {
-          // Success! (Got data)
-          queue.updateTaskStatus(nextTask.id, 'completed', result);
-          
-          // Inject straight into the cacheStore so it's instantly available to UI
-          let cacheKey: string = nextTask.category;
-          if (nextTask.category === 'transport' && nextTask.paxId && nextTask.subType) {
-            const pax = trip.passengers.find(p => p.id === nextTask.paxId);
-            const paxCity = pax?.city || 'Unknown';
-            const dest = trip.destination || 'Unknown';
-            cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v6`;
-          }
-            
-          cache.setCache(cacheKey, result);
         } else if (result.status === 'cache_miss') {
           // It was a background check, and it's not cached in DB
           queue.updateTaskStatus(nextTask.id, 'cache_miss');
+        } else if (Array.isArray(result) || (result && !result.status)) {
+          // Got a response — check if it has actual data
+          const hasData = Array.isArray(result)
+            ? result.length > 0
+            : (result.options && result.options.length > 0);
+
+          if (!hasData) {
+            // Empty result — treat as error so user can retry, not permanently disabled
+            queue.updateTaskStatus(nextTask.id, 'error');
+          } else {
+            // Success! (Got real data) — inject into cacheStore
+            queue.updateTaskStatus(nextTask.id, 'completed', result);
+            
+            let cacheKey: string = nextTask.category;
+            if (nextTask.category === 'transport' && nextTask.paxId && nextTask.subType) {
+              const pax = trip.passengers.find(p => p.id === nextTask.paxId);
+              const paxCity = pax?.city || 'Unknown';
+              const dest = trip.destination || 'Unknown';
+              cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v7`;
+            }
+              
+            cache.setCache(cacheKey, result);
+          }
         } else {
           queue.updateTaskStatus(nextTask.id, 'error');
         }

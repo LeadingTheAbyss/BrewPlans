@@ -43,6 +43,7 @@ def get_parse_api_key():
     _parse_usage_count += 1
     return available_keys[_current_parse_index]
 
+
 async def fetch_redbus_api(origin: str, destination: str, travel_date: str, check_only: bool = False) -> List[dict]:
     """Strategy 1: Live redBus API via parse.bot"""
     logging.info("Attempting Strategy 1: Live redBus API via parse.bot")
@@ -58,7 +59,10 @@ async def fetch_redbus_api(origin: str, destination: str, travel_date: str, chec
             
             valid_buses = []
             seen_buses = set()
-            
+    except Exception as e:
+        logging.warning(f"DB lookup failed: {e}")
+    return []
+
 from services.heuristic_pricing import calculate_heuristic_bus_fare
 import urllib.parse
 import math
@@ -174,7 +178,7 @@ async def get_live_bus_data(origin: str, destination: str, travel_date: str, che
     for scrape_strategy in strategies:
         try:
             # Attempt to extract the 4 required fields
-                bus_listings = await scrape_strategy(origin, destination, travel_date)
+            bus_listings = await scrape_strategy(origin, destination, travel_date)
             
             if bus_listings is None and check_only:
                 return {"status": "cache_miss"}

@@ -30,6 +30,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    import traceback
+    tb = traceback.format_exc()
+    print(f"[UNHANDLED ERROR] {exc}\n{tb}", flush=True)
+    return JSONResponse(status_code=500, content={"error": str(exc), "traceback": tb})
+
 # Collaboration Websocket Manager
 class ConnectionManager:
     def __init__(self):

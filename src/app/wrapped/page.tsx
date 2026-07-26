@@ -9,6 +9,11 @@ const LeafletMap = dynamic(() => import('@/components/LeafletMap'), {
   loading: () => <div className="absolute inset-0 bg-transparent animate-pulse" />
 });
 
+const AnimatedJourneyMap = dynamic(() => import('@/components/AnimatedJourneyMap'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-transparent animate-pulse" />
+});
+
 const CITY_COORDS: Record<string, {lat: number, lng: number}> = {
   "Jaipur": {lat: 26.9124, lng: 75.7873},
   "Udaipur": {lat: 24.5854, lng: 73.7125},
@@ -32,13 +37,54 @@ const CITY_COORDS: Record<string, {lat: number, lng: number}> = {
   "Srinagar": {lat: 34.0837, lng: 74.7973},
   "Darjeeling": {lat: 27.0410, lng: 88.2663},
   "Ooty": {lat: 11.4100, lng: 76.6950},
-  "Shimla": {lat: 31.1048, lng: 77.1734}
+  "Shimla": {lat: 31.1048, lng: 77.1734},
+  "Lucknow": {lat: 26.8467, lng: 80.9462},
+  "New Delhi": {lat: 28.6139, lng: 77.2090},
+  "Chandigarh": {lat: 30.7333, lng: 76.7794},
+  "Amritsar": {lat: 31.6340, lng: 74.8723},
+  "Mysore": {lat: 12.2958, lng: 76.6394},
+  "Guwahati": {lat: 26.1445, lng: 91.7362}
 };
+
+function AnimatedNumber({ value, active, duration = 1500 }: { value: number, active: boolean, duration?: number }) {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setCurrent(0);
+      return;
+    }
+
+    let startTime = performance.now();
+    
+    const animate = (time: number) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // easeOutExpo for a cool fast-to-slow rolling effect
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      
+      const nextValue = Math.floor(easeProgress * value);
+      setCurrent(nextValue);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCurrent(value);
+      }
+    };
+    
+    const raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [value, active, duration]);
+
+  return <>{current.toLocaleString()}</>;
+}
 
 function WrappedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const total = 8;
+  const total = 7;
   const [current, setCurrent] = useState(1);
   const [showToast, setShowToast] = useState(false);
   
@@ -98,7 +144,7 @@ function WrappedContent() {
           const dest = t.destination || t.snapshot?.city || 'Unknown';
           cityMap[dest] = (cityMap[dest] || 0) + 1;
 
-          // Foods
+          // Places & Foods (All Itinerary Items)
           if (t.snapshot?.selectedFood) {
              t.snapshot.selectedFood.forEach((f: any) => {
                const fname = typeof f === 'string' ? f : f.name || 'Food';
@@ -106,13 +152,28 @@ function WrappedContent() {
                totalFoodStops++;
              });
           }
+          if (t.snapshot?.selectedPlaces) {
+             t.snapshot.selectedPlaces.forEach((p: any) => {
+               const pname = typeof p === 'string' ? p : p.name || 'Place';
+               foodMap[pname] = (foodMap[pname] || 0) + 1;
+               totalFoodStops++;
+             });
+          }
           if (t.snapshot?.stops) {
              t.snapshot.stops.forEach((s: any) => {
-               if (s.category === 'FOOD') {
-                 const sname = s.name || 'Food Stop';
+                 const sname = s.name || 'Stop';
                  foodMap[sname] = (foodMap[sname] || 0) + 1;
                  totalFoodStops++;
-               }
+             });
+          }
+          if (t.snapshot?.itinerary) {
+             t.snapshot.itinerary.forEach((day: any) => {
+               const acts = day.activities || day.places || day.spots || [];
+               acts.forEach((act: any) => {
+                 const actname = typeof act === 'string' ? act : (act.name || act.title || 'Activity');
+                 foodMap[actname] = (foodMap[actname] || 0) + 1;
+                 totalFoodStops++;
+               });
              });
           }
 
@@ -150,26 +211,49 @@ function WrappedContent() {
         // Generate sequential map routes
         const coords: any[] = [];
         const routes: any[] = [];
-        let validCities = sortedCities.filter(c => CITY_COORDS[c]);
         
-        validCities.forEach((city, index) => {
-          const coord = CITY_COORDS[city];
-          const node = { id: `city-${city}`, lat: coord.lat, lng: coord.lng, type: 'destination', name: city };
-          coords.push(node);
-          
-          if (index > 0) {
-            routes.push({
-              id: `route-${validCities[index-1]}-${city}`,
-              start: coords[index - 1],
-              end: node
-            });
+        // Asynchronously fetch coords
+        (async () => {
+          const newCoords = { ...CITY_COORDS };
+          for (const city of sortedCities) {
+            const match = Object.keys(newCoords).find(k => k.toLowerCase() === city.toLowerCase());
+            if (!match) {
+              try {
+                // Free geocoding fallback for missing cities
+                const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
+                const geoData = await geo.json();
+                if (geoData && geoData[0]) {
+                  newCoords[city] = { lat: parseFloat(geoData[0].lat), lng: parseFloat(geoData[0].lon) };
+                }
+              } catch(e) {}
+            }
           }
-        });
-        
-        setMapCoords(coords);
-        setMapRoutes(routes);
 
-        setLoading(false);
+          let validCities = sortedCities.filter(c => {
+            return Object.keys(newCoords).some(k => k.toLowerCase() === c.toLowerCase());
+          });
+          
+          validCities.forEach((city, index) => {
+            const match = Object.keys(newCoords).find(k => k.toLowerCase() === city.toLowerCase());
+            if (match) {
+              const coord = newCoords[match];
+              const node = { id: `city-${city}`, lat: coord.lat, lng: coord.lng, type: 'destination', name: city };
+              coords.push(node);
+              
+              if (index > 0) {
+                routes.push({
+                  id: `route-${validCities[index-1]}-${city}`,
+                  start: coords[index - 1],
+                  end: node
+                });
+              }
+            }
+          });
+          
+          setMapCoords(coords);
+          setMapRoutes(routes);
+          setLoading(false);
+        })();
       })
       .catch((err) => {
         console.error(err);
@@ -252,34 +336,24 @@ function WrappedContent() {
         }
         .hint b{color:rgba(247,243,236,0.6); font-weight:600;}
 
-        /* phone frame */
+        /* story container */
         .phone{
           position:relative;
-          width:390px;
-          height:844px;
-          max-height:92vh;
-          aspect-ratio:390/844;
-          border-radius:44px;
-          padding:12px;
-          background:linear-gradient(155deg,#1c2350,#05061a 60%);
-          box-shadow:
-            0 0 0 1px rgba(255,255,255,0.06),
-            0 40px 90px -20px rgba(0,0,0,0.75),
-            0 0 120px -30px rgba(245,185,66,0.15);
-        }
-        .notch{
-          position:absolute;
-          top:12px; left:50%; transform:translateX(-50%);
-          width:110px; height:26px;
+          width:100%;
+          max-width:440px;
+          height:85vh;
+          max-height:850px;
+          border-radius:24px;
           background:#05061A;
-          border-radius:0 0 16px 16px;
-          z-index:50;
+          box-shadow:
+            0 0 0 1px rgba(255,255,255,0.08),
+            0 40px 90px -20px rgba(0,0,0,0.8),
+            0 0 120px -30px rgba(245,185,66,0.1);
+          overflow:hidden;
         }
         .screen-frame{
           position:relative;
           width:100%; height:100%;
-          border-radius:34px;
-          overflow:hidden;
           background:var(--ink);
           isolation:isolate;
         }
@@ -606,9 +680,8 @@ function WrappedContent() {
           &larr; Back
         </button>
 
-        <div className="stage">
+        <div className="stage w-full px-4">
           <div className="phone">
-            <div className="notch"></div>
             <div className="screen-frame">
               <div className="ambient">
                 <div className="blob b1"></div><div className="blob b2"></div><div className="blob b3"></div>
@@ -639,23 +712,26 @@ function WrappedContent() {
                 </div>
 
                 {/* 2 EXPLORER */}
-                <div className={`screen ${current === 2 ? 'active' : ''}`} id="s2">
+                <div className={`screen flex flex-col ${current === 2 ? 'active' : ''}`} id="s2" style={{paddingBottom:'24px'}}>
                   <div className="eyebrow">Terminal 01 &middot; Destinations</div>
                   <div className="statnum" data-count={cities.length === 1 && cities[0] === 'No trips yet' ? 0 : cities.length}>{cities.length === 1 && cities[0] === 'No trips yet' ? 0 : cities.length}</div>
                   <div className="statunit">cities explored</div>
                   <div className="accentline" style={{background:'var(--gold)'}}></div>
-                  <div className="subcopy" style={{marginTop:'20px'}}>You didn't just travel. You collected stamps.</div>
-                  <div className="chiprow" id="citychips">
-                    {cities.map((c, i) => (
-                      <div key={i} className="citychip" style={{animationDelay: `${0.15 + i*0.05}s`}}>{c}</div>
-                    ))}
+                  <div className="mapwrap" style={{marginTop:'24px'}}>
+                    {mapCoords.length > 0 ? (
+                      <div className="absolute inset-0 z-0">
+                        {current === 2 && <AnimatedJourneyMap coords={mapCoords} isActive={true} />}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-white/50 text-sm font-mono bg-[#0A0E27]">No route data available</div>
+                    )}
                   </div>
                 </div>
 
                 {/* 3 DISTANCE */}
                 <div className={`screen ${current === 3 ? 'active' : ''}`} id="s3">
                   <div className="eyebrow" style={{color:'var(--mint)'}}>Terminal 02 &middot; Distance</div>
-                  <div className="statnum" data-count={distance}>{distance.toLocaleString()}</div>
+                  <div className="statnum" data-count={distance}><AnimatedNumber value={distance} active={current === 3} /></div>
                   <div className="statunit">kilometers covered</div>
                   <div className="accentline" style={{background:'var(--mint)'}}></div>
                   <div className="routeviz">
@@ -674,7 +750,7 @@ function WrappedContent() {
                 {/* 4 TRIPS */}
                 <div className={`screen ${current === 4 ? 'active' : ''}`} id="s4">
                   <div className="eyebrow">Terminal 03 &middot; Trips</div>
-                  <div className="statnum" data-count={tripsCount}>{tripsCount}</div>
+                  <div className="statnum" data-count={tripsCount}><AnimatedNumber value={tripsCount} active={current === 4} /></div>
                   <div className="statunit">trips planned</div>
                   <div className="accentline" style={{background:'var(--gold)'}}></div>
                   <div className="subcopy" style={{marginTop:'20px'}}>{tripsCount} times you said "let's just go" &mdash; and actually went.</div>
@@ -684,13 +760,13 @@ function WrappedContent() {
                   <div className="ticket-tag">&#10003; The world is yours</div>
                 </div>
 
-                {/* 5 FOODIE */}
+                {/* 5 EXPLORATIONS */}
                 <div className={`screen ${current === 5 ? 'active' : ''}`} id="s5">
-                  <div className="eyebrow" style={{color:'var(--pink)'}}>Terminal 04 &middot; Food Stops</div>
-                  <div className="statnum" data-count={foodStopsCount}>{foodStopsCount}</div>
-                  <div className="statunit">restaurants &amp; food stops</div>
+                  <div className="eyebrow" style={{color:'var(--pink)'}}>Terminal 04 &middot; Explorations</div>
+                  <div className="statnum" data-count={foodStopsCount}><AnimatedNumber value={foodStopsCount} active={current === 5} /></div>
+                  <div className="statunit">places &amp; restaurants visited</div>
                   <div className="accentline" style={{background:'var(--pink)'}}></div>
-                  <div className="subcopy" style={{marginTop:'20px'}}>Certified plate-cleaner. Here's what you kept ordering.</div>
+                  <div className="subcopy" style={{marginTop:'20px'}}>You explored far and wide. Here are the spots that defined your trips.</div>
                   <div className="tagcloud" id="foodtags">
                     {foods.map((f, i) => (
                       <div key={i} className="foodtag" style={{animationDelay: `${0.15 + i*0.05}s`}}>{f}</div>
@@ -698,27 +774,19 @@ function WrappedContent() {
                   </div>
                 </div>
 
-                {/* 6 MAP */}
-                <div className={`screen ${current === 6 ? 'active' : ''}`} id="s6" style={{paddingBottom:'24px'}}>
-                  <div className="eyebrow">Terminal 05 &middot; Footprint</div>
-                  <div className="display" style={{fontSize:'24px'}}>Your route across India</div>
-                  <div className="mapwrap">
-                    {mapCoords.length > 0 ? (
-                      <div className="absolute inset-0 z-0">
-                        <LeafletMap coords={mapCoords} routes={mapRoutes} />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-white/50 text-sm font-mono">No route data available</div>
-                    )}
-                  </div>
-                  <div className="subcopy" style={{marginTop:'0'}}>You covered more of the map than most people's bucket lists.</div>
-                </div>
-
-                {/* 7 SOCIAL */}
-                <div className={`screen ${current === 7 ? 'active' : ''}`} id="s7">
-                  <div className="eyebrow" style={{color:'var(--pink)'}}>Terminal 06 &middot; Travel Squad</div>
+                {/* 6 SOCIAL */}
+                <div 
+                  className={`screen ${current === 6 ? 'active' : ''}`} 
+                  id="s6"
+                  style={{
+                    backgroundImage: 'linear-gradient(to bottom, rgba(5,6,26,0.7), rgba(5,6,26,0.95)), url(/wrapped_friends.png)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                >
+                  <div className="eyebrow" style={{color:'var(--pink)'}}>Terminal 05 &middot; Travel Squad</div>
                   <div className="buddy-count-row">
-                    <div className="statnum" style={{fontSize:'64px'}} data-count={buddiesCount}>{buddiesCount}</div>
+                    <div className="statnum" style={{fontSize:'64px'}} data-count={buddiesCount}><AnimatedNumber value={buddiesCount} active={current === 6} /></div>
                     <div className="statunit" style={{marginTop:'0'}}>travel buddies in this period</div>
                   </div>
                   <div className="reveal-card">
@@ -732,7 +800,7 @@ function WrappedContent() {
                       <div key={i} className="buddy-bar-row">
                         <div className="bname">{b[0]}</div>
                         <div className="buddy-bar-track">
-                          <div className="buddy-bar-fill" style={{width: current === 7 ? `${((b[1] as number)/4)*100}%` : '0%', transitionDelay: `${150 + i*100}ms`}}></div>
+                          <div className="buddy-bar-fill" style={{width: current === 6 ? `${((b[1] as number)/4)*100}%` : '0%', transitionDelay: `${150 + i*100}ms`}}></div>
                         </div>
                         <div className="bnum">{b[1]}</div>
                       </div>
@@ -740,8 +808,8 @@ function WrappedContent() {
                   </div>
                 </div>
 
-                {/* 8 SUMMARY */}
-                <div className={`screen ${current === 8 ? 'active' : ''}`} id="s8">
+                {/* 7 SUMMARY */}
+                <div className={`screen ${current === 7 ? 'active' : ''}`} id="s7">
                   <div className="ticket">
                     <div className="ticket-top">
                       <div className="tlogo">PLAN<span>BRO</span></div>
@@ -752,7 +820,7 @@ function WrappedContent() {
                       <div className="ticket-stat"><div className="k">Destinations</div><div className="v gold">{cities.length === 1 && cities[0] === 'No trips yet' ? 0 : cities.length}</div></div>
                       <div className="ticket-stat"><div className="k">Distance</div><div className="v mint">{distance.toLocaleString()} km</div></div>
                       <div className="ticket-stat"><div className="k">Trips</div><div className="v">{tripsCount}</div></div>
-                      <div className="ticket-stat"><div className="k">Food stops</div><div className="v pink">{foodStopsCount}</div></div>
+                      <div className="ticket-stat"><div className="k">Explorations</div><div className="v pink">{foodStopsCount}</div></div>
                       <div className="ticket-stat"><div className="k">Travel buddies</div><div className="v">{buddiesCount}</div></div>
                       <div className="ticket-stat"><div className="k">Top buddy</div><div className="v gold">{topBuddy}</div></div>
                     </div>

@@ -20,7 +20,7 @@ export const api = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching transport options:', error);
-      return [];
+      return { error: 'Failed to fetch transport options' } as any;
     }
   },
 
@@ -36,7 +36,7 @@ export const api = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching places:', error);
-      return [];
+      return { error: 'Failed to fetch places' } as any;
     }
   },
 
@@ -52,7 +52,7 @@ export const api = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching food:', error);
-      return [];
+      return { error: 'Failed to fetch food' } as any;
     }
   },
 
@@ -68,7 +68,7 @@ export const api = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching hotels:', error);
-      return [];
+      return { error: 'Failed to fetch hotels' } as any;
     }
   },
 
