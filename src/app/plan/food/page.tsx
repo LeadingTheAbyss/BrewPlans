@@ -42,6 +42,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const { activeTheme } = useDestinationTheme();
 
   useEffect(() => {
     if (activeTab === 'Reviews' && reviews.length === 0) {
@@ -125,7 +126,7 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
         onClick={onClose}
       >
         <div
-          className={`sm:rounded-3xl overflow-hidden w-full h-full sm:h-auto max-w-lg shadow-2xl relative flex flex-col sm:max-h-[90vh] ${isSelected ? 'border border-blue-500' : activeTheme.card} ${activeTheme.text}`}
+          className={`sm:rounded-3xl overflow-hidden w-full h-full sm:h-auto max-w-lg shadow-2xl relative flex flex-col sm:max-h-[90vh] text-white ${isSelected ? 'border border-blue-500' : 'bg-zinc-900'}`}
           onClick={e => e.stopPropagation()}
         >
         {/* Close Button */}

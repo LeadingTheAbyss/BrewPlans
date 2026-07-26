@@ -301,7 +301,7 @@ export function getImageUrlForCity(cityName: string, fallbackThemeImageUrl: stri
   return `/api/theme-wiki-image?q=${encodeURIComponent(query)}`;
 }
 
-export const THEME_STYLES: Record<string, { card: string, text: string, imageUrl: string }> = {
+export const THEME_STYLES: Record<string, { card: string, text: string, imageUrl: string, bg?: string, glowColor?: string }> = {
   default: {
     card: 'bg-zinc-50/90 dark:bg-zinc-900/90',
     text: 'text-zinc-900 dark:text-zinc-100',

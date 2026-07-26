@@ -378,14 +378,14 @@ export default function ReviewPage() {
                     >
                       <button 
                         onClick={() => handleUniversalLink(false)}
-                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full"
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-zinc-200 text-left font-medium w-full"
                       >
                         <LinkIcon size={16} className="text-emerald-500 shrink-0" />
                         Copy View Link
                       </button>
                       <button 
                         onClick={() => handleUniversalLink(true)}
-                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full"
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-zinc-200 text-left font-medium w-full"
                       >
                         <LinkIcon size={16} className="text-purple-500 shrink-0" />
                         Copy Edit Link
@@ -393,7 +393,7 @@ export default function ReviewPage() {
                       <button 
                         onClick={handleDownloadPdf}
                         disabled={isGeneratingPdf}
-                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-left font-medium w-full disabled:opacity-50"
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-zinc-200 text-left font-medium w-full disabled:opacity-50"
                       >
                         <Download size={16} className="text-blue-500 shrink-0" />
                         <div className="flex flex-col items-start gap-1">
