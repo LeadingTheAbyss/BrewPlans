@@ -216,7 +216,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* API Limit Warning Notification */}
         {user && !user.isAdmin && user.apiCalls >= 40 && !isNotificationDismissed && (
-          <div className="absolute bottom-8 left-8 w-72 bg-[#111] border border-red-900/50 rounded-2xl shadow-2xl p-4 z-50">
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-[#111]/95 backdrop-blur-md border border-red-500/50 rounded-2xl shadow-[0_0_40px_rgba(220,38,38,0.15)] p-4 z-[9999] animate-in slide-in-from-top-4 fade-in">
             <button
               onClick={() => setIsNotificationDismissed(true)}
               className="absolute top-3 right-3 text-neutral-400 hover:text-white transition-colors"

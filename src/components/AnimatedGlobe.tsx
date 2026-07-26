@@ -103,7 +103,7 @@ export default function AnimatedGlobe({ passengers, destination, mode, routeMode
     };
     
     fetchCoords();
-  }, [passengers, destination, mode]);
+  }, [JSON.stringify(passengers), destination, mode, JSON.stringify(routeModes)]);
 
   if (!isClient) return <div className="absolute inset-0 bg-[#050505]" />;
 
