@@ -11,12 +11,14 @@ import { api } from '@/lib/api';
 import { ArrowRight, CheckCircle2, Circle, AlertCircle, MapPin, ShieldCheck, Star, Eye, Calendar, Bed, Maximize, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CinematicLoader } from '@/components/CinematicLoader';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
 
 export default function HotelsPage() {
   const router = useRouter();
   const trip = useTripStore();
   const budget = useBudgetStore();
   const itinerary = useItineraryStore();
+  const { activeTheme } = useDestinationTheme();
 
   const fetchQueue = useFetchQueue();
   const cache = useCacheStore();
@@ -123,12 +125,12 @@ export default function HotelsPage() {
           />
         </div>
       )}
-      <div className="min-h-screen bg-background pt-10 px-4 text-foreground transition-colors duration-300">
+      <div className={`min-h-screen bg-transparent pt-10 px-4 transition-colors duration-300 ${activeTheme.text}`}>
       <div className="max-w-4xl mx-auto space-y-12 pb-24">
         <div className="flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-bold mb-2">Hotel Selection</h1>
-            <p className="text-muted-foreground">
+            <p className="text-inherit opacity-70">
               Where will you stay for {nights} nights in {trip.destination || 'the destination'}?
             </p>
           </div>
@@ -150,19 +152,19 @@ export default function HotelsPage() {
             <div className="flex gap-2 text-sm">
               <button
                 onClick={() => setSortBy('best')}
-                className={`${sortBy === 'best' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
+                className={`${sortBy === 'best' ? 'bg-blue-600 text-white border-blue-600' : 'bg-current/10 text-inherit opacity-80 border-current/20 hover:bg-current/20 hover:opacity-100'} font-medium px-4 py-2 rounded-lg border transition-colors`}
               >
                 Best Overall
               </button>
               <button
                 onClick={() => setSortBy('closest')}
-                className={`${sortBy === 'closest' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
+                className={`${sortBy === 'closest' ? 'bg-blue-600 text-white border-blue-600' : 'bg-current/10 text-inherit opacity-80 border-current/20 hover:bg-current/20 hover:opacity-100'} font-medium px-4 py-2 rounded-lg border transition-colors`}
               >
                 Closest to Places
               </button>
               <button
                 onClick={() => setSortBy('budget')}
-                className={`${sortBy === 'budget' ? 'bg-primary/20 text-primary border-primary/50' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'} font-medium px-4 py-2 rounded-lg border transition-colors`}
+                className={`${sortBy === 'budget' ? 'bg-blue-600 text-white border-blue-600' : 'bg-current/10 text-inherit opacity-80 border-current/20 hover:bg-current/20 hover:opacity-100'} font-medium px-4 py-2 rounded-lg border transition-colors`}
               >
                 Budget
               </button>
@@ -200,10 +202,10 @@ export default function HotelsPage() {
                       key={hotel.id}
                       onClick={() => handleSelectHotel(hotel)}
                       className={`
-                        relative flex flex-col md:flex-row overflow-hidden rounded-2xl border cursor-pointer transition-all duration-300 shadow-sm
+                        relative flex flex-col md:flex-row overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 shadow-sm
                         ${isSelected
-                          ? 'border-primary bg-primary/5 shadow-[0_0_0_1px_currentColor] text-primary'
-                          : 'border-border/60 bg-card hover:border-foreground/20 hover:bg-muted/30'
+                          ? `${activeTheme.card} ${activeTheme.text} border-2 border-primary ring-4 ring-primary/20 shadow-2xl shadow-primary/20 scale-[1.02] z-10`
+                          : `border border-border/60 ${activeTheme.card} ${activeTheme.text} hover:opacity-90 hover:shadow-xl hover:border-foreground/20`
                         }
                       `}
                     >
@@ -245,16 +247,16 @@ export default function HotelsPage() {
                         <div>
                           <div className="flex justify-between items-start gap-4">
                             <div>
-                              <h3 className={`text-xl font-bold leading-tight mb-1 flex items-center gap-2 ${isSelected ? 'text-foreground' : 'text-foreground'}`}>
+                              <h3 className={`text-xl font-bold leading-tight mb-1 flex items-center gap-2 ${isSelected ? 'text-primary drop-shadow-sm' : 'text-inherit'}`}>
                                 {hotel.name}
-                                <span className="text-sm font-bold text-foreground inline-flex items-center gap-1">
+                                <span className="text-sm font-bold text-inherit inline-flex items-center gap-1">
                                   <Star size={15} className="fill-yellow-500 text-yellow-500" /> {hotel.rating}
                                 </span>
                               </h3>
                               
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
-                                  <MapPin size={14} className="text-foreground/50" />
+                                <div className="flex items-center gap-1.5 text-sm text-inherit opacity-70 font-medium">
+                                  <MapPin size={14} className="text-inherit opacity-50" />
                                   {itinerary.selectedPlaces.length > 0 
                                       ? `${hotel.distanceToCluster || 2.5} km from the places you wish to visit` 
                                       : 'No food spots or places selected yet'}
@@ -263,10 +265,10 @@ export default function HotelsPage() {
                             </div>
 
                             <div className="text-right shrink-0">
-                              <div className="text-2xl font-bold text-foreground tracking-tight mb-1">
+                              <div className="text-2xl font-bold text-inherit tracking-tight mb-1">
                                 ₹{totalCost.toLocaleString('en-IN')}
                               </div>
-                              <div className="text-xs font-medium text-muted-foreground">
+                              <div className="text-xs font-medium text-inherit opacity-70">
                                 ₹{hotel.pricePerNight.toLocaleString('en-IN')} / night
                               </div>
                             </div>
@@ -283,28 +285,28 @@ export default function HotelsPage() {
                         {/* Bottom Stats Row (Like StayDetailsCard) */}
                         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border/50">
                           <div>
-                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                            <div className="text-[11px] text-inherit opacity-70 mb-1 flex items-center gap-1.5">
                               <Calendar size={12}/> Duration
                             </div>
-                            <div className="text-sm font-semibold text-foreground">{nights} {nights === 1 ? 'Night' : 'Nights'}</div>
+                            <div className="text-sm font-semibold text-inherit">{nights} {nights === 1 ? 'Night' : 'Nights'}</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                            <div className="text-[11px] text-inherit opacity-70 mb-1 flex items-center gap-1.5">
                               <Bed size={12}/> Rooms
                             </div>
-                            <div className="text-sm font-semibold text-foreground">{rooms} {rooms === 1 ? 'Room' : 'Rooms'}</div>
+                            <div className="text-sm font-semibold text-inherit">{rooms} {rooms === 1 ? 'Room' : 'Rooms'}</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                            <div className="text-[11px] text-inherit opacity-70 mb-1 flex items-center gap-1.5">
                               <CheckCircle2 size={12}/> Comfort
                             </div>
-                            <div className="text-sm font-semibold text-foreground">{hotel.comfortScore}/10</div>
+                            <div className="text-sm font-semibold text-inherit">{hotel.comfortScore}/10</div>
                           </div>
                           <div>
-                            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                            <div className="text-[11px] text-inherit opacity-70 mb-1 flex items-center gap-1.5">
                               <ShieldCheck size={12}/> Safety
                             </div>
-                            <div className="text-sm font-semibold text-foreground">{hotel.safetyScore}/10</div>
+                            <div className="text-sm font-semibold text-inherit">{hotel.safetyScore}/10</div>
                           </div>
                         </div>
                       </div>
@@ -317,12 +319,12 @@ export default function HotelsPage() {
         )}
 
         {/* CONTINUATION */}
-        <div className="flex justify-between items-center pt-8 border-t border-border">
+        <div className="flex justify-between items-center pt-6 border-t border-current/10">
           <button
-            onClick={() => router.push('/plan/places')}
-            className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+            onClick={() => router.push('/plan/food')}
+            className="text-inherit opacity-70 hover:opacity-100 font-medium transition-opacity text-sm"
           >
-            ← Back to Places
+            ← Back to Food
           </button>
           <button
             onClick={() => router.push('/plan/itinerary')}

@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { SortablePlaceCard } from '@/components/itinerary/SortablePlaceCard';
 import TutorialOverlay from '@/components/TutorialOverlay';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
 
 // --- DROPPABLE LIST COMPONENT ---
 function DroppableList({ id, items, children, className }: { id: string, items: string[], children: React.ReactNode, className?: string }) {
@@ -57,6 +58,7 @@ export default function ItineraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const authUser = useAuthStore(state => state.user);
+  const { activeTheme } = useDestinationTheme();
   
   const myUser = React.useMemo(() => {
      const colors = ['#ef4444', '#10b981', '#a855f7', '#ec4899', '#f59e0b', '#3b82f6'];
@@ -440,7 +442,7 @@ export default function ItineraryPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-[#050505] text-white relative overflow-y-auto lg:overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full bg-transparent relative overflow-y-auto lg:overflow-hidden">
       {/* Ambient Deep Background */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-30">
         <div className="absolute top-[-10%] left-[30%] w-[40%] h-[40%] rounded-full bg-emerald-600/10 blur-[120px]"></div>
@@ -552,11 +554,11 @@ export default function ItineraryPage() {
         </div>
 
         {/* PANE 2: Center Canvas (Horizontal Board) */}
-        <div className="flex-1 flex flex-col z-10 relative min-w-0 min-h-[60vh] lg:min-h-0 bg-[#050505]">
+        <div className="flex-1 flex flex-col z-10 relative min-w-0 min-h-[60vh] lg:min-h-0 bg-transparent">
           {/* Toggle Left Sidebar */}
           <button 
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-50 border hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg ${activeTheme.card} ${activeTheme.text}`}
           >
             {isLeftSidebarOpen ? '<' : '>'}
           </button>
@@ -564,15 +566,15 @@ export default function ItineraryPage() {
           {/* Toggle Right Sidebar */}
           <button 
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-50 bg-[#1a1a1a] border border-[#333] hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg"
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-50 border hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg ${activeTheme.card} ${activeTheme.text}`}
           >
             {isRightSidebarOpen ? '>' : '<'}
           </button>
 
           {/* Top Overview / Minimap Bar */}
-          <div className="h-auto min-h-[64px] shrink-0 border-b border-[#1a1a1a] bg-[#0a0a0a]/80 backdrop-blur flex flex-col sm:flex-row sm:items-center px-4 lg:px-8 py-4 sm:py-0 justify-between z-20 gap-3">
+          <div className={`h-auto min-h-[64px] shrink-0 border-b flex flex-col sm:flex-row sm:items-center px-4 lg:px-8 py-4 sm:py-0 justify-between z-20 gap-3 ${activeTheme.card} ${activeTheme.text}`}>
             <div>
-              <p className="text-sm text-zinc-300 font-medium leading-relaxed tracking-wide">
+              <p className="text-sm font-medium leading-relaxed tracking-wide">
                 Drag places to a day, or <span className="text-emerald-400 font-bold">click on a place</span> to quickly assign it.
               </p>
             </div>
@@ -819,10 +821,10 @@ export default function ItineraryPage() {
         </div>
 
         {/* PANE 3: Right Summary (Trip Overview) */}
-        <div className={`transition-all duration-300 ease-in-out bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-l border-t lg:border-t-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl overflow-hidden ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
+        <div className={`transition-all duration-300 ease-in-out lg:border-l border-t lg:border-t-0 z-20 shrink-0 shadow-2xl overflow-hidden ${activeTheme.card} ${activeTheme.text} ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <div className="w-[300px] flex flex-col h-full">
-            <div className="px-6 py-8 border-b border-[#1a1a1a] shrink-0">
-            <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-300 mb-6">
+            <div className="px-6 py-8 border-b border-current/10 shrink-0">
+            <h3 className="text-sm font-bold tracking-widest uppercase text-inherit opacity-70 mb-6">
               Trip Overview
             </h3>
             
@@ -875,7 +877,7 @@ export default function ItineraryPage() {
               </div>
             </div>
           </div>
-          <div className="p-6 flex-1 flex flex-col gap-4 bg-gradient-to-b from-transparent to-[#050505]">
+          <div className="p-6 flex-1 flex flex-col gap-4 bg-transparent">
             <div className="flex-1"></div>
             
             <button

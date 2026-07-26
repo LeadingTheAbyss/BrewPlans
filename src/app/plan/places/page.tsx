@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { ImageOff } from 'lucide-react';
 import { CinematicLoader, preloadCinematicImages } from '@/components/CinematicLoader';
 import TutorialOverlay from '@/components/TutorialOverlay';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
 
 function getDefaultDuration(category?: string): number {
   if (!category) return 2.0;
@@ -133,7 +134,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
         onClick={onClose}
       >
         <div
-        className="bg-zinc-900 sm:rounded-3xl overflow-hidden w-full h-full sm:h-auto max-w-lg shadow-2xl relative flex flex-col sm:max-h-[90vh]"
+        className={`sm:rounded-3xl overflow-hidden w-full h-full sm:h-auto max-w-lg shadow-2xl relative flex flex-col sm:max-h-[90vh] ${isSelected ? 'border border-blue-500' : 'bg-zinc-900'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -349,6 +350,7 @@ export default function PlacesPage() {
   const trip = useTripStore();
   const budget = useBudgetStore();
   const itinerary = useItineraryStore();
+  const { activeTheme } = useDestinationTheme();
 
   const fetchQueue = useFetchQueue();
   const cache = useCacheStore();
@@ -405,18 +407,18 @@ export default function PlacesPage() {
   }, [places, activeCategory, sortBy]);
 
   return (
-    <div className="min-h-screen bg-background pt-10 px-4 text-foreground transition-colors duration-300">
+    <div className={`min-h-screen bg-transparent pt-10 px-4 transition-colors duration-300 ${activeTheme.text}`}>
       <div className="max-w-5xl mx-auto space-y-6 pb-24">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-1">Place Discovery</h1>
-            <p className="text-zinc-400 text-sm">
-              Explore top attractions in <span className="text-white font-medium">{trip.destination || 'your destination'}</span>
+            <p className="text-inherit opacity-70 text-sm">
+              Explore top attractions in <span className="text-inherit opacity-90 font-medium">{trip.destination || 'your destination'}</span>
             </p>
           </div>
-          <div className="text-sm font-semibold bg-blue-900/40 text-blue-300 px-4 py-2 rounded-full border border-blue-800/50 shrink-0">
+          <div className="text-sm font-semibold bg-blue-500/20 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full border border-blue-500/30 shrink-0">
             {itinerary.selectedPlaces.length} Selected
           </div>
         </div>
@@ -432,7 +434,7 @@ export default function PlacesPage() {
                 className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
                   activeCategory === cat
                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-900/40'
-                    : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50 hover:border-zinc-500 hover:text-zinc-200'
+                    : 'bg-current/10 text-inherit opacity-80 border-current/20 hover:bg-current/20 hover:opacity-100'
                 }`}
               >
                 {cat}
@@ -455,7 +457,7 @@ export default function PlacesPage() {
           <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500">
             <MapPin size={32} className="mx-auto mb-3 opacity-20" />
             <p className="font-medium">No places found</p>
-            <p className="text-sm mt-1">Try selecting a different category or go back and set a destination.</p>
+            <p className="text-inherit opacity-70 mt-1">Try selecting a different category or go back and set a destination.</p>
           </div>
         ) : (
           <div id="tutorial-places-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -465,10 +467,10 @@ export default function PlacesPage() {
                 <div
                   key={place.id}
                   onClick={() => setSelectedModalPlace(place)}
-                  className={`relative flex flex-col rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden group hover:-translate-y-1 bg-zinc-900 ${
+                  className={`relative flex flex-col rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden group hover:-translate-y-1 ${activeTheme.card} ${activeTheme.text} ${
                     isSelected
                       ? 'border-blue-500 shadow-lg shadow-blue-900/30'
-                      : 'border-zinc-800 hover:border-zinc-600 hover:shadow-xl hover:shadow-black/40'
+                      : 'hover:shadow-xl hover:shadow-black/40'
                   }`}
                 >
                   {/* Image */}
@@ -500,10 +502,10 @@ export default function PlacesPage() {
                   {/* Content */}
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex justify-between items-start gap-2 mb-2">
-                      <h3 className="text-base font-bold text-white leading-tight group-hover:text-blue-400 transition-colors">
+                      <h3 className="text-base font-bold text-inherit leading-tight group-hover:text-blue-500 transition-colors">
                         {place.name}
                       </h3>
-                      <span className={`text-sm font-bold shrink-0 ${place.entryFee === 0 ? 'text-emerald-400' : 'text-zinc-300'}`}>
+                      <span className={`text-sm font-bold shrink-0 ${place.entryFee === 0 ? 'text-emerald-500' : 'text-inherit opacity-70'}`}>
                         {place.entryFee === 0 ? 'Free' : `₹${place.entryFee} - ₹${Math.round(place.entryFee * 1.8)}`}
                       </span>
                     </div>
@@ -511,16 +513,16 @@ export default function PlacesPage() {
                     {/* Rating */}
                     <div className="flex items-center gap-1 mb-3">
                       <Star size={12} className="text-yellow-400" fill="currentColor" />
-                      <span className="text-xs font-semibold text-zinc-300">
+                      <span className="text-xs font-semibold text-inherit">
                         {place.rating ? place.rating.toFixed(1) : 'New'}
                       </span>
-                      <span className="text-zinc-500 text-xs mt-0.5">
+                      <span className="text-inherit opacity-60 text-xs mt-0.5">
                         {place.reviewsCount ? `(${place.reviewsCount.toLocaleString('en-IN')})` : ''}
                       </span>
                     </div>
 
                     {/* Duration */}
-                    <div className="flex items-center gap-1.5 text-zinc-500 text-xs mt-auto mb-3">
+                    <div className="flex items-center gap-1.5 text-inherit opacity-70 text-xs mt-auto mb-3">
                       <Clock size={12} />
                       <span>{place.visitDurationHours || getDefaultDuration(place.category)} hrs visit</span>
                     </div>
@@ -530,8 +532,8 @@ export default function PlacesPage() {
                       onClick={e => { e.stopPropagation(); handleTogglePlace(place); }}
                       className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                         isSelected
-                          ? 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                          : 'bg-transparent text-blue-400 border-blue-600/40 hover:bg-blue-600 hover:text-white hover:border-blue-600'
+                          ? 'bg-black/20 text-inherit border-current/20 hover:bg-black/30'
+                          : 'bg-transparent text-blue-600 dark:text-blue-400 border-blue-600/40 hover:bg-blue-600 hover:text-white hover:border-blue-600'
                       }`}
                     >
                       {isSelected ? 'Remove' : '+ Add to Plan'}
@@ -544,10 +546,10 @@ export default function PlacesPage() {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between items-center pt-6 border-t border-zinc-800">
+        <div className="flex justify-between items-center pt-6 border-t border-current/10">
           <button
             onClick={() => router.push('/plan/transport')}
-            className="text-zinc-400 hover:text-white font-medium transition-colors text-sm"
+            className="text-inherit opacity-70 hover:opacity-100 font-medium transition-opacity text-sm"
           >
             ← Back to Transport
           </button>

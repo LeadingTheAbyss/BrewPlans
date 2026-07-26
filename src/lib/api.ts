@@ -127,9 +127,15 @@ export const api = {
   
   searchCity: async (q: string) => {
     try {
-      const res = await fetch(`${BASE_URL}/search-city?q=${encodeURIComponent(q)}`);
+      const url = `${BASE_URL}/search-city?q=${encodeURIComponent(q)}`;
+      const cached = apiCache.get(url);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
+
+      const res = await fetch(url);
       if (!res.ok) return [];
-      return await res.json();
+      const data = await res.json();
+      if (data && data.length > 0) apiCache.set(url, { data, timestamp: Date.now() });
+      return data;
     } catch (e) {
       console.error("Failed to search city:", e);
       return [];

@@ -8,8 +8,18 @@ async function getUserId() {
     const cookieStore = await cookies();
     const token = cookieStore.get('brewplans_session')?.value;
     if (!token) return null;
+
+    // Check Redis cache first for session
+    const cacheKey = `session:${token}`;
+    const cachedUserId = await redis.get(cacheKey);
+    if (cachedUserId) return cachedUserId as string;
+
     const session = await prisma.session.findUnique({ where: { token } });
     if (!session || session.expiresAt < new Date()) return null;
+
+    // Cache the session in Redis for 1 hour to prevent DB bottleneck
+    await redis.set(cacheKey, session.userId, { ex: 3600 });
+
     return session.userId;
   } catch (e) {
     return null;
@@ -71,8 +81,10 @@ export async function POST(request: Request) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const scopedName = name.startsWith('shared-') ? name : `${userId}:${name}`;
+    const cacheKey = `appState:${scopedName}`;
 
-    const appState = await prisma.appState.upsert({
+    // Parallelize the database write and cache invalidation to shave off roundtrip time
+    const dbPromise = prisma.appState.upsert({
       where: { storeName: scopedName },
       update: { stateJson: value },
       create: {
@@ -80,10 +92,9 @@ export async function POST(request: Request) {
         stateJson: value,
       },
     });
+    const cachePromise = redis.del(cacheKey);
 
-    // Invalidate Redis Cache
-    const cacheKey = `appState:${scopedName}`;
-    await redis.del(cacheKey);
+    const [appState] = await Promise.all([dbPromise, cachePromise]);
 
     return NextResponse.json({ success: true, id: appState.id });
   } catch (error) {
@@ -105,14 +116,15 @@ export async function DELETE(request: Request) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const scopedName = name.startsWith('shared-') ? name : `${userId}:${name}`;
+    const cacheKey = `appState:${scopedName}`;
 
-    await prisma.appState.delete({
+    // Parallelize DB delete and Cache delete
+    const dbPromise = prisma.appState.delete({
       where: { storeName: scopedName },
     });
+    const cachePromise = redis.del(cacheKey);
 
-    // Invalidate Redis Cache
-    const cacheKey = `appState:${scopedName}`;
-    await redis.del(cacheKey);
+    await Promise.all([dbPromise, cachePromise]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -26,9 +26,11 @@ interface LeafletMapProps {
   coords: Coordinate[];
   routes: Route[];
   isMaximized?: boolean;
+  themeImageUrl?: string;
+  themeGlowColor?: string;
 }
 
-function RouteOverlay({ coords, routes }: LeafletMapProps) {
+function RouteOverlay({ coords, routes, themeImageUrl, themeGlowColor }: LeafletMapProps) {
   const map = useMap();
   const [nodes, setNodes] = useState<any[]>([]);
   const [paths, setPaths] = useState<any[]>([]);
@@ -133,6 +135,10 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
+
+          <clipPath id="avatarClip">
+            <circle r="40" />
+          </clipPath>
         </defs>
 
         {/* The Track */}
@@ -189,11 +195,23 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
         {nodes.map(node => (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
             {node.type === 'destination' ? (
-              <>
-                <circle className="dest-pulse" r="25" fill="none" stroke="url(#neonGradient)" strokeWidth="1.5" filter="url(#subtleGlow)" />
-                <circle className="dest-bloom" r="16" fill="url(#neonGradient)" opacity="0.4" filter="url(#hyperGlow)" />
-                <circle r="3.5" fill="#ffffff" filter="url(#subtleGlow)" />
-              </>
+              themeImageUrl ? (
+                <g className="transition-all duration-1000">
+                  {/* Outer Glow Ring */}
+                  <circle r="48" fill="none" stroke={themeGlowColor || "url(#neonGradient)"} strokeWidth="8" filter="url(#subtleGlow)" opacity="0.6" className="dest-pulse" />
+                  <circle r="44" fill="none" stroke="#ffffff" strokeWidth="4" filter="url(#hyperGlow)" opacity="0.8" />
+                  {/* Image Avatar */}
+                  <g clipPath="url(#avatarClip)">
+                     <image href={themeImageUrl} x="-40" y="-40" width="80" height="80" preserveAspectRatio="xMidYMid slice" />
+                  </g>
+                </g>
+              ) : (
+                <>
+                  <circle className="dest-pulse" r="25" fill="none" stroke="url(#neonGradient)" strokeWidth="1.5" filter="url(#subtleGlow)" />
+                  <circle className="dest-bloom" r="16" fill="url(#neonGradient)" opacity="0.4" filter="url(#hyperGlow)" />
+                  <circle r="3.5" fill="#ffffff" filter="url(#subtleGlow)" />
+                </>
+              )
             ) : (
               <>
                 <circle className="origin-bloom" r="10" fill="rgba(79, 172, 254, 0.2)" filter="url(#subtleGlow)" />
@@ -202,7 +220,7 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
             )}
             
             <text 
-              y={node.type === 'destination' ? 24 : 16}
+              y={node.type === 'destination' ? (themeImageUrl ? 60 : 24) : 16}
               className="text-label"
               textAnchor="middle"
             >
@@ -272,7 +290,7 @@ function RouteOverlay({ coords, routes }: LeafletMapProps) {
   );
 }
 
-export default function LeafletMap({ coords, routes, isMaximized = false }: LeafletMapProps) {
+export default function LeafletMap({ coords, routes, isMaximized = false, themeImageUrl, themeGlowColor }: LeafletMapProps) {
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050505]">
       {/* Explicitly load Leaflet CSS via CDN to prevent Next.js CSS import bugs from breaking tile layouts */}
@@ -301,7 +319,7 @@ export default function LeafletMap({ coords, routes, isMaximized = false }: Leaf
         
         {/* Removed cinematic dark filter to reveal bright 4K satellite colors */}
         
-        <RouteOverlay coords={coords} routes={routes} />
+        <RouteOverlay coords={coords} routes={routes} themeImageUrl={themeImageUrl} themeGlowColor={themeGlowColor} />
       </MapContainer>
     </div>
   );

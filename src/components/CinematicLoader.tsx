@@ -261,7 +261,7 @@ export function CinematicLoader({ isLoading, category, destination }: CinematicL
 
         .cinematic-loader-overlay {
           position: fixed;
-          inset: 0;
+          inset: -200px 0 -200px 0; /* Extended top and bottom to completely cover any layout gaps or scrolling artifacts */
           z-index: 9999;
           overflow: hidden;
           background: #050508;

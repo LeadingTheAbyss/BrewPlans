@@ -16,6 +16,7 @@ import MemberTravelCard from '@/components/review/MemberTravelCard';
 import StayDetailsCard from '@/components/review/StayDetailsCard';
 import DayCard from '@/components/review/DayCard';
 import VisualJourneyMap from '@/components/VisualJourneyMap';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function ReviewPage() {
   const trip = (isReadOnly ? sharedTripData.trip : globalTrip) as typeof globalTrip;
   const itinerary = (isReadOnly ? sharedTripData.itinerary : globalItinerary) as typeof globalItinerary;
   const budget = (isReadOnly ? sharedTripData.budget : globalBudget) as typeof globalBudget;
+  const { activeTheme } = useDestinationTheme();
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -311,7 +313,7 @@ export default function ReviewPage() {
   }, [trip.passengers, trip.selectedTransports, cache.cache.transportOptions]);
 
   return (
-    <div className="flex h-full w-full bg-[#050505] text-white overflow-hidden font-sans">
+    <div className={`flex h-full w-full bg-transparent overflow-hidden font-sans transition-colors duration-300 ${activeTheme.text}`}>
       
       {/* Main Content Area */}
       <div 
@@ -325,12 +327,12 @@ export default function ReviewPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Trip Review and Finances</h1>
-              <p className="text-sm text-zinc-400 mt-2">Review your trip details and settle up expenses</p>
+              <p className="text-sm mt-2 opacity-80">Review your trip details and settle up expenses</p>
             </div>
             
-            <div className="flex bg-[#111] border border-white/5 p-1 rounded-full items-center relative self-start md:self-end">
+            <div className={`flex border border-white/10 p-1 rounded-full items-center relative self-start md:self-end ${activeTheme.card} ${activeTheme.text}`}>
               <div 
-                className="absolute inset-y-1 bg-white/10 rounded-full transition-all duration-300 ease-out" 
+                className="absolute inset-y-1 bg-current/10 rounded-full transition-all duration-300 ease-out" 
                 style={{
                   width: 'calc(50% - 4px)',
                   left: viewMode === 'itinerary' ? '4px' : 'calc(50%)'
@@ -338,7 +340,7 @@ export default function ReviewPage() {
               />
               <button 
                 onClick={() => setViewMode('itinerary')}
-                className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'itinerary' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'itinerary' ? 'text-inherit opacity-100' : 'text-inherit opacity-50 hover:opacity-80'}`}
               >
                 View Itinerary
               </button>
@@ -346,7 +348,7 @@ export default function ReviewPage() {
               {!isReadOnly && (
                 <button 
                   onClick={() => setViewMode('ledger')}
-                  className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'ledger' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                  className={`relative px-6 py-2 rounded-full text-sm font-bold transition-colors z-10 w-40 text-center ${viewMode === 'ledger' ? 'text-inherit opacity-100' : 'text-inherit opacity-50 hover:opacity-80'}`}
                 >
                   Track Expenses
                 </button>
@@ -404,7 +406,7 @@ export default function ReviewPage() {
                 </AnimatePresence>
                 </div>
               )}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#222] bg-[#111] text-sm shrink-0">
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-sm shrink-0 ${activeTheme.card} ${activeTheme.text}`}>
                 <Users size={16} className="text-green-500" />
                 <span className="font-medium">{trip.passengers.length} Members</span>
               </div>
@@ -422,7 +424,7 @@ export default function ReviewPage() {
               >
                 {/* 1. Member Travel Details */}
           <section className="space-y-4">
-            <h2 className="text-sm font-bold tracking-widest uppercase text-green-500 flex items-center gap-2">
+            <h2 className="text-sm font-bold tracking-widest uppercase text-green-600 dark:text-green-500 flex items-center gap-2 w-fit bg-current/5 px-3 py-1.5 rounded-lg backdrop-blur-md border border-current/10">
               <Users size={16} /> 1. Member Travel Details
             </h2>
             
@@ -440,7 +442,7 @@ export default function ReviewPage() {
 
           {/* 2. Stay Details */}
           <section className="space-y-4">
-            <h2 className="text-sm font-bold tracking-widest uppercase text-green-500 flex items-center gap-2">
+            <h2 className="text-sm font-bold tracking-widest uppercase text-green-600 dark:text-green-500 flex items-center gap-2 w-fit bg-current/5 px-3 py-1.5 rounded-lg backdrop-blur-md border border-current/10">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/><path d="M10 9h.01"/><path d="M14 9h.01"/><path d="M10 13h.01"/><path d="M14 13h.01"/></svg>
               2. Stay Details
             </h2>
@@ -453,19 +455,19 @@ export default function ReviewPage() {
                 paxCount={trip.passengers.length}
               />
             ) : (
-              <div className="bg-[#111] border border-[#222] rounded-2xl p-6 text-center text-zinc-500 text-sm">
+              <div className={`border border-white/10 rounded-2xl p-6 text-center text-sm opacity-80 ${activeTheme.card} ${activeTheme.text}`}>
                 No hotel selected for this trip.
               </div>
             )}
           </section>
 
-          {/* 3. Itinerary Overview */}
+          {/* 3. Daily Breakdown */}
           <section className="space-y-4">
+            <h2 className="text-sm font-bold tracking-widest uppercase text-green-600 dark:text-green-500 flex items-center gap-2 w-fit bg-current/5 px-3 py-1.5 rounded-lg backdrop-blur-md border border-current/10">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+              3. Daily Breakdown
+            </h2>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold tracking-widest uppercase text-green-500 flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
-                3. Itinerary Overview
-              </h2>
               <button onClick={() => router.push('/plan/itinerary')} className="text-xs text-zinc-400 hover:text-white transition-colors">
                 View Full Itinerary →
               </button>
@@ -493,8 +495,8 @@ export default function ReviewPage() {
               })}
             </div>
             
-            <p className="text-xs text-zinc-500 flex items-center gap-1.5 mt-4">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <p className="text-xs text-inherit opacity-80 font-medium flex items-center gap-2 mt-4 bg-current/5 px-3 py-2 rounded-lg backdrop-blur-md border border-current/10 w-fit">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
               Each day's route includes places to visit, food stops and travel between locations.
             </p>
           </section>
@@ -521,10 +523,10 @@ export default function ReviewPage() {
           </AnimatePresence>
 
           {/* Bottom Actions */}
-          <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-[#222] gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-current/10 gap-4">
             <button 
               onClick={() => router.push('/plan/itinerary')}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors font-medium text-sm px-4 py-2 w-full sm:w-auto justify-center"
+              className="flex items-center gap-2 text-inherit opacity-80 hover:opacity-100 transition-colors font-bold text-sm px-5 py-2.5 w-full sm:w-auto justify-center bg-current/5 hover:bg-current/10 border border-current/10 rounded-xl backdrop-blur-md"
             >
               <ArrowLeft size={16} /> Go Back and Edit
             </button>

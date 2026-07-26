@@ -15,6 +15,9 @@ import { useFetchQueue } from '@/store/fetchQueueStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedGlobe from '@/components/AnimatedGlobe';
 import TutorialOverlay from '@/components/TutorialOverlay';
+import { UserAvatar } from '@/components/UserAvatar';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
+import ImagePrefetcher from '@/components/ImagePrefetcher';
 
 const TRIP_STYLES = [
   { id: 'family', label: 'Family' },
@@ -34,6 +37,9 @@ export default function TripSetupPage() {
   const [savedPassengers, setSavedPassengers] = useState<any[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [focusedPaxId, setFocusedPaxId] = useState<string | null>(null);
+
+  const { activeTheme, dynamicBg, currentTheme } = useDestinationTheme();
 
   const displayToast = (msg: string) => {
     setToastMessage(msg);
@@ -116,7 +122,7 @@ export default function TripSetupPage() {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 bg-background transition-colors duration-300 overflow-hidden" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className={`w-full h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 transition-all duration-1000 overflow-hidden`} style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -125,17 +131,18 @@ export default function TripSetupPage() {
       >
         
         {/* Main Configuration Body */}
-        <div className="w-[60%] sm:w-[50%] md:w-auto md:flex-1 lg:flex-[1.2] shrink-0 bg-card text-foreground p-3 sm:p-4 md:p-6 lg:p-12 relative border-r border-border transition-colors overflow-y-auto overflow-x-hidden">
-          
-          <div className="flex justify-between items-center mb-4 md:mb-10">
-            <h2 className="text-lg md:text-3xl font-light tracking-tight text-foreground">Trip Details</h2>
+        <div 
+          className={`w-[60%] sm:w-[50%] md:w-auto md:flex-1 lg:flex-[1.2] shrink-0 p-3 sm:p-4 md:p-6 lg:p-12 relative border-r transition-all duration-1000 overflow-y-auto overflow-x-hidden ${activeTheme.card} ${activeTheme.text}`}
+        >
+          <div className="flex justify-between items-center mb-4 md:mb-10 relative z-10">
+            <h2 className="text-lg md:text-3xl font-light tracking-tight">Trip Details</h2>
           </div>
 
-          <div className="space-y-6 md:space-y-10">
+          <div className="space-y-6 md:space-y-10 relative z-10">
             {/* Row 1: Destination & Dates */}
             <div className="grid grid-cols-2 gap-2 md:gap-8">
               <div id="tutorial-step-destination" className="space-y-1.5 sm:space-y-3 min-w-0 rounded-lg">
-                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Destination</label>
+                <label className={`block text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-inherit opacity-70`}>Destination</label>
                 <div className="relative text-white z-50">
                   <CityAutocomplete 
                     label="" 
@@ -162,7 +169,7 @@ export default function TripSetupPage() {
               </div>
 
               <div id="tutorial-step-dates" className="space-y-1.5 sm:space-y-3 min-w-0 rounded-lg">
-                <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Dates</label>
+                <label className={`block text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-inherit opacity-70`}>Dates</label>
                 <div className="relative text-white z-40">
                   <ModernDateRangePicker 
                     label=""
@@ -181,53 +188,54 @@ export default function TripSetupPage() {
             </div>
 
             {/* Row 2: Budget */}
-            <div id="tutorial-step-budget" className="space-y-1.5 sm:space-y-3 rounded-lg">
-              <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Total Budget (INR)</label>
-              <div className="flex items-center gap-3 border-b border-border pb-2 hover:border-primary/50 transition-colors">
-                <span className="text-xl font-medium text-muted-foreground">₹</span>
+            <div id="tutorial-step-budget" className="space-y-1.5 sm:space-y-3 pt-2 sm:pt-4">
+              <label className={`block text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-inherit opacity-70`}>Total Budget (INR)</label>
+              <div className="relative">
+                <span className={`absolute left-0 top-1/2 -translate-y-1/2 text-xl sm:text-2xl font-light ${activeTheme.text}`}>₹</span>
                 <input 
-                  type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100000"
+                  type="number"
+                  min="0"
                   value={budget.totalBudget || ''}
-                  onChange={(e) => {
-                    const cleanStr = e.target.value.replace(/\D/g, '');
-                    if (!cleanStr) {
-                      budget.setTotalBudget(0);
-                    } else {
-                      const val = parseInt(cleanStr, 10);
-                      budget.setTotalBudget(isNaN(val) ? 0 : val);
-                    }
-                  }}
-                  className="w-full bg-transparent border-none focus:outline-none text-lg font-medium text-foreground placeholder:text-muted-foreground/50"
+                  onChange={(e) => budget.setTotalBudget(Math.max(0, Number(e.target.value)))}
+                  placeholder="100000"
+                  className={`w-full bg-transparent text-xl sm:text-3xl font-light pl-6 sm:pl-8 py-2 focus:outline-none placeholder:opacity-50 border-b-2 transition-colors ${activeTheme.text} border-current focus:border-primary/50 ${currentTheme !== 'default' ? 'placeholder:text-current' : 'placeholder:text-muted-foreground/50'}`}
                 />
               </div>
             </div>
 
-            {/* Row 3: Passengers */}
-            <div id="tutorial-step-passenger" className="pt-8 border-t border-neutral-800 rounded-lg">
-               <div className="flex flex-row justify-between items-center mb-5 gap-2">
-                 <label className="block text-[9px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Passengers</label>
-                 <button onClick={handleAddPassenger} className="text-muted-foreground hover:text-foreground text-[9px] sm:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 transition-colors whitespace-nowrap shrink-0">
+            {/* Passengers Section */}
+            <div id="tutorial-step-passenger" className="pt-4 sm:pt-8 flex flex-col">
+               <div className="flex justify-between items-center mb-2 sm:mb-4">
+                  <label className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-inherit opacity-70`}>Passengers</label>
+                  <button 
+                    onClick={handleAddPassenger}
+                    className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 transition-colors text-inherit opacity-70 hover:opacity-100`}
+                  >
                    <Plus size={12}/> Add Passenger
                  </button>
                </div>
 
-               <div className="space-y-4">
-                  {trip.passengers.map((pax, i) => (
-                    <div key={pax.id} className="relative bg-card border border-border rounded-xl p-5 mb-3 shadow-sm hover:border-primary/40 transition-all">
-                      {/* Header */}
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Passenger {String(i + 1).padStart(2, '0')}</div>
-                        {i > 0 && (
+
+
+               <div className="space-y-3 sm:space-y-4 pr-1 sm:pr-2 pb-4">
+                  {trip.passengers.map((pax, index) => (
+                    <div key={pax.id} className={`p-3 sm:p-5 rounded-xl border relative transition-all group ${currentTheme !== 'default' ? 'bg-white/40' : 'bg-card/50'} border-current/20`}>
+                      
+                      <div className="flex justify-between items-start mb-3 sm:mb-5">
+                        <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-inherit opacity-70`}>
+                          Passenger {String(index + 1).padStart(2, '0')}
+                        </span>
+                        {index > 0 && (
                           <button onClick={() => trip.removePassenger(pax.id)} className="text-red-500/50 hover:text-red-500 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
                             <Trash2 size={12} /> Remove
                           </button>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                        {/* Name Input with Autocomplete */}
-                        <div className="md:col-span-5 relative">
-                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Full Name</label>
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 relative">
+                        {/* Name Input */}
+                        <div className="md:col-span-6 relative z-30">
+                          <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Full Name</label>
                           <input 
                             type="text" placeholder="e.g. John Doe"
                             className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
@@ -236,26 +244,27 @@ export default function TripSetupPage() {
                           />
                           {pax.name && [...savedPassengers, ...trip.passengers.filter(p => p.remember && p.id !== pax.id && p.name)]
                             .filter((sp, index, self) => index === self.findIndex((t) => t.name === sp.name))
-                            .filter(sp => sp.name.toLowerCase().startsWith(pax.name.toLowerCase()) && sp.name !== pax.name).length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                            .filter(sp => sp.name.toLowerCase().startsWith(pax.name.toLowerCase()) && sp.name.toLowerCase() !== pax.name.toLowerCase()).length > 0 && (
+                            <div className={`absolute top-full left-0 right-0 mt-2 border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto bg-white dark:bg-zinc-900 border-border text-black dark:text-white`}>
                               {[...savedPassengers, ...trip.passengers.filter(p => p.remember && p.id !== pax.id && p.name)]
                                 .filter((sp, index, self) => index === self.findIndex((t) => t.name === sp.name))
-                                .filter(sp => sp.name.toLowerCase().startsWith(pax.name.toLowerCase()) && sp.name !== pax.name)
+                                .filter(sp => sp.name.toLowerCase().startsWith(pax.name.toLowerCase()) && sp.name.toLowerCase() !== pax.name.toLowerCase())
                                 .map((sp, idx) => (
                                   <button
                                     key={idx}
-                                    className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                                    className={`w-full text-left px-4 py-3 text-sm hover:bg-black/5 dark:hover:bg-white/10 transition-colors border-b last:border-0 border-border`}
                                     onClick={() => {
                                       trip.updatePassenger(pax.id, {
                                         name: sp.name,
                                         age: sp.age,
                                         gender: sp.gender as any,
-                                        city: sp.city || pax.city
+                                        city: sp.city || pax.city,
+                                        remember: true
                                       });
                                     }}
                                   >
-                                    <div className="font-medium text-foreground">{sp.name}</div>
-                                    <div className="text-[10px] text-muted-foreground mt-1 tracking-wide uppercase">{sp.city || 'Unknown City'} • {sp.age}yo • {sp.gender}</div>
+                                    <div className="font-bold text-inherit">{sp.name}</div>
+                                    <div className="text-[10px] opacity-70 mt-1 tracking-wide uppercase">{sp.city || 'Unknown City'} • {sp.age}yo • {sp.gender}</div>
                                   </button>
                                 ))}
                             </div>
@@ -263,8 +272,8 @@ export default function TripSetupPage() {
                         </div>
 
                         {/* Age Input */}
-                        <div className="md:col-span-3">
-                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Age</label>
+                        <div className="md:col-span-3 relative z-20">
+                          <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Age</label>
                           <input 
                             type="number" placeholder="Years" min="1" max="120"
                             className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
@@ -278,11 +287,11 @@ export default function TripSetupPage() {
                         </div>
 
                         {/* Gender Select */}
-                        <div className="md:col-span-4">
-                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Gender</label>
+                        <div className="md:col-span-3 relative z-10">
+                          <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Gender</label>
                           <div className="relative">
                             <select 
-                              className="w-full h-10 bg-muted/30 border border-border rounded-lg px-2 sm:px-3 text-xs sm:text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all appearance-none"
+                              className={`w-full h-10 border rounded-lg px-2 sm:px-3 text-xs sm:text-sm font-medium focus:outline-none focus:ring-1 transition-all appearance-none ${currentTheme !== 'default' ? 'bg-white/50' : 'bg-muted/30'} border-current/20 focus:border-primary/50 ${activeTheme.text}`}
                               value={pax.gender || ''} 
                               onChange={(e) => trip.updatePassenger(pax.id, { gender: e.target.value as any })}
                             >
@@ -291,17 +300,12 @@ export default function TripSetupPage() {
                               <option value="female">Female</option>
                               <option value="other">Other</option>
                             </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
                           </div>
                         </div>
 
                         {/* City Input */}
                         <div className="md:col-span-6 relative z-10">
-                          <label className="block text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 truncate">Current City</label>
+                          <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Current City</label>
                           <CityAutocomplete 
                             label="" placeholder="Where is this person currently" 
                             value={pax.city || ''} 
@@ -311,7 +315,7 @@ export default function TripSetupPage() {
 
                         {/* Remember Checkbox */}
                         <div className="md:col-span-6 flex items-end pb-2 sm:pl-2">
-                           <label className="flex items-center gap-2 cursor-pointer text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors">
+                           <label className={`flex items-center gap-2 cursor-pointer text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-colors text-inherit opacity-70 hover:opacity-100`}>
                              <input 
                                type="checkbox" 
                                checked={pax.remember || false}
@@ -336,9 +340,9 @@ export default function TripSetupPage() {
               )}
               <button 
                 onClick={handleContinue}
-                className="w-full py-3 sm:py-4 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-[9px] sm:text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 sm:gap-2.5 rounded-xl shadow-lg whitespace-nowrap overflow-hidden px-2"
+                className={`group w-full py-3 sm:py-4 font-bold uppercase tracking-widest text-[9px] sm:text-xs transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2.5 rounded-xl shadow-lg whitespace-nowrap overflow-hidden px-2 hover:-translate-y-1 hover:shadow-2xl hover:brightness-105 active:translate-y-0 active:scale-[0.98] active:shadow-md bg-black text-white dark:bg-white dark:text-black`}
               >
-                <span>Continue to Transport</span> <ArrowRight size={14} className="shrink-0"/>
+                <span>Continue to Transport</span> <ArrowRight size={14} className="shrink-0 transition-transform group-hover:translate-x-1"/>
               </button>
             </div>
 
@@ -346,8 +350,17 @@ export default function TripSetupPage() {
         </div>
 
         {/* Right Map View (Globe) */}
-        <div className="w-[40%] sm:w-[50%] md:w-auto md:flex-1 shrink-0 bg-background relative overflow-hidden flex flex-col transition-colors border-0">
-           <AnimatedGlobe passengers={trip.passengers} destination={trip.destination} />
+        <div className="w-[40%] sm:w-[50%] md:w-auto md:flex-1 shrink-0 relative overflow-hidden flex flex-col transition-colors border-0 items-center justify-center">
+           <ImagePrefetcher />
+           <div className="w-full h-full absolute inset-0 z-0">
+             <AnimatedGlobe 
+               passengers={trip.passengers} 
+               destination={trip.destination} 
+               themeImageUrl={currentTheme !== 'default' ? activeTheme.imageUrl : undefined} 
+               themeGlowColor={currentTheme !== 'default' ? activeTheme.glowColor : undefined}
+             />
+           </div>
+
         </div>
 
       </motion.div>

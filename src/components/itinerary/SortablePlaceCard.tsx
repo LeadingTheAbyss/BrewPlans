@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Place } from '@/types/trip';
 import { Clock, Ticket, CheckSquare, Square, Plus, GripVertical, Trash2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
 
 interface SortablePlaceCardProps {
   place: Place;
@@ -44,6 +45,8 @@ export function SortablePlaceCard({
     ...(dragUser ? { outline: `2px solid ${dragUser.color}`, boxShadow: `0 0 15px ${dragUser.color}40` } : {})
   };
 
+  const { activeTheme } = useDestinationTheme();
+
   const getCategoryColor = (cat: string) => {
     const c = (cat || '').toLowerCase();
     if (c.includes('park') || c.includes('nature')) return 'text-green-400 bg-green-500/10 border-green-500/20';
@@ -72,9 +75,9 @@ export function SortablePlaceCard({
       onClick={onClickContainer}
       {...(!isAssigned ? attributes : {})}
       {...(!isAssigned ? listeners : {})}
-      className={`relative group bg-[#111111] border rounded-xl flex items-stretch transition-[border-color,background-color,box-shadow,opacity] duration-300 touch-none
+      className={`relative group border rounded-xl flex items-stretch transition-[border-color,background-color,box-shadow,opacity] duration-300 touch-none ${activeTheme.card} ${activeTheme.text}
         ${isOverlay ? 'shadow-[0_0_30px_rgba(34,197,94,0.15)] border-green-500/50 scale-[1.02] z-50' : (dayBorder || 'border-[#222222] hover:border-[#333] hover:shadow-lg')}
-        ${isSelected ? 'border-emerald-500/50 bg-emerald-500/5' : ''}
+        ${isSelected ? 'border-emerald-500/50' : ''}
         ${!isAssigned ? 'cursor-grab active:cursor-grabbing' : ''}
         ${compact ? 'p-3' : 'p-4'}
       `}
@@ -110,9 +113,8 @@ export function SortablePlaceCard({
 
       {/* Minimal Drag Handle */}
       <div 
-        className={`w-6 flex items-center justify-center shrink-0 transition-opacity text-zinc-500 hover:text-zinc-300
-          ${isAssigned ? 'opacity-10' : 'opacity-40 group-hover:opacity-100'}
-          ${compact && !isAssigned ? 'lg:opacity-0 lg:group-hover:opacity-100' : ''}
+        className={`w-6 flex items-center justify-center shrink-0 transition-opacity text-inherit hover:opacity-100
+          ${isAssigned ? 'opacity-20' : 'opacity-50'}
         `}
       >
         <GripVertical size={16} strokeWidth={2} />
@@ -121,14 +123,14 @@ export function SortablePlaceCard({
       {/* Content */}
       <div className={`flex-1 min-w-0 ${compact ? 'pl-3' : 'pl-4'} relative`}>
         <div className="flex justify-between items-start mb-1">
-          <h4 className="font-bold text-sm text-zinc-100 truncate pr-6">{place.name}</h4>
+          <h4 className="font-bold text-sm text-inherit truncate pr-6">{place.name}</h4>
           
           {/* Remove Button (Only shown when in a day column i.e. dayColorCode exists) */}
           {dayColorCode && onRemoveFromDay && (
             <div className="absolute right-0 top-0">
               <button 
                 onClick={(e) => { e.stopPropagation(); onRemoveFromDay(place.id); }}
-                className="text-zinc-500 hover:text-red-400 transition-colors p-1 bg-[#1a1a1a] hover:bg-[#222] hover:border-red-500/50 rounded-md border border-[#333]"
+                className="text-inherit opacity-60 hover:opacity-100 hover:text-red-500 transition-colors p-1 bg-current/5 hover:bg-current/10 hover:border-red-500/50 rounded-md border border-current/10"
                 title="Remove from day"
               >
                 <Trash2 size={12} />
@@ -139,7 +141,7 @@ export function SortablePlaceCard({
         
         <div className="flex items-center gap-2 mb-1.5">
           {place.entryFee && place.entryFee > 0 ? (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#222] shrink-0">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-inherit opacity-70 bg-current/5 px-1.5 py-0.5 rounded border border-current/10 shrink-0">
               <Ticket size={10} /> ₹{place.entryFee}
             </div>
           ) : null}
@@ -150,7 +152,7 @@ export function SortablePlaceCard({
             <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catStyle}`}>
               {place.category || 'Location'}
             </span>
-            <span className="flex items-center gap-1 text-[10px] text-zinc-500 font-medium">
+            <span className="flex items-center gap-1 text-[10px] text-inherit opacity-60 font-medium">
               <Clock size={10} /> {(place.visitDurationHours || 1) + (place.travelTimeHours || 0)}h
             </span>
           </div>
@@ -162,7 +164,7 @@ export function SortablePlaceCard({
                 e.stopPropagation();
                 onQuickAdd(place.id);
               }}
-              className="px-2 py-1 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white rounded text-[10px] font-bold uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100 flex items-center gap-1"
+              className="px-2 py-1 bg-current/10 hover:bg-emerald-600 text-inherit opacity-70 hover:opacity-100 hover:text-white rounded text-[10px] font-bold uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100 flex items-center gap-1"
             >
               <Plus size={10} /> Add
             </button>

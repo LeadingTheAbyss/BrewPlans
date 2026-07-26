@@ -72,28 +72,18 @@ export function BackgroundFetcher() {
           // It was a background check, and it's not cached in DB
           queue.updateTaskStatus(nextTask.id, 'cache_miss');
         } else if (Array.isArray(result) || (result && !result.status)) {
-          // Got a response — check if it has actual data
-          const hasData = Array.isArray(result)
-            ? result.length > 0
-            : (result.options && result.options.length > 0);
-
-          if (!hasData) {
-            // Empty result — treat as error so user can retry, not permanently disabled
-            queue.updateTaskStatus(nextTask.id, 'error');
-          } else {
-            // Success! (Got real data) — inject into cacheStore
-            queue.updateTaskStatus(nextTask.id, 'completed', result);
-            
-            let cacheKey: string = nextTask.category;
-            if (nextTask.category === 'transport' && nextTask.paxId && nextTask.subType) {
-              const pax = trip.passengers.find(p => p.id === nextTask.paxId);
-              const paxCity = pax?.city || 'Unknown';
-              const dest = trip.destination || 'Unknown';
-              cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v7`;
-            }
-              
-            cache.setCache(cacheKey, result);
+          // Got a response (even if empty) — save to cache so UI can show empty state!
+          queue.updateTaskStatus(nextTask.id, 'completed', result);
+          
+          let cacheKey: string = nextTask.category;
+          if (nextTask.category === 'transport' && nextTask.paxId && nextTask.subType) {
+            const pax = trip.passengers.find(p => p.id === nextTask.paxId);
+            const paxCity = pax?.city || 'Unknown';
+            const dest = trip.destination || 'Unknown';
+            cacheKey = `${nextTask.paxId}-${paxCity}-${dest}-${nextTask.subType}-v7`;
           }
+            
+          cache.setCache(cacheKey, result);
         } else {
           queue.updateTaskStatus(nextTask.id, 'error');
         }

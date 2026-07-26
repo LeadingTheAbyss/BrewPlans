@@ -20,6 +20,8 @@ interface AnimatedGlobeProps {
   mode?: string; // fallback single mode
   routeModes?: Record<string, string>; // city -> mode mapping
   isMaximized?: boolean;
+  themeImageUrl?: string;
+  themeGlowColor?: string;
 }
 
 
@@ -38,7 +40,7 @@ interface Route {
   mode?: string;
 }
 
-export default function AnimatedGlobe({ passengers, destination, mode, routeModes, isMaximized }: AnimatedGlobeProps) {
+export default function AnimatedGlobe({ passengers, destination, mode, routeModes, isMaximized, themeImageUrl, themeGlowColor }: AnimatedGlobeProps) {
   const [coords, setCoords] = useState<Coordinate[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -59,7 +61,15 @@ export default function AnimatedGlobe({ passengers, destination, mode, routeMode
         let destCoord: Coordinate | null = null;
         const newCoords: Coordinate[] = [];
         
-        const destRes = await api.searchCity(destination);
+        const destPromise = api.searchCity(destination);
+        const srcPromises = uniqueCities.map(async (city) => {
+          const res = await api.searchCity(city);
+          return { city, res };
+        });
+
+        // Fetch destination and all sources concurrently to cut loading time in half
+        const [destRes, ...srcResponses] = await Promise.all([destPromise, ...srcPromises]);
+
         if (destRes && destRes.length > 0 && destRes[0].lat !== undefined) {
           const lat = Number(destRes[0].lat);
           const lng = Number(destRes[0].lng);
@@ -68,14 +78,6 @@ export default function AnimatedGlobe({ passengers, destination, mode, routeMode
         }
 
         const newRoutes: Route[] = [];
-
-        // Fetch all source coordinates concurrently
-        const srcResponses = await Promise.all(
-          uniqueCities.map(async (city) => {
-            const res = await api.searchCity(city);
-            return { city, res };
-          })
-        );
 
         for (const { city, res } of srcResponses) {
           if (res && res.length > 0 && res[0].lat !== undefined) {
@@ -109,7 +111,7 @@ export default function AnimatedGlobe({ passengers, destination, mode, routeMode
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050505] overflow-hidden">
-      <LeafletMap coords={coords} routes={routes} isMaximized={isMaximized} />
+      <LeafletMap coords={coords} routes={routes} isMaximized={isMaximized} themeImageUrl={themeImageUrl} themeGlowColor={themeGlowColor} />
     </div>
   );
 }

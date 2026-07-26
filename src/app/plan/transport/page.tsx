@@ -14,6 +14,7 @@ import { TrainRouteModal, LiveStatusModal, StationBoardModal } from '@/component
 import AnimatedGlobe from '@/components/AnimatedGlobe';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { preloadCinematicImages } from '@/components/CinematicLoader';
+import { useDestinationTheme } from '@/hooks/useDestinationTheme';
 
 const LoadingScreen = ({ isFinished, onComplete }: { isFinished: boolean, onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -221,6 +222,7 @@ export default function TransportPage() {
   const router = useRouter();
   const trip = useTripStore();
   const budget = useBudgetStore();
+  const { activeTheme, currentTheme } = useDestinationTheme();
   
   // Global stores for queue and cache
   const fetchQueue = useFetchQueue();
@@ -353,7 +355,7 @@ export default function TransportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    <div className="min-h-screen bg-transparent transition-colors duration-300">
       
       {/* Hero Header (Full Width) */}
       <motion.div
@@ -439,17 +441,17 @@ export default function TransportPage() {
                     <div 
                       id="tutorial-transport-passenger"
                       onClick={() => setIsPassengerDropdownOpen(!isPassengerDropdownOpen)}
-                      className="bg-card p-5 rounded-2xl border border-border cursor-pointer flex justify-between items-center shadow-sm hover:border-primary/50 hover:shadow-md transition-all group"
+                      className={`p-5 rounded-2xl border border-border cursor-pointer flex justify-between items-center shadow-sm hover:border-primary/50 hover:shadow-md transition-all group ${activeTheme.card} ${activeTheme.text}`}
                     >
                       <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
                         <div className="hidden sm:flex w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 items-center justify-center shrink-0">
                           <Users size={18} className="text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                          <h3 className="text-base sm:text-lg font-bold text-inherit group-hover:text-primary transition-colors truncate">
                             {trip.passengers.find(p => p.id === activePassengerId)?.name || trip.passengers[0].name}
                           </h3>
-                          <p className="text-[11px] sm:text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5 whitespace-normal">
+                          <p className="text-[11px] sm:text-sm text-inherit opacity-70 flex items-center gap-1.5 mt-0.5 whitespace-normal">
                             <span className="font-medium">{trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'}</span>
                             <ArrowRight size={12} className="text-primary/60 shrink-0" />
                             <span className="font-medium">{trip.destination}</span>
@@ -457,8 +459,8 @@ export default function TransportPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted/50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-border whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
-                        <ChevronDown className={`transition-transform duration-300 text-muted-foreground shrink-0 ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
+                        <span className="text-[10px] sm:text-xs text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-border whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
+                        <ChevronDown className={`transition-transform duration-300 text-inherit opacity-70 shrink-0 ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
                     
@@ -468,7 +470,7 @@ export default function TransportPage() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+                          className={`absolute top-full left-0 right-0 mt-2 border border-border rounded-xl shadow-xl z-50 overflow-hidden ${activeTheme.card} ${activeTheme.text}`}
                         >
                           {trip.passengers.map(p => (
                             <div 
@@ -480,8 +482,8 @@ export default function TransportPage() {
                               className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border last:border-b-0 flex justify-between items-center ${p.id === activePassengerId ? 'bg-primary/10' : ''}`}
                             >
                               <div>
-                                <div className="font-bold">{p.name}</div>
-                                <div className="text-xs text-muted-foreground">{p.city || 'Unknown Origin'} → {trip.destination}</div>
+                                <div className="font-bold text-inherit">{p.name}</div>
+                                <div className="text-xs text-inherit opacity-70">{p.city || 'Unknown Origin'} → {trip.destination}</div>
                               </div>
                               {p.id === activePassengerId && <CheckCircle2 size={16} className="text-primary" />}
                             </div>
@@ -499,7 +501,7 @@ export default function TransportPage() {
                     <motion.section 
                       variants={itemVariants}
                       key={pax.id} 
-                      className="bg-card p-6 rounded-2xl border border-border shadow-lg transition-colors"
+                      className={`p-6 rounded-2xl border shadow-lg transition-colors ${activeTheme.card} ${activeTheme.text}`}
                     >
                         {/* Transport Section */}
                     <div className="space-y-5">
@@ -517,7 +519,7 @@ export default function TransportPage() {
                           const typeOptionsRaw = rawOptions.filter((o: any) => o.type === type || (type === 'cab' && o.type === 'car'));
                           
                           const currentActive = activeTabs[pax.id] ?? '';
-                          const isActive = currentActive === type && (isFetched ? typeOptionsRaw.length > 0 : true);
+                          const isActive = currentActive === type;
                           const hasError = task?.status === 'error';
                           // Only permanently disable if we got real data back and it was truly empty
                           const isDisabled = isFetched && typeOptionsRaw.length === 0 && !hasError;
@@ -539,7 +541,7 @@ export default function TransportPage() {
                                   ? 'bg-muted/20 border-border/40 text-muted-foreground/40 cursor-not-allowed'
                                   : isActive
                                     ? `${typeColors[type]} shadow-sm`
-                                    : `bg-card border-border hover:border-primary/40 text-foreground hover:shadow-sm`
+                                    : `bg-transparent border-border hover:border-primary/40 hover:shadow-sm`
                               }`}
                             >
                               <div className="flex items-center gap-2">
@@ -581,7 +583,7 @@ export default function TransportPage() {
                             }
                             
                             const currentActive = activeTabs[pax.id] ?? '';
-                            const isActive = currentActive === type && (isFetched ? typeOptions.length > 0 : true);
+                            const isActive = currentActive === type;
 
                             if (!isActive) return null;
 
@@ -618,6 +620,15 @@ export default function TransportPage() {
                                               <ChevronDown size={14} />
                                             </div>
                                           </div>
+                                        </div>
+                                      )}
+                                      {typeOptions.length === 0 && isFetched && (
+                                        <div className="flex flex-col items-center justify-center p-8 bg-muted/10 border border-border rounded-xl text-muted-foreground mt-4">
+                                           <div className="bg-muted/30 p-3 rounded-full mb-3">
+                                             <AlertCircle size={24} className="opacity-50" />
+                                           </div>
+                                           <h3 className="text-sm font-bold tracking-widest uppercase mb-1">Not Available</h3>
+                                           <p className="text-xs opacity-70 text-center">We couldn't find any available {type === 'bus' ? 'buses' : type === 'cab' ? 'cabs' : type + 's'} for this route right now.</p>
                                         </div>
                                       )}
                                       {typeOptions.map((opt, idx) => {
@@ -712,7 +723,7 @@ export default function TransportPage() {
                                             >
                                               {/* Header */}
                                               <div className="px-5 pt-4 pb-2">
-                                                <div className="font-bold text-foreground text-[15px] sm:text-[16px] uppercase tracking-wide">
+                                                <div className="font-bold text-inherit text-[15px] sm:text-[16px] uppercase tracking-wide">
                                                   {opt.provider} ({trainNum})
                                                 </div>
                                               </div>
@@ -723,25 +734,25 @@ export default function TransportPage() {
                                                 <div className="flex justify-between items-center mt-3">
                                                   {/* Departure */}
                                                   <div className="flex flex-col items-start w-[32%]">
-                                                    <span className="text-2xl sm:text-3xl font-light text-foreground tracking-tight">{depTimeStr}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-foreground mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={pax.city}>{pax.city}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-foreground/70 mt-0.5">{depDateStr}</span>
+                                                    <span className="text-2xl sm:text-3xl font-light text-inherit tracking-tight">{depTimeStr}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-inherit mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={pax.city}>{pax.city}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-inherit opacity-70 mt-0.5">{depDateStr}</span>
                                                   </div>
                                                   
                                                   {/* Duration Line */}
                                                   <div className="flex flex-col items-center justify-start flex-1 px-1 relative -mt-8 sm:-mt-10">
                                                     <div className="flex items-center w-full">
                                                       <div className="h-[1px] bg-border flex-1"></div>
-                                                      <span className="text-[13px] sm:text-[15px] text-foreground mx-2 sm:mx-3 tracking-wider">{formattedDur}</span>
+                                                      <span className="text-[13px] sm:text-[15px] text-inherit mx-2 sm:mx-3 tracking-wider">{formattedDur}</span>
                                                       <div className="h-[1px] bg-border flex-1"></div>
                                                     </div>
                                                   </div>
                                                   
                                                   {/* Arrival */}
                                                   <div className="flex flex-col items-end w-[32%]">
-                                                    <span className="text-2xl sm:text-3xl font-light text-foreground tracking-tight">{arrTimeStr}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-foreground mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={trip.destination}>{trip.destination}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-foreground/70 mt-0.5">{arrDateStr}</span>
+                                                    <span className="text-2xl sm:text-3xl font-light text-inherit tracking-tight">{arrTimeStr}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-inherit mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={trip.destination}>{trip.destination}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-inherit opacity-70 mt-0.5">{arrDateStr}</span>
                                                   </div>
                                                 </div>
                                               </div>
@@ -752,7 +763,7 @@ export default function TransportPage() {
                                                   <button className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm transition-colors ${isSelected ? 'bg-[#f4a261] text-white border border-[#f4a261] dark:bg-[#f4a261]/80' : 'bg-[#facca9] text-white border border-[#facca9] hover:bg-[#f4a261] dark:bg-[#facca9]/50 dark:hover:bg-[#f4a261]/80'}`}>
                                                     {isSelected ? 'SELECTED' : 'Select'}
                                                   </button>
-                                                  <div className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm border border-border/70 bg-transparent text-foreground uppercase flex items-center justify-center">
+                                                  <div className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm border border-border/70 bg-transparent text-inherit uppercase flex items-center justify-center">
                                                     ₹{opt.price.toLocaleString('en-IN')}
                                                   </div>
                                                 </div>
@@ -771,7 +782,8 @@ export default function TransportPage() {
                                             whileHover={{ scale: 1.01 }}
                                             whileTap={{ scale: 0.99 }}
                                             className={`
-                                              relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-colors bg-card
+                                              relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-colors
+
                                               ${isSelected 
                                                 ? 'border-primary bg-primary/10 shadow-sm' 
                                                 : 'border-border hover:border-primary/50 hover:bg-muted/50'
@@ -820,16 +832,16 @@ export default function TransportPage() {
                                                       </span>
                                                       {/* Desktop Badge */}
                                                       {opt.type !== 'cross' && isSelected && (
-                                                        <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50 w-fit shrink-0">
-                                                          <span className="font-bold uppercase truncate max-w-[120px] text-foreground/80">{pax.city}</span>
+                                                        <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full border border-border/50 w-fit shrink-0">
+                                                          <span className="font-bold uppercase truncate max-w-[120px] text-inherit">{pax.city}</span>
                                                           <ArrowRight size={10} className="text-primary/60 shrink-0"/>
-                                                          <span className="font-bold uppercase truncate max-w-[120px] text-foreground/80">{trip.destination}</span>
+                                                          <span className="font-bold uppercase truncate max-w-[120px] text-inherit">{trip.destination}</span>
                                                         </div>
                                                       )}
                                                     </div>
                                                     
                                                     {opt.type !== 'cross' && (
-                                                      <div className="hidden sm:flex text-sm text-muted-foreground mt-1 items-center gap-1 flex-wrap">
+                                                      <div className="hidden sm:flex text-sm text-inherit opacity-70 mt-1 items-center gap-1 flex-wrap">
                                                         <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
                                                         <ArrowRight className="inline mx-1" size={12}/>
                                                         <span className="flex items-center">
@@ -856,7 +868,7 @@ export default function TransportPage() {
                                                   {/* Mobile Time/Duration + Badge */}
                                                   <div className="flex sm:hidden flex-col gap-1.5 min-w-0 flex-1">
                                                     {opt.type !== 'cross' && (
-                                                      <div className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                                                      <div className="text-[10px] text-inherit opacity-70 flex items-center gap-1 flex-wrap">
                                                         <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
                                                         <ArrowRight className="inline mx-0.5" size={10}/>
                                                         <span className="flex items-center">
@@ -877,16 +889,16 @@ export default function TransportPage() {
                                                     )}
                                                     
                                                     {opt.type !== 'cross' && isSelected && (
-                                                      <div className="flex items-center gap-1 text-[8px] text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded-sm border border-border/50 w-fit shrink-0">
-                                                        <span className="font-bold uppercase truncate max-w-[90px] text-foreground/80">{pax.city}</span>
+                                                      <div className="flex items-center gap-1 text-[8px] text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-sm border border-border/50 w-fit shrink-0">
+                                                        <span className="font-bold uppercase truncate max-w-[90px] text-inherit">{pax.city}</span>
                                                         <ArrowRight size={8} className="text-primary/60 shrink-0"/>
-                                                        <span className="font-bold uppercase truncate max-w-[90px] text-foreground/80">{trip.destination}</span>
+                                                        <span className="font-bold uppercase truncate max-w-[90px] text-inherit">{trip.destination}</span>
                                                       </div>
                                                     )}
                                                   </div>
 
                                                   <div className="text-right shrink-0 ml-auto">
-                                                    <div className="text-sm sm:text-xl font-bold text-foreground">₹{opt.price.toLocaleString('en-IN')}</div>
+                                                    <div className="text-sm sm:text-xl font-bold text-inherit">₹{opt.price.toLocaleString('en-IN')}</div>
                                                   </div>
                                                 </div>
                                               
@@ -896,9 +908,9 @@ export default function TransportPage() {
                                                       <div key={lIdx} className="flex justify-between items-center text-[10px] sm:text-xs bg-background/50 p-2 rounded-lg border border-border">
                                                         <div className="flex items-center gap-2">
                                                           <div className="scale-75 origin-left">{getTransportIcon(leg.mode)}</div>
-                                                          <span className="font-semibold text-foreground/80">{leg.source} → {leg.destination}</span>
+                                                          <span className="font-semibold text-inherit opacity-80">{leg.source} → {leg.destination}</span>
                                                         </div>
-                                                        <div className="text-muted-foreground flex gap-3 text-right">
+                                                        <div className="text-inherit opacity-70 flex gap-3 text-right">
                                                           <span className="truncate max-w-[60px] sm:max-w-none">{leg.provider}</span>
                                                           <span className="font-medium">₹{leg.price}</span>
                                                         </div>
@@ -929,7 +941,7 @@ export default function TransportPage() {
                 <div className="sticky top-24 space-y-4">
 
                   {/* Summary Card */}
-                  <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
+                  <div className={`rounded-2xl border border-border shadow-lg overflow-hidden ${activeTheme.card} ${activeTheme.text}`}>
                     {/* Header */}
                     <div className="px-5 pt-5 pb-4 border-b border-border/60" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.08) 0%, transparent 100%)' }}>
                       <div className="flex items-center justify-between">
@@ -937,7 +949,7 @@ export default function TransportPage() {
                           <CheckCircle2 size={16} className="text-primary" />
                           Transport Summary
                         </h2>
-                        <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border">
+                        <span className="text-xs text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-2 py-1 rounded-full border border-border">
                           {trip.passengers.filter(p => trip.selectedTransports.find(t => t.passengerId === p.id)).length}/{trip.passengers.length} selected
                         </span>
                       </div>
@@ -980,10 +992,10 @@ export default function TransportPage() {
                         return (
                           <div key={pax.id} className={`rounded-xl border overflow-hidden transition-all ${tr ? 'border-border' : 'border-dashed border-border/50'}`}>
                             {/* Pax name bar */}
-                            <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border/40">
-                              <span className="text-xs font-bold text-foreground uppercase tracking-wider">{pax.name}</span>
+                            <div className="flex items-center justify-between px-3 py-2 bg-black/5 dark:bg-white/5 border-b border-border/40">
+                              <span className="text-xs font-bold text-inherit uppercase tracking-wider">{pax.name}</span>
                               {tr && (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${modeBg[tr.type] || 'bg-muted border-border'} ${modeColor[tr.type] || 'text-foreground'} uppercase tracking-wider`}>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${modeBg[tr.type] || 'bg-black/10 border-border'} ${modeColor[tr.type] || 'text-inherit'} uppercase tracking-wider`}>
                                   {tr.type}
                                 </span>
                               )}
@@ -1007,22 +1019,22 @@ export default function TransportPage() {
                                         <div className="scale-75">{getTransportIcon(tr.type)}</div>
                                       </div>
                                     )}
-                                    <span className="text-xs font-bold text-foreground truncate leading-tight">
+                                    <span className="text-xs font-bold text-inherit truncate leading-tight">
                                       {tr.type === 'flight' ? (tr.provider || '').split('*')[0].trim() : tr.provider || tr.type}
                                     </span>
                                   </div>
-                                  <span className="text-sm font-black text-foreground shrink-0">₹{tr.price.toLocaleString('en-IN')}</span>
+                                  <span className="text-sm font-black text-inherit shrink-0">₹{tr.price.toLocaleString('en-IN')}</span>
                                 </div>
 
                                 {/* Departure / Arrival times */}
                                 <div className="bg-background/60 rounded-lg border border-border/30 px-3 py-2 flex items-center gap-2">
                                   <div className="text-center min-w-0 flex-1">
-                                    <div className="text-[15px] font-black text-foreground">{depTime}</div>
-                                    <div className="text-[10px] text-muted-foreground font-medium uppercase">{cityAbbrev(pax.city || '')}</div>
-                                    {depDate && <div className="text-[9px] text-muted-foreground/70 mt-0.5">{depDate}</div>}
+                                    <div className="text-[15px] font-black text-inherit">{depTime}</div>
+                                    <div className="text-[10px] text-inherit opacity-70 font-medium uppercase">{cityAbbrev(pax.city || '')}</div>
+                                    {depDate && <div className="text-[9px] text-inherit opacity-50 mt-0.5">{depDate}</div>}
                                   </div>
                                   <div className="flex flex-col items-center flex-1 min-w-0">
-                                    <div className="text-[9px] text-muted-foreground/70 uppercase tracking-wider">{tr.duration}</div>
+                                    <div className="text-[9px] text-inherit opacity-70 uppercase tracking-wider">{tr.duration}</div>
                                     <div className="relative w-full flex items-center my-1">
                                       <div className="h-[1px] bg-border flex-1"></div>
                                       <div className={`mx-1 ${modeColor[tr.type] || 'text-primary'}`}>
@@ -1032,14 +1044,14 @@ export default function TransportPage() {
                                     </div>
                                   </div>
                                   <div className="text-center min-w-0 flex-1">
-                                    <div className="text-[15px] font-black text-foreground">{arrTime}</div>
-                                    <div className="text-[10px] text-muted-foreground font-medium uppercase">{cityAbbrev(trip.destination || '')}</div>
-                                    {arrDate && <div className="text-[9px] text-muted-foreground/70 mt-0.5">{arrDate}</div>}
+                                    <div className="text-[15px] font-black text-inherit">{arrTime}</div>
+                                    <div className="text-[10px] text-inherit opacity-70 font-medium uppercase">{cityAbbrev(trip.destination || '')}</div>
+                                    {arrDate && <div className="text-[9px] text-inherit opacity-50 mt-0.5">{arrDate}</div>}
                                   </div>
                                 </div>
                               </div>
                             ) : (
-                              <div className="p-3 flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="p-3 flex items-center gap-2 text-xs text-inherit opacity-70">
                                 <AlertCircle size={13} className="text-amber-400 shrink-0" />
                                 <span>No transport selected</span>
                               </div>
