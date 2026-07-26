@@ -254,6 +254,16 @@ export default function TransportPage() {
     preloadCinematicImages('places');
   }, []);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMapMaximized) {
+        setIsMapMaximized(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isMapMaximized]);
+
   const handleAccordionClick = (pax: Passenger, type: string) => {
     if (!pax.city) {
       alert(`Please go back to Setup and enter a starting city for ${pax.name || 'this passenger'}`);
@@ -383,7 +393,7 @@ export default function TransportPage() {
           {/* Maximize/Minimize Button - Using z-[2000] to overlay leaflet which uses up to 1000 */}
           <button
             onClick={() => setIsMapMaximized(!isMapMaximized)}
-            className="absolute top-4 right-4 z-[2000] p-2 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-all shadow-lg border border-white/10"
+            className={`absolute ${isMapMaximized ? 'top-20 md:top-24' : 'top-4'} right-4 z-[2000] p-2 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-all shadow-lg border border-white/10`}
             title={isMapMaximized ? "Minimize Map" : "Maximize Map"}
           >
             {isMapMaximized ? <X size={24} /> : <Maximize size={20} />}
@@ -459,7 +469,7 @@ export default function TransportPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-[10px] sm:text-xs text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-border whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
+                        <span className="text-[10px] sm:text-xs font-bold text-primary bg-primary/10 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-primary/20 whitespace-nowrap">{trip.passengers.length} traveller{trip.passengers.length > 1 ? 's' : ''}</span>
                         <ChevronDown className={`transition-transform duration-300 text-inherit opacity-70 shrink-0 ${isPassengerDropdownOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
@@ -548,8 +558,8 @@ export default function TransportPage() {
                                 {getTransportIcon(type)}
                                 <span className="text-sm whitespace-nowrap font-bold">{type === 'bus' ? 'Buses' : type === 'cab' ? 'Cabs' : type.charAt(0).toUpperCase() + type.slice(1) + 's'}</span>
                               </div>
-                              <span className={`text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap truncate w-full text-center ${
-                                isLoading ? 'text-primary animate-pulse' : isDisabled ? 'text-muted-foreground/40' : isActive ? 'opacity-80' : 'text-muted-foreground'
+                              <span className={`text-[10px] font-bold uppercase tracking-wider whitespace-nowrap truncate w-full text-center ${
+                                isLoading ? 'text-primary animate-pulse' : isDisabled ? 'text-primary/40' : isActive ? 'opacity-90' : 'text-primary/70'
                               }`}>
                                 {isLoading ? '⟳ Loading...' : (!isFetched || hasError ? 'Tap to search' : (typeOptionsRaw.length === 0 ? 'Not available' : `${typeOptionsRaw.length} options`))}
                               </span>
@@ -723,7 +733,7 @@ export default function TransportPage() {
                                             >
                                               {/* Header */}
                                               <div className="px-5 pt-4 pb-2">
-                                                <div className="font-bold text-inherit text-[15px] sm:text-[16px] uppercase tracking-wide">
+                                                <div className="font-bold text-card-foreground text-[15px] sm:text-[16px] uppercase tracking-wide">
                                                   {opt.provider} ({trainNum})
                                                 </div>
                                               </div>
@@ -734,25 +744,25 @@ export default function TransportPage() {
                                                 <div className="flex justify-between items-center mt-3">
                                                   {/* Departure */}
                                                   <div className="flex flex-col items-start w-[32%]">
-                                                    <span className="text-2xl sm:text-3xl font-light text-inherit tracking-tight">{depTimeStr}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-inherit mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={pax.city}>{pax.city}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-inherit opacity-70 mt-0.5">{depDateStr}</span>
+                                                    <span className="text-2xl sm:text-3xl font-light text-card-foreground tracking-tight">{depTimeStr}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-card-foreground mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={pax.city}>{pax.city}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-card-foreground opacity-70 mt-0.5">{depDateStr}</span>
                                                   </div>
                                                   
                                                   {/* Duration Line */}
                                                   <div className="flex flex-col items-center justify-start flex-1 px-1 relative -mt-8 sm:-mt-10">
                                                     <div className="flex items-center w-full">
                                                       <div className="h-[1px] bg-border flex-1"></div>
-                                                      <span className="text-[13px] sm:text-[15px] text-inherit mx-2 sm:mx-3 tracking-wider">{formattedDur}</span>
+                                                      <span className="text-[13px] sm:text-[15px] text-card-foreground mx-2 sm:mx-3 tracking-wider">{formattedDur}</span>
                                                       <div className="h-[1px] bg-border flex-1"></div>
                                                     </div>
                                                   </div>
                                                   
                                                   {/* Arrival */}
                                                   <div className="flex flex-col items-end w-[32%]">
-                                                    <span className="text-2xl sm:text-3xl font-light text-inherit tracking-tight">{arrTimeStr}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-inherit mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={trip.destination}>{trip.destination}</span>
-                                                    <span className="text-[11px] sm:text-[13px] text-inherit opacity-70 mt-0.5">{arrDateStr}</span>
+                                                    <span className="text-2xl sm:text-3xl font-light text-card-foreground tracking-tight">{arrTimeStr}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-card-foreground mt-2 sm:mt-3 uppercase truncate max-w-full tracking-wide" title={trip.destination}>{trip.destination}</span>
+                                                    <span className="text-[11px] sm:text-[13px] text-card-foreground opacity-70 mt-0.5">{arrDateStr}</span>
                                                   </div>
                                                 </div>
                                               </div>
@@ -763,7 +773,7 @@ export default function TransportPage() {
                                                   <button className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm transition-colors ${isSelected ? 'bg-[#f4a261] text-white border border-[#f4a261] dark:bg-[#f4a261]/80' : 'bg-[#facca9] text-white border border-[#facca9] hover:bg-[#f4a261] dark:bg-[#facca9]/50 dark:hover:bg-[#f4a261]/80'}`}>
                                                     {isSelected ? 'SELECTED' : 'Select'}
                                                   </button>
-                                                  <div className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm border border-border/70 bg-transparent text-inherit uppercase flex items-center justify-center">
+                                                  <div className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-[13px] sm:text-[14px] font-bold rounded-sm border border-border/70 bg-transparent text-card-foreground uppercase flex items-center justify-center">
                                                     ₹{opt.price.toLocaleString('en-IN')}
                                                   </div>
                                                 </div>
@@ -949,7 +959,7 @@ export default function TransportPage() {
                           <CheckCircle2 size={16} className="text-primary" />
                           Transport Summary
                         </h2>
-                        <span className="text-xs text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-2 py-1 rounded-full border border-border">
+                        <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full border border-primary/20">
                           {trip.passengers.filter(p => trip.selectedTransports.find(t => t.passengerId === p.id)).length}/{trip.passengers.length} selected
                         </span>
                       </div>
@@ -1027,14 +1037,14 @@ export default function TransportPage() {
                                 </div>
 
                                 {/* Departure / Arrival times */}
-                                <div className="bg-background/60 rounded-lg border border-border/30 px-3 py-2 flex items-center gap-2">
+                                <div className="bg-current/5 rounded-lg border border-current/10 px-3 py-2 flex items-center gap-2">
                                   <div className="text-center min-w-0 flex-1">
                                     <div className="text-[15px] font-black text-inherit">{depTime}</div>
-                                    <div className="text-[10px] text-inherit opacity-70 font-medium uppercase">{cityAbbrev(pax.city || '')}</div>
-                                    {depDate && <div className="text-[9px] text-inherit opacity-50 mt-0.5">{depDate}</div>}
+                                    <div className="text-[10px] text-inherit font-bold uppercase">{cityAbbrev(pax.city || '')}</div>
+                                    {depDate && <div className="text-[9px] text-inherit font-bold mt-0.5">{depDate}</div>}
                                   </div>
                                   <div className="flex flex-col items-center flex-1 min-w-0">
-                                    <div className="text-[9px] text-inherit opacity-70 uppercase tracking-wider">{tr.duration}</div>
+                                    <div className="text-[9px] text-inherit font-bold uppercase tracking-wider">{tr.duration}</div>
                                     <div className="relative w-full flex items-center my-1">
                                       <div className="h-[1px] bg-border flex-1"></div>
                                       <div className={`mx-1 ${modeColor[tr.type] || 'text-primary'}`}>
@@ -1045,8 +1055,8 @@ export default function TransportPage() {
                                   </div>
                                   <div className="text-center min-w-0 flex-1">
                                     <div className="text-[15px] font-black text-inherit">{arrTime}</div>
-                                    <div className="text-[10px] text-inherit opacity-70 font-medium uppercase">{cityAbbrev(trip.destination || '')}</div>
-                                    {arrDate && <div className="text-[9px] text-inherit opacity-50 mt-0.5">{arrDate}</div>}
+                                    <div className="text-[10px] text-inherit font-bold uppercase">{cityAbbrev(trip.destination || '')}</div>
+                                    {arrDate && <div className="text-[9px] text-inherit font-bold mt-0.5">{arrDate}</div>}
                                   </div>
                                 </div>
                               </div>
@@ -1064,8 +1074,8 @@ export default function TransportPage() {
                     {/* Total footer */}
                     {trip.selectedTransports.length > 0 && (
                       <div className="px-5 py-4 border-t border-border/60 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.05) 0%, transparent 100%)' }}>
-                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Transport</span>
-                        <span className="text-lg font-black text-foreground">
+                        <span className="text-xs font-bold text-inherit opacity-70 uppercase tracking-wider">Total Transport</span>
+                        <span className="text-lg font-black text-inherit">
                           ₹{trip.selectedTransports.reduce((sum, t) => sum + t.cost, 0).toLocaleString('en-IN')}
                         </span>
                       </div>

@@ -414,8 +414,8 @@ export default function PlacesPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-1">Place Discovery</h1>
-            <p className="text-inherit opacity-70 text-sm">
-              Explore top attractions in <span className="text-inherit opacity-90 font-medium">{trip.destination || 'your destination'}</span>
+            <p className="text-inherit font-semibold text-sm mt-1">
+              Explore top attractions in <span className="text-inherit font-black">{trip.destination || 'your destination'}</span>
             </p>
           </div>
           <div className="text-sm font-semibold bg-blue-500/20 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full border border-blue-500/30 shrink-0">
@@ -431,10 +431,10 @@ export default function PlacesPage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
                   activeCategory === cat
                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-900/40'
-                    : 'bg-current/10 text-inherit opacity-80 border-current/20 hover:bg-current/20 hover:opacity-100'
+                    : 'bg-current/5 text-inherit border-current/20 hover:bg-current/10'
                 }`}
               >
                 {cat}
