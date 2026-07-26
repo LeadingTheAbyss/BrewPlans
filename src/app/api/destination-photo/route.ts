@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const cleanName = sanitizeName(name);
-    const cacheKey = `google_img_hq_${type}_${cleanName.toLowerCase()}_w${width}`;
+    const cacheKey = `google_img_v2_${type}_${cleanName.toLowerCase()}_w${width}`;
     
     // Check Redis cache first
     const cachedUrl = await redis.get(cacheKey);
@@ -99,8 +99,8 @@ export async function GET(request: NextRequest) {
 
       const isAdmin = isAdminEmail(user.email);
       if (!isAdmin) {
-        if ((dailyStat?.apiCallsImages || 0) >= 250) {
-          return NextResponse.redirect(new URL('/placeholder.jpg', request.url)); // Return a placeholder image if limit reached so frontend doesn't break
+        if ((dailyStat?.apiCallsImages || 0) >= 5000) {
+          return NextResponse.redirect('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80'); // Valid fallback
         }
       }
     }
@@ -145,8 +145,38 @@ export async function GET(request: NextRequest) {
           }
           
           if (bestPhoto?.name) {
-            bestUrl = `https://places.googleapis.com/v1/${bestPhoto.name}/media?key=${googleKey}&maxWidthPx=${width}`;
+            const mediaUrl = `https://places.googleapis.com/v1/${bestPhoto.name}/media?key=${googleKey}&maxWidthPx=${width}&skipHttpRedirect=true`;
+            try {
+              const mediaRes = await fetch(mediaUrl);
+              if (mediaRes.ok) {
+                const mediaData = await mediaRes.json();
+                if (mediaData.photoUri) {
+                  bestUrl = mediaData.photoUri;
+                }
+              }
+            } catch (e) {
+               console.error('[destination-photo] Google Media fetch error:', e);
+            }
           }
+        }
+      }
+      
+      // Wikipedia fallback if Google API failed or was rate limited
+      if (!bestUrl) {
+        try {
+          const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cleanName)}&prop=pageimages&format=json&pithumbsize=${width}`);
+          if (wikiRes.ok) {
+            const wikiData = await wikiRes.json();
+            const pages = wikiData?.query?.pages;
+            if (pages) {
+              const pageId = Object.keys(pages)[0];
+              if (pageId && pageId !== '-1' && pages[pageId].thumbnail?.source) {
+                bestUrl = pages[pageId].thumbnail.source;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[destination-photo] Wiki fetch error:', e);
         }
       }
       
@@ -172,9 +202,11 @@ export async function GET(request: NextRequest) {
 
     const isRedirect = searchParams.get('redirect') === 'true';
 
+    const finalFallback = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80';
+
     if (!bestUrl) {
       if (isRedirect) {
-        return NextResponse.redirect('/placeholder-place.svg', {
+        return NextResponse.redirect(finalFallback, {
           status: 302,
           headers: { 'Cache-Control': 'public, max-age=86400' }
         });
@@ -195,8 +227,9 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error('[destination-photo] Error:', err);
+    const finalFallback = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80';
     if (searchParams.get('redirect') === 'true') {
-      return NextResponse.redirect('/placeholder-place.svg', { status: 302 });
+      return NextResponse.redirect(finalFallback, { status: 302 });
     }
     return NextResponse.json({ url: null });
   }

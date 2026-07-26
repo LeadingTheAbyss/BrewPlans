@@ -104,6 +104,13 @@ export default function HotelsPage() {
     budget.recalcBudget();
   };
 
+  // Handle Escape key to close maximized image
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMaximizedImage(null); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [maximizedImage]);
+
   return (
     <>
       {maximizedImage && (
@@ -113,7 +120,7 @@ export default function HotelsPage() {
         >
           <button
             onClick={() => setMaximizedImage(null)}
-            className="absolute top-6 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors backdrop-blur-md"
+            className="absolute top-20 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors backdrop-blur-md"
           >
             <X size={24} />
           </button>

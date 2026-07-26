@@ -108,6 +108,13 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
     }
   };
 
+  // Handle Escape key to close fullscreen image
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isFullscreen]);
+
   return (
     <>
       {isFullscreen && place.imageUrl && (
@@ -117,7 +124,7 @@ function PlaceModal({ place, destination, isOpen, onClose, onToggle, isSelected 
         >
           <button
             onClick={() => setIsFullscreen(false)}
-            className="absolute top-6 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors backdrop-blur-md"
+            className="absolute top-20 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors backdrop-blur-md"
           >
             <X size={24} />
           </button>

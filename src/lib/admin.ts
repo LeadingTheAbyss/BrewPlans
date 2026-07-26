@@ -12,5 +12,6 @@ export const getAdminEmails = (): string[] => {
 
 export const isAdminEmail = (email: string | null | undefined): boolean => {
   if (!email) return false;
-  return getAdminEmails().includes(email);
+  const adminEmails = getAdminEmails().map(e => e.toLowerCase());
+  return adminEmails.includes(email.toLowerCase());
 };
