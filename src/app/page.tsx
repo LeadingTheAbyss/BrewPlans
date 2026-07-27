@@ -888,7 +888,7 @@ export default function LandingPage() {
                 title="Send us Feedback"
               >
                 <MessageSquare size={14} />
-                <span className="text-xs font-bold uppercase tracking-widest">Send Us Feedback</span>
+                <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest">Send Us Feedback</span>
               </button>
               <button 
                 onClick={() => router.push('/profile')}
