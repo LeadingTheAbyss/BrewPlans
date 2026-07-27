@@ -80,17 +80,15 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
           onChange={handleInputChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           onBlur={() => {
-            setTimeout(() => {
-              if (query && query.toLowerCase() !== (value || '').toLowerCase()) {
-                if (results.length > 0) {
-                  handleSelect(results[0].name);
-                } else {
-                  handleSelect(query);
-                }
-              } else if (query && query.toLowerCase() === (value || '').toLowerCase() && query !== value) {
-                setQuery(value);
+            if (query && query.toLowerCase() !== (value || '').toLowerCase()) {
+              if (results.length > 0) {
+                handleSelect(results[0].name);
+              } else {
+                handleSelect(query);
               }
-            }, 150);
+            } else if (query && query.toLowerCase() === (value || '').toLowerCase() && query !== value) {
+              setQuery(value);
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -126,7 +124,10 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
             <div
               key={i}
               className="p-3 hover:bg-muted cursor-pointer flex flex-col border-b last:border-0 border-border transition-colors"
-              onClick={() => handleSelect(res.name)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSelect(res.name);
+              }}
             >
               <div className="font-semibold text-foreground flex items-center gap-2 overflow-hidden">
                 <MapPin size={14} className="text-muted-foreground shrink-0" />

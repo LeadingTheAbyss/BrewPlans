@@ -30,6 +30,8 @@ function getDefaultDuration(category?: string): number {
   }
 }
 
+import { createPortal } from 'react-dom';
+
 function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }: {
   place: Place;
   destination: string;
@@ -43,6 +45,11 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const { activeTheme } = useDestinationTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'Reviews' && reviews.length === 0) {
@@ -62,7 +69,6 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
     }
   }, [activeTab, place.id]);
 
-  if (!isOpen) return null;
 
   const reviewCount = place.reviewsCount || 0;
   const displayRating = place.rating ? place.rating.toFixed(1) : 'New';
@@ -100,7 +106,9 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isFullscreen]);
 
-  return (
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
     <>
       {isFullscreen && place.imageUrl && (
         <div 
@@ -316,7 +324,8 @@ function FoodModal({ place, destination, isOpen, onClose, onToggle, isSelected }
         </div>
       </div>
     </div>
-    </>
+    </>,
+    document.body
   );
 }
 

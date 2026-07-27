@@ -51,6 +51,7 @@ export default function MemberTravelCard({ passengers = [], transport, isPrimary
     const codes: Record<string, string> = {
       lucknow: 'LKO',
       delhi: 'DEL',
+      'new delhi': 'NDLS',
       mumbai: 'BOM',
       bangalore: 'BLR',
       bengaluru: 'BLR',

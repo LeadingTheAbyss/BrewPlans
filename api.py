@@ -600,8 +600,9 @@ def _remove_diacritics(text: str) -> str:
         return text
     return ''.join(c for c in unicodedata.normalize('NFD', str(text)) if unicodedata.category(c) != 'Mn')
 
-_shared_session = requests.Session()
-def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
+import httpx
+_shared_async_client = httpx.AsyncClient(timeout=3.0)
+async def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     if not q or len(q) < 1:
         return []
 
@@ -629,7 +630,7 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
     }
     
     try:
-        response = _shared_session.get(url, params=params, timeout=2.0)
+        response = await _shared_async_client.get(url, params=params)
         response.raise_for_status()
         data = response.json()
         
@@ -683,7 +684,7 @@ def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
 
 @app.get("/api/search-city")
 async def api_search_city(q: str = Query(..., min_length=1)):
-    return await asyncio.to_thread(_fetch_photon_cities, q)
+    return await _fetch_photon_cities(q)
 
 @app.get("/api/test-redbus")
 async def test_redbus(q: str = Query(...)):

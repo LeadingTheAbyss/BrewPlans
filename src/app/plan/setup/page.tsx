@@ -127,12 +127,12 @@ export default function TripSetupPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full h-[calc(100vh-4.5rem)] md:h-[min(800px,85vh)] md:max-w-4xl relative flex flex-row shadow-2xl md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-border"
+        className="w-full h-[calc(100vh-4.5rem)] md:h-[min(800px,85vh)] md:max-w-4xl relative flex flex-col-reverse md:flex-row shadow-2xl md:shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-border"
       >
         
         {/* Main Configuration Body */}
         <div 
-          className={`w-[60%] sm:w-[50%] md:w-auto md:flex-1 lg:flex-[1.2] shrink-0 p-3 sm:p-4 md:p-6 lg:p-12 relative border-r transition-all duration-1000 overflow-y-auto overflow-x-hidden ${activeTheme.card} ${activeTheme.text}`}
+          className={`w-full md:w-auto md:flex-1 lg:flex-[1.2] flex-[1.5] shrink-0 p-3 sm:p-4 md:p-6 lg:p-12 relative md:border-r transition-all duration-1000 overflow-y-auto overflow-x-hidden ${activeTheme.card} ${activeTheme.text}`}
         >
           <div className="flex justify-between items-center mb-4 md:mb-10 relative z-10">
             <h2 className="text-lg md:text-3xl font-light tracking-tight">Trip Details</h2>
@@ -209,7 +209,7 @@ export default function TripSetupPage() {
                   <label className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-inherit opacity-70`}>Passengers</label>
                   <button 
                     onClick={handleAddPassenger}
-                    className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 transition-colors text-inherit opacity-70 hover:opacity-100`}
+                    className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 transition-colors text-inherit opacity-70 hover:opacity-100 whitespace-nowrap`}
                   >
                    <Plus size={12}/> Add Passenger
                  </button>
@@ -350,7 +350,7 @@ export default function TripSetupPage() {
         </div>
 
         {/* Right Map View (Globe) */}
-        <div className="w-[40%] sm:w-[50%] md:w-auto md:flex-1 shrink-0 relative overflow-hidden flex flex-col transition-colors border-0 items-center justify-center">
+        <div className="w-full md:w-auto md:flex-1 flex-[1] min-h-[30%] shrink-0 relative overflow-hidden flex flex-col transition-colors border-0 items-center justify-center">
            <ImagePrefetcher />
            <div className="w-full h-full absolute inset-0 z-0">
              <AnimatedGlobe 

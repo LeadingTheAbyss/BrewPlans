@@ -229,7 +229,7 @@ export default function ItineraryPage() {
   
   // Filtered vault places
   const vaultPlaces = React.useMemo(() => {
-    let places = itinerary.selectedPlaces;
+    let places = allUnassigned;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       places = places.filter(p => p.name.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
@@ -247,7 +247,7 @@ export default function ItineraryPage() {
     return places;
   }, [itinerary.selectedPlaces, searchQuery, vaultFilter]);
   
-  const vaultItemIds = React.useMemo(() => vaultPlaces.map(p => assignedPlaceIds.has(p.id) ? `vault-assigned-${p.id}` : p.id), [vaultPlaces, assignedPlaceIds]);
+  const vaultItemIds = React.useMemo(() => vaultPlaces.map(p => p.id), [vaultPlaces]);
 
   // Summary Metrics
   const totalScheduledHours = React.useMemo(() => itinerary.days.reduce((sum, d) => sum + d.totalTimeHours, 0), [itinerary.days]);
@@ -458,8 +458,8 @@ export default function ItineraryPage() {
       >
         
         {/* PANE 1: Left Vault (Unassigned) */}
-        <div id="tutorial-itinerary-vault" className={`transition-all duration-300 ease-in-out flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[45vh] lg:h-auto overflow-hidden ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
-          <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d] shrink-0 w-[320px]">
+        <div id="tutorial-itinerary-vault" className={`transition-all duration-300 ease-in-out flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[70vh] lg:h-auto overflow-hidden ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
+          <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d] shrink-0 w-full lg:w-[320px]">
             <div className="mb-4">
               <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-zinc-100">
                 <MapPin size={18} className="text-emerald-500" />
@@ -513,7 +513,7 @@ export default function ItineraryPage() {
             </div>
           </div>
           
-          <DroppableList id="unassigned" items={vaultItemIds} className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 custom-scrollbar w-[320px]">
+          <DroppableList id="unassigned" items={vaultItemIds} className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5 custom-scrollbar w-full lg:w-[320px] touch-pan-y">
             {vaultPlaces.map(place => {
               const isAssigned = assignedPlaceIds.has(place.id);
               return (
@@ -821,8 +821,8 @@ export default function ItineraryPage() {
         </div>
 
         {/* PANE 3: Right Summary (Trip Overview) */}
-        <div className={`transition-all duration-300 ease-in-out lg:border-l border-t lg:border-t-0 z-20 shrink-0 shadow-2xl overflow-hidden ${activeTheme.card} ${activeTheme.text} ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <div className="w-[300px] flex flex-col h-full">
+        <div className={`transition-all duration-300 ease-in-out lg:border-l border-t lg:border-t-0 z-20 shrink-0 shadow-2xl overflow-y-auto overflow-x-hidden flex flex-col ${activeTheme.card} ${activeTheme.text} ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
+          <div className="w-full lg:w-[300px] flex flex-col shrink-0">
             <div className="px-6 py-8 border-b border-current/10 shrink-0">
             <h3 className="text-sm font-bold tracking-widest uppercase text-inherit opacity-70 mb-6">
               Trip Overview

@@ -92,14 +92,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <div className="flex items-center gap-3 md:gap-4 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4 shrink-0">
             
             {/* Budget Dropdown in Navbar */}
             {pathname.startsWith('/plan') && (
               <div className="relative">
                 <button
                   onClick={() => setIsBudgetDropdownOpen(!isBudgetDropdownOpen)}
-                  className="h-7 px-3 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-800 dark:text-neutral-200 gap-2"
+                  className="h-7 px-2 sm:px-3 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-800 dark:text-neutral-200 gap-1.5 sm:gap-2"
                 >
                   <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest hidden sm:inline-block">Budget</span>
                   <span className="text-xs font-bold">₹{budget.totalBudget.toLocaleString('en-IN')}</span>
@@ -150,7 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
             <button 
               onClick={() => setIsDark(!isDark)}
-              className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300"
+              className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
               title="Toggle Theme"
             >
               {isDark ? <Sun size={14} /> : <Moon size={14} />}
@@ -158,11 +158,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             
             <button 
               onClick={() => setIsFeedbackOpen(true)}
-              className="h-7 px-3 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center gap-1.5 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
+              className="h-7 px-2 sm:px-3 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center gap-1.5 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
               title="Send us Feedback"
             >
               <MessageSquare size={13} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
+              <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
             </button>
             <Link href="/profile" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
               {user ? (

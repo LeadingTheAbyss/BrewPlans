@@ -35,8 +35,9 @@ export default function StayDetailsCard({ hotel, checkInDate, checkOutDate, paxC
       <div className="md:w-72 h-48 md:h-auto relative shrink-0 bg-zinc-900">
         {hotel.imageUrl && (
           <img 
-            src={hotel.imageUrl} 
+            src={`/api/proxy-image?url=${encodeURIComponent(hotel.imageUrl)}`} 
             alt={hotel.name} 
+            crossOrigin="anonymous"
             className="w-full h-full object-cover absolute inset-0 z-10"
             onError={(e) => {
               e.currentTarget.style.display = 'none';

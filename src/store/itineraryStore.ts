@@ -106,8 +106,12 @@ export const useItineraryStore = create<ItineraryState>()(
     // Add to new day
     newDays = newDays.map(day => {
       if (day.dayNumber === toDay) {
-        const ids = [...day.placeIds];
+        let ids = [...day.placeIds];
+        // Ensure no duplicates by removing the placeId if it somehow already exists
+        ids = ids.filter(id => id !== placeId);
+        
         if (newIndex !== undefined) {
+          // Adjust newIndex if necessary, but typically standard array splice works
           ids.splice(newIndex, 0, placeId);
         } else {
           ids.push(placeId);

@@ -76,7 +76,7 @@ function RouteOverlay({ coords, routes, themeImageUrl, themeGlowColor }: Leaflet
         // Increased maxZoom to 12 so it can zoom in beautifully on close cities inside India.
         // Added much smaller uniform padding so the map can zoom in closer.
         map.fitBounds(bounds, { 
-          padding: [30, 30], 
+          padding: [40, 40], 
           maxZoom: 10, 
           animate: false 
         });
@@ -137,7 +137,7 @@ function RouteOverlay({ coords, routes, themeImageUrl, themeGlowColor }: Leaflet
           </filter>
 
           <clipPath id="avatarClip">
-            <circle r="40" />
+            <circle r="30" />
           </clipPath>
         </defs>
 
@@ -192,17 +192,26 @@ function RouteOverlay({ coords, routes, themeImageUrl, themeGlowColor }: Leaflet
         })}
 
         {/* Living Nodes */}
-        {nodes.map(node => (
+        {nodes.map(node => {
+          const destNode = nodes.find(n => n.type === 'destination');
+          const isWest = destNode && node.lng < destNode.lng;
+          const isEast = destNode && node.lng >= destNode.lng;
+
+          const textX = node.type === 'origin' && destNode ? (isWest ? -15 : 15) : 0;
+          const textY = node.type === 'origin' ? (destNode ? 4 : 16) : (themeImageUrl ? 50 : 24);
+          const anchor = node.type === 'origin' && destNode ? (isWest ? 'end' : 'start') : 'middle';
+
+          return (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
             {node.type === 'destination' ? (
               themeImageUrl ? (
                 <g className="transition-all duration-1000">
                   {/* Outer Glow Ring */}
-                  <circle r="48" fill="none" stroke={themeGlowColor || "url(#neonGradient)"} strokeWidth="8" filter="url(#subtleGlow)" opacity="0.6" className="dest-pulse" />
-                  <circle r="44" fill="none" stroke="#ffffff" strokeWidth="4" filter="url(#hyperGlow)" opacity="0.8" />
+                  <circle r="38" fill="none" stroke={themeGlowColor || "url(#neonGradient)"} strokeWidth="6" filter="url(#subtleGlow)" opacity="0.6" className="dest-pulse" />
+                  <circle r="34" fill="none" stroke="#ffffff" strokeWidth="3" filter="url(#hyperGlow)" opacity="0.8" />
                   {/* Image Avatar */}
                   <g clipPath="url(#avatarClip)">
-                     <image href={themeImageUrl} x="-40" y="-40" width="80" height="80" preserveAspectRatio="xMidYMid slice" />
+                     <image href={themeImageUrl} x="-30" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid slice" />
                   </g>
                 </g>
               ) : (
@@ -220,14 +229,15 @@ function RouteOverlay({ coords, routes, themeImageUrl, themeGlowColor }: Leaflet
             )}
             
             <text 
-              y={node.type === 'destination' ? (themeImageUrl ? 60 : 24) : 16}
+              x={textX}
+              y={textY}
               className="text-label"
-              textAnchor="middle"
+              textAnchor={anchor}
             >
               {node.name}
             </text>
           </g>
-        ))}
+        )})}
       </svg>
       
       <style jsx global>{`
