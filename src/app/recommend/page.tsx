@@ -629,6 +629,32 @@ export default function RecommendPage() {
               <p className="text-xs font-bold text-neutral-500 uppercase tracking-[0.2em] animate-pulse">Running location analysis algorithms...</p>
             </div>
           )}
+
+          {!loading && formCollapsed && rawResults.length === 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="py-20 px-6 my-12 flex flex-col items-center justify-center text-center border border-neutral-200 dark:border-neutral-800 rounded-sm bg-neutral-50/50 dark:bg-[#080808] max-w-xl mx-auto space-y-6 shadow-lg"
+            >
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+                <Compass size={24} className="animate-spin-slow" />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-wide">Server Sleep / Timeout Detected</h3>
+                <p className="text-sm font-light text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                  Our recommendation AI briefly went to sleep or experienced a network timeout. The good news is that your request just woke it up!
+                </p>
+                <p className="text-xs font-bold uppercase tracking-widest text-amber-500 pt-2">
+                  Kindly press the Edit option above (or button below) and re-submit your search
+                </p>
+              </div>
+              <button
+                onClick={() => setFormCollapsed(false)}
+                className="mt-2 bg-neutral-900 dark:bg-white text-white dark:text-black px-8 py-3.5 font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-all shadow-md"
+              >
+                Edit & Re-submit Now
+              </button>
+            </motion.div>
+          )}
         </AnimatePresence>
 
       </main>
