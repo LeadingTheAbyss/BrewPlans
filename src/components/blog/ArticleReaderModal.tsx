@@ -64,14 +64,12 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
   const handleDelete = () => {
     if (!article) return;
     if (confirm(`Are you sure you want to delete "${article.title}"?`)) {
-      try {
-        const customBlogsLocal = localStorage.getItem('brewplans_custom_blogs');
-        if (customBlogsLocal) {
-          let customBlogs: Article[] = JSON.parse(customBlogsLocal);
-          customBlogs = customBlogs.filter(a => a.id !== article.id && a.slug !== article.slug);
-          localStorage.setItem('brewplans_custom_blogs', JSON.stringify(customBlogs));
-        }
-      } catch(e) {}
+      if (typeof window !== 'undefined') {
+        fetch(`/api/blogs/${article.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        }).catch(e => console.error(e));
+      }
       onClose();
       // To trigger a re-render in the parent, we reload the page if it's the blog page
       if (window.location.pathname === '/blog') {
@@ -177,14 +175,11 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
     setComments(updatedComments);
     
     if (typeof window !== 'undefined' && article) {
-      const existing: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-      const updated = existing.map(a => {
-        if (a.id === article.id || a.slug === article.slug) {
-          return { ...a, comments: updatedComments };
-        }
-        return a;
-      });
-      localStorage.setItem('brewplans_custom_blogs', JSON.stringify(updated));
+      fetch(`/api/blogs/${article.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comments: updatedComments })
+      }).catch(e => console.error(e));
     }
     
     setNewComment('');

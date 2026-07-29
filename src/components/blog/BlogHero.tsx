@@ -16,15 +16,20 @@ export function BlogHero() {
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const customBlogs = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-      const uniqueWriters = new Set(customBlogs.map((b: any) => b.author?.username).filter(Boolean));
-      const uniqueCities = new Set(customBlogs.map((b: any) => b.city).filter(Boolean));
-      if (uniqueWriters.size > 0 || uniqueCities.size > 0) {
-        setStats({
-          writers: 12 + uniqueWriters.size,
-          cities: 28 + uniqueCities.size
-        });
-      }
+      fetch('/api/blogs')
+        .then(res => res.json())
+        .then(customBlogs => {
+          if (!Array.isArray(customBlogs)) return;
+          const uniqueWriters = new Set(customBlogs.map((b: any) => b.author?.username).filter(Boolean));
+          const uniqueCities = new Set(customBlogs.map((b: any) => b.city).filter(Boolean));
+          if (uniqueWriters.size > 0 || uniqueCities.size > 0) {
+            setStats({
+              writers: 12 + uniqueWriters.size,
+              cities: 28 + uniqueCities.size
+            });
+          }
+        })
+        .catch(e => console.error('Failed to fetch blogs for hero stats', e));
     }
   }, []);
 

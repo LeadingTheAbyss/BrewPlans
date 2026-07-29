@@ -140,7 +140,11 @@ export default function WriteBlogPage() {
       // 2. If editing existing article, pre-fill all fields
       if (editId) {
         try {
-          const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
+          const fetchRes = await fetch(`/api/blogs/${editId}`);
+          let customBlogs: Article[] = [];
+          if (fetchRes.ok) {
+            customBlogs = [await fetchRes.json()];
+          }
           const allArticles = [...customBlogs, ...ARTICLES, FEATURED_ARTICLE];
           const target = allArticles.find(a => a?.id === editId || a?.slug === editId);
           if (target) {
@@ -383,7 +387,7 @@ export default function WriteBlogPage() {
     }
   };
 
-  const handlePublish = (e: React.FormEvent) => {
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) {
       alert('Please enter a title!');
@@ -448,19 +452,24 @@ export default function WriteBlogPage() {
       return str.replace(/data:image\/[^;]+;base64,[a-zA-Z0-9+/=]+/g, 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80');
     };
 
-    // Clean up any old corruption in the local storage before reading
-    const rawCustom = localStorage.getItem('brewplans_custom_blogs') || '[]';
-    const cleanRawCustom = rawCustom.replace(/data:image\/[^;]+;base64,[a-zA-Z0-9+/=]+/g, 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80');
-    let existingCustom: Article[] = JSON.parse(cleanRawCustom);
-
-    if (editingId) {
-      existingCustom = existingCustom.map(a => (a.id === editingId || a.slug === editingId) ? { ...a, ...(newArticle as any) } : a);
-    } else {
-      existingCustom.unshift(newArticle as any);
+    try {
+      const payload = JSON.parse(safeStringify(newArticle));
+      if (editingId) {
+        await fetch(`/api/blogs/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        await fetch('/api/blogs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save blog:', err);
     }
-    
-    // Save cleanly
-    localStorage.setItem('brewplans_custom_blogs', safeStringify(existingCustom));
 
     // Create mock account for admin overriding
     if (isAdmin && username !== (user as any)?.username) {

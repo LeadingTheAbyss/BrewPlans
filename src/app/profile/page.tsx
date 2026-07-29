@@ -121,6 +121,12 @@ export default function ProfilePage() {
   // Load custom profile & incoming collaboration invites
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      (async () => {
+        let fetchedBlogs: Article[] = [];
+        try {
+          const res = await fetch('/api/blogs');
+          if (res.ok) fetchedBlogs = await res.json();
+        } catch(e) {}
       try {
         const saved = localStorage.getItem('brewplans_user_profile');
         let myUsername = '1';
@@ -152,9 +158,7 @@ export default function ProfilePage() {
             setEditForm(init);
           }
 
-          // Load custom blogs written by user
-          const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-          const allAvailable = [...customBlogs, ...ARTICLES.slice(0, 3)];
+          const allAvailable = [...fetchedBlogs, ...ARTICLES.slice(0, 3)];
           const myStories = allAvailable.filter(s => 
             s.author.username === myUsername ||
             s.author.name === (myProfileData?.displayName || user?.name) ||
@@ -182,8 +186,7 @@ export default function ProfilePage() {
             return;
           }
 
-          const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-          const all = [...customBlogs, FEATURED_ARTICLE, ...ARTICLES];
+          const all = [...fetchedBlogs, FEATURED_ARTICLE, ...ARTICLES];
           
           let foundProfile = null;
           try {
@@ -238,8 +241,7 @@ export default function ProfilePage() {
           setCollabRequests(storedReqs);
         }
 
-        const customBlogs = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-        const mine = customBlogs.filter((b: any) => 
+        const mine = fetchedBlogs.filter((b: any) => 
           b.author?.username?.toLowerCase() === (targetUserParam || '').toLowerCase() || 
           b.collaborators?.some((c: any) => c.username.toLowerCase() === (targetUserParam || '').toLowerCase() && c.status === 'approved')
         );
@@ -256,6 +258,7 @@ export default function ProfilePage() {
       } catch (e) {
         console.error(e);
       }
+      })();
     }
   }, [user, targetUserParam]);
 
@@ -265,25 +268,31 @@ export default function ProfilePage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('brewplans_collab_requests', JSON.stringify(updatedReqs));
 
-      // Check if article is in custom_blogs or standard articles and add collaborator
-      let customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-      let storyObj = [...customBlogs, ...ARTICLES, FEATURED_ARTICLE].find(s => s.slug === articleSlug || s.id === articleSlug);
-      
-      if (storyObj && !userStories.some(s => s.id === storyObj?.id)) {
-        storyObj = {
-          ...storyObj,
-          collaborators: [
-            ...(storyObj.collaborators || []),
-            {
-              name: customProfile.displayName || 'Travel Companion',
-              username: customProfile.username || 'companion',
-              avatar: customProfile.pfp || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80',
-              status: 'approved'
-            }
-          ]
-        };
-        setUserStories([storyObj, ...userStories]);
-      }
+      fetch('/api/blogs')
+        .then(res => res.json())
+        .then(customBlogs => {
+          let storyObj = [...customBlogs, ...ARTICLES, FEATURED_ARTICLE].find(s => s.slug === articleSlug || s.id === articleSlug);
+          if (storyObj && !userStories.some(s => s.id === storyObj?.id)) {
+            const updatedStory = {
+              ...storyObj,
+              collaborators: [
+                ...(storyObj.collaborators || []),
+                {
+                  name: customProfile.displayName || 'Travel Companion',
+                  username: customProfile.username || 'companion',
+                  avatar: customProfile.pfp || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80',
+                  status: 'approved'
+                }
+              ]
+            };
+            setUserStories([updatedStory, ...userStories]);
+            fetch(`/api/blogs/${storyObj.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ collaborators: updatedStory.collaborators })
+            });
+          }
+        });
     }
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);

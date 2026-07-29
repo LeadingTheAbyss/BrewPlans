@@ -49,45 +49,26 @@ export default function BlogLandingPage() {
     if (typeof window !== 'undefined') {
       const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
-        const customBlogsLocal = localStorage.getItem('brewplans_custom_blogs');
-        let customBlogs: Article[] = [];
-        let updated = false;
-        
-        if (customBlogsLocal && customBlogsLocal !== '[]') {
-          customBlogs = JSON.parse(customBlogsLocal);
-          const hasSeed = customBlogs.some(b => b.id.startsWith('seed-'));
-          if (!hasSeed) {
-            customBlogs = [...customBlogs, ...INITIAL_CUSTOM_BLOGS];
-            updated = true;
-          }
-        } else {
-          customBlogs = [...INITIAL_CUSTOM_BLOGS];
-          updated = true;
-        }
-
-        // Apply progressive metrics
-        customBlogs = customBlogs.map(b => {
-          const metrics = calculateProgressiveMetrics(b);
-          return {
-            ...b,
-            likes: metrics.likesCount,
-            views: metrics.viewsCount
-          };
-        });
-        
-        // Temporary cleanup block to remove all blogs except the Jammu one
-        const previousLen = customBlogs.length;
-        customBlogs = customBlogs.filter(b => b.title.toLowerCase().includes('jammu'));
-        
-        if (customBlogs.length !== previousLen) {
-          updated = true;
-        }
-
-        if (updated) {
-          localStorage.setItem('brewplans_custom_blogs', JSON.stringify(customBlogs));
-        }
-        
-        setArticles(customBlogs);
+        fetch('/api/blogs')
+          .then(res => res.json())
+          .then(data => {
+            let customBlogs: Article[] = Array.isArray(data) ? data : [];
+            
+            // Apply progressive metrics
+            customBlogs = customBlogs.map(b => {
+              const metrics = calculateProgressiveMetrics(b);
+              return {
+                ...b,
+                likes: metrics.likesCount,
+                views: metrics.viewsCount
+              };
+            });
+            
+            // Temporary cleanup block to remove all blogs except the Jammu one
+            customBlogs = customBlogs.filter(b => b.title.toLowerCase().includes('jammu'));
+            
+            setArticles(customBlogs);
+          });
 
         const profileSaved = localStorage.getItem('brewplans_user_profile');
         const userSaved = localStorage.getItem('brewplans_user');
@@ -119,8 +100,13 @@ export default function BlogLandingPage() {
 
   const handleDeleteArticle = (articleToDelete: Article) => {
     if (typeof window !== 'undefined') {
+      try {
+        fetch(`/api/blogs/${articleToDelete.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (e) {}
       const updated = articles.filter(a => a.id !== articleToDelete.id && a.slug !== articleToDelete.slug);
-      localStorage.setItem('brewplans_custom_blogs', JSON.stringify(updated));
       setArticles(updated);
     }
   };

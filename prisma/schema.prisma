@@ -331,3 +331,43 @@ model CostAnalysis {
   apiBreakdown   Json     // { "Places": 1.20, "Flights": 0.40 }
   createdAt      DateTime @default(now())
 }
+
+model Article {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  title              String
+  excerpt            String
+  category           String
+  city               String
+  categoryIcon       String
+  categoryBadgeBg    String
+  categoryBadgeText  String
+  readingTime        String
+  
+  author             Json
+  collaborators      Json?
+  
+  date               String
+  imageUrl           String
+  featured           Boolean? @default(false)
+  likes              Int      @default(0)
+  views              Int      @default(0)
+  commentsCount      Int      @default(0)
+  controversialScore Int      @default(0)
+  timesPlanned       Int      @default(0)
+  
+  budget             String?
+  bestSeason         String?
+  accommodation      String?
+  transportMode      String?
+  
+  itineraryStops     Json?
+  content            String?  @db.Text
+  mediaType          String?
+  videoUrl           String?
+  
+  comments           Json?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}

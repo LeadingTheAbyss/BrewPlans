@@ -12,8 +12,10 @@ export default function BlogMediaPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-        setArticles(customBlogs);
+        fetch('/api/blogs')
+          .then(res => res.json())
+          .then(data => setArticles(Array.isArray(data) ? data : []))
+          .catch(() => setArticles([]));
       } catch (e) {
         setArticles([]);
       }

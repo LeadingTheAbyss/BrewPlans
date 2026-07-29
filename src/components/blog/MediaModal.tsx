@@ -21,15 +21,21 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
         if (likedIds.includes(article.id)) setLiked(true);
         
         // Also check if we have updated data for this custom article
-        const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-        const updatedArticle = customBlogs.find(a => a.id === article.id);
-        if (updatedArticle) {
-          setLikesCount(updatedArticle.likes || 0);
-          setComments(updatedArticle.comments || []);
-        } else if (likedIds.includes(article.id)) {
-          // It's a static article but liked locally
-          setLikesCount((article.likes || 0) + 1);
-        }
+        fetch(`/api/blogs/${article.id}`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error('Not found');
+          })
+          .then(updatedArticle => {
+            setLikesCount(updatedArticle.likes || 0);
+            setComments(updatedArticle.comments || []);
+          })
+          .catch(() => {
+            if (likedIds.includes(article.id)) {
+              // It's a static article but liked locally
+              setLikesCount((article.likes || 0) + 1);
+            }
+          });
       } catch (e) {}
     }
   }, [article]);
@@ -58,12 +64,11 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
       localStorage.setItem('brewplans_liked_articles', JSON.stringify(likedIds));
 
       // Update custom blogs if applicable
-      const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-      const bIndex = customBlogs.findIndex(a => a.id === article.id);
-      if (bIndex > -1) {
-        customBlogs[bIndex].likes = newCount;
-        localStorage.setItem('brewplans_custom_blogs', JSON.stringify(customBlogs));
-      }
+      fetch(`/api/blogs/${article.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ likes: newCount })
+      }).catch(() => {});
     } catch (e) {}
   };
 
@@ -94,12 +99,11 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
 
     try {
       // Update custom blogs if applicable
-      const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-      const bIndex = customBlogs.findIndex(a => a.id === article.id);
-      if (bIndex > -1) {
-        customBlogs[bIndex].comments = updatedComments;
-        localStorage.setItem('brewplans_custom_blogs', JSON.stringify(customBlogs));
-      }
+      fetch(`/api/blogs/${article.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comments: updatedComments })
+      }).catch(() => {});
     } catch (e) {}
   };
 

@@ -49,18 +49,27 @@ export default function DedicatedArticlePage() {
       a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleSlug
     );
 
-    // If not found in default data, check local storage for custom written blogs or collaborated blogs
+    // If not found in default data, check API for custom written blogs or collaborated blogs
     if (!found && typeof window !== 'undefined') {
-      try {
-        const customBlogs: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-        found = customBlogs.find(a => 
-          a.slug === articleSlug || 
-          a.author.username === username ||
-          a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleSlug
-        );
-      } catch (e) {
-        console.error('Failed to parse user custom blogs', e);
-      }
+      fetch('/api/blogs')
+        .then(res => res.json())
+        .then(data => {
+          let customBlogs: Article[] = Array.isArray(data) ? data : [];
+          const customFound = customBlogs.find(a => 
+            a.slug === articleSlug || 
+            a.author.username === username ||
+            a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleSlug
+          );
+          if (customFound) {
+            setArticle(customFound);
+            const metrics = calculateProgressiveMetrics(customFound);
+            setLikesCount(metrics.likesCount);
+            setViewsCount(metrics.viewsCount);
+            setTimesPlanned(customFound.timesPlanned || 0);
+            setComments(customFound.comments || []);
+          }
+        })
+        .catch(e => console.error('Failed to fetch user custom blogs', e));
     }
 
     const displayArticle = found || FEATURED_ARTICLE;
@@ -107,9 +116,10 @@ export default function DedicatedArticlePage() {
     if (!article) return;
     if (confirm(`Are you sure you want to delete "${article.title}"?`)) {
       if (typeof window !== 'undefined') {
-        const existing: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-        const updated = existing.filter(a => a.id !== article.id && a.slug !== article.slug);
-        localStorage.setItem('brewplans_custom_blogs', JSON.stringify(updated));
+        fetch(`/api/blogs/${article.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        }).catch(e => console.error(e));
       }
       setDeleteNotice(true);
       setTimeout(() => {
@@ -208,14 +218,11 @@ export default function DedicatedArticlePage() {
     setComments(updatedComments);
     
     if (typeof window !== 'undefined' && article) {
-      const existing: Article[] = JSON.parse(localStorage.getItem('brewplans_custom_blogs') || '[]');
-      const updated = existing.map(a => {
-        if (a.id === article.id || a.slug === article.slug) {
-          return { ...a, comments: updatedComments };
-        }
-        return a;
-      });
-      localStorage.setItem('brewplans_custom_blogs', JSON.stringify(updated));
+      fetch(`/api/blogs/${article.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comments: updatedComments })
+      }).catch(e => console.error(e));
     }
     
     setNewComment('');
