@@ -733,35 +733,40 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
           ));
         }, 150);
 
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        })
-          .then(res => res.json())
-          .then(data => {
+        (async () => {
+          try {
+            const presignRes = await fetch('/api/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename: file.name, contentType: file.type })
+            });
+            const presignData = await presignRes.json();
+            
+            if (!presignRes.ok) throw new Error(presignData.error || 'Failed to get upload URL');
+
+            const uploadRes = await fetch(presignData.uploadUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': file.type },
+              body: file,
+            });
+
+            if (!uploadRes.ok) throw new Error('Failed to upload file to storage bucket');
+
             clearInterval(iv);
-            if (data.url) {
-              setBlocks(prev =>
-                prev.map(b =>
-                  b.id === tid
-                    ? { ...b, meta: { imageLoading: false, imageUrl: data.url } }
-                    : b
-                )
-              );
-            } else {
-              throw new Error(data.error || 'Upload failed');
-            }
-          })
-          .catch(err => {
+            setBlocks(prev =>
+              prev.map(b =>
+                b.id === tid
+                  ? { ...b, meta: { imageLoading: false, imageUrl: presignData.publicUrl } }
+                  : b
+              )
+            );
+          } catch (err) {
             clearInterval(iv);
             console.error('Pasted image upload failed:', err);
-            // Remove the loader block if it fails
             setBlocks(prev => prev.filter(b => b.id !== tid));
             alert('Failed to upload pasted image.');
-          });
+          }
+        })();
         return;
       }
     }
