@@ -10,7 +10,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; saveStatus?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ displayName?: string; pfp?: string; username?: string } | null>(null);
   const isMediaTab = pathname === '/blog/media';
@@ -108,16 +108,25 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
             className="flex items-center gap-2 p-1.5 pr-3.5 rounded-2xl bg-[#1F2937] hover:bg-black text-white font-extrabold text-xs tracking-wide shadow-md hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 border border-white/10"
             title="View Your Profile, PFP, Bio & Socials"
           >
-            <UserAvatar 
-              user={{ 
-                name: userProfile?.displayName || user?.name || 'Explorer', 
-                picture: userProfile?.pfp || user?.picture 
-              }} 
-              className="w-7 h-7 text-[10px]" 
-            />
-            <span className="hidden sm:inline font-black text-white">
-              {userProfile?.displayName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Profile'}
-            </span>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-white/20 animate-pulse"></div>
+                <div className="w-12 h-3 bg-white/20 rounded animate-pulse hidden sm:block"></div>
+              </div>
+            ) : (
+              <>
+                <UserAvatar 
+                  user={{ 
+                    name: userProfile?.displayName || user?.name || 'Explorer', 
+                    picture: userProfile?.pfp || user?.picture 
+                  }} 
+                  className="w-7 h-7 text-[10px]" 
+                />
+                <span className="hidden sm:inline font-black text-white">
+                  {userProfile?.displayName?.split(' ')[0] || user?.name?.split(' ')[0] || 'Profile'}
+                </span>
+              </>
+            )}
           </Link>
 
           <button 

@@ -166,7 +166,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
             </button>
             <Link href="/u/1" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
-              {user ? (
+              {isLoading ? (
+                <div className="w-full h-full bg-black/10 dark:bg-white/10 animate-pulse"></div>
+              ) : user ? (
                 <UserAvatar user={user} className="w-full h-full text-[10px]" />
               ) : (
                 <User size={14} />
