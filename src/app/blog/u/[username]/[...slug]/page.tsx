@@ -284,6 +284,24 @@ export default function DedicatedArticlePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <input
+                type="date"
+                title="Change publish date"
+                className="px-3 py-1.5 rounded-xl border-2 border-gray-200 text-xs font-black text-gray-700 bg-white focus:outline-none focus:border-[#FF8A3D] cursor-pointer"
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  const newDateStr = new Date(e.target.value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  fetch(`/api/blogs/${article.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: newDateStr })
+                  }).then(() => {
+                    setArticle({ ...article, date: newDateStr });
+                  });
+                }}
+              />
+            )}
             {isOwner && (
               <>
                 {/* 1. EDIT BUTTON */}
