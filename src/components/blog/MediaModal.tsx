@@ -80,10 +80,12 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
     }
 
     const commentObj: Comment = {
+      id: `c_${Date.now()}`,
       author,
       avatar,
       content: newComment,
-      date: 'Just now'
+      date: 'Just now',
+      likes: 0
     };
 
     const updatedComments = [commentObj, ...comments];
