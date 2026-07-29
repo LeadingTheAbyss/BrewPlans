@@ -369,7 +369,13 @@ export default function WriteBlogPage() {
     setIsUploadingMedia(true);
     const data = await uploadFileToR2(file);
     if (data) {
-      setImageUrl(data.publicUrl);
+      if (data.type === 'video') {
+        setVideoUrl(data.publicUrl);
+        setImageUrl('');
+      } else {
+        setImageUrl(data.publicUrl);
+        setVideoUrl('');
+      }
     }
     setIsUploadingMedia(false);
   };
@@ -628,16 +634,6 @@ export default function WriteBlogPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setMediaType('upload')}
-                className={`flex-1 sm:flex-none px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex justify-center items-center gap-2 ${
-                  mediaType === 'upload' ? 'bg-gradient-to-tr from-[#FF8A3D] to-purple-500 text-white shadow-md scale-100 ring-1 ring-purple-300' : 'text-[#6B7280] hover:text-[#4B5563] hover:bg-white/40'
-                }`}
-              >
-                <span className="text-base">📷</span>
-                <span>Media Upload</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => setMediaType('youtube')}
                 className={`flex-1 sm:flex-none px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex justify-center items-center gap-2 ${
                   mediaType === 'youtube' ? 'bg-rose-500 text-white shadow-md scale-100 ring-1 ring-rose-400' : 'text-[#6B7280] hover:text-[#4B5563] hover:bg-white/40'
@@ -773,11 +769,15 @@ export default function WriteBlogPage() {
                     </div>
                   </div>
 
-                  {imageUrl ? (
-                    <div className="relative rounded-2xl overflow-hidden shadow-md group">
-                      <img src={imageUrl} alt="Cover Preview" className="w-full h-40 object-cover" />
+                  {imageUrl || videoUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden shadow-md group bg-black">
+                      {videoUrl ? (
+                        <video src={videoUrl} autoPlay loop muted playsInline className="w-full h-40 object-cover" />
+                      ) : (
+                        <img src={imageUrl} alt="Cover Preview" className="w-full h-40 object-cover" />
+                      )}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button type="button" onClick={() => setImageUrl('')} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
+                        <button type="button" onClick={() => { setImageUrl(''); setVideoUrl(''); }} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
                           Remove Cover
                         </button>
                       </div>
@@ -788,7 +788,7 @@ export default function WriteBlogPage() {
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => { setImageUrl(preset.url); setActiveDrawer('none'); }}
+                          onClick={() => { setImageUrl(preset.url); setVideoUrl(''); setActiveDrawer('none'); }}
                           className={`relative rounded-2xl overflow-hidden h-24 border-3 transition-all ${imageUrl === preset.url ? 'border-[#FF8A3D] shadow-lg scale-102' : 'border-transparent opacity-80 hover:opacity-100'}`}
                         >
                           <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
@@ -798,7 +798,7 @@ export default function WriteBlogPage() {
                     </div>
                   )}
 
-                  {!imageUrl && (
+                  {!imageUrl && !videoUrl && (
                     <div 
                       className="p-6 rounded-2xl bg-[#FFF3E6]/60 border-2 border-dashed border-[#FF8A3D]/40 text-center space-y-2 mt-4 hover:bg-[#FFF3E6] transition-colors focus:outline-none"
                       tabIndex={0}
@@ -807,7 +807,7 @@ export default function WriteBlogPage() {
                         if (!items) return;
                         let file: File | null = null;
                         for (let i = 0; i < items.length; i++) {
-                          if (items[i].type.indexOf('image') !== -1) {
+                          if (items[i].type.indexOf('image') !== -1 || items[i].type.indexOf('video') !== -1) {
                             file = items[i].getAsFile();
                             break;
                           }
@@ -816,7 +816,15 @@ export default function WriteBlogPage() {
                           e.preventDefault();
                           setIsUploadingMedia(true);
                           uploadFileToR2(file).then(data => {
-                            if (data) setImageUrl(data.publicUrl);
+                            if (data) {
+                              if (data.type === 'video') {
+                                setVideoUrl(data.publicUrl);
+                                setImageUrl('');
+                              } else {
+                                setImageUrl(data.publicUrl);
+                                setVideoUrl('');
+                              }
+                            }
                             setIsUploadingMedia(false);
                             setActiveDrawer('none');
                           });
@@ -824,11 +832,11 @@ export default function WriteBlogPage() {
                       }}
                     >
                       <Upload size={24} className="mx-auto text-[#D45B0C]" />
-                      <div className="font-bold text-sm text-[#1F2937]">Upload high-res photo file (Max 10 MB)</div>
-                      <div className="text-xs text-[#D45B0C] font-black mb-2">Or press Ctrl+V to paste an image here</div>
+                      <div className="font-bold text-sm text-[#1F2937]">Upload high-res photo or video (Max 50 MB)</div>
+                      <div className="text-xs text-[#D45B0C] font-black mb-2">Or press Ctrl+V to paste media here</div>
                       <label className="inline-block px-6 py-2.5 rounded-xl bg-[#FF8A3D] text-[#1F2937] font-black text-xs uppercase tracking-wider cursor-pointer shadow hover:scale-105 transition-transform">
-                        <span>Select Photo...</span>
-                        <input type="file" accept="image/*" onChange={(e) => { handleFileUpload(e); setActiveDrawer('none'); }} className="hidden" />
+                        <span>Select Media...</span>
+                        <input type="file" accept="image/*,video/mp4,video/webm" onChange={(e) => { handleFileUpload(e); setActiveDrawer('none'); }} className="hidden" />
                       </label>
                     </div>
                   )}
@@ -1044,81 +1052,14 @@ export default function WriteBlogPage() {
             </div>
           )}
 
-          {mediaType === 'upload' && (
-            <div className="p-5 rounded-3xl bg-[#FFF3E6] border-2 border-[#FF8A3D] space-y-4 mb-4">
-              <div className="flex flex-col gap-1">
-                <label className="block text-xs font-black uppercase tracking-wider text-[#D45B0C]">
-                  📷 Upload Image or Video *
-                </label>
-                <span className="text-[11px] font-bold text-[#6B7280]">Limits: Images &lt; 5MB | Videos &lt; 2 minutes (strictly max 50MB)</span>
-              </div>
-              
-              <div 
-                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-[#FF8A3D]/40 rounded-2xl bg-white/60 hover:bg-white transition-colors focus:outline-none"
-                tabIndex={0}
-                onPaste={(e) => {
-                  const items = e.clipboardData?.items;
-                  if (!items) return;
-                  let file: File | null = null;
-                  for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                      file = items[i].getAsFile();
-                      break;
-                    }
-                  }
-                  if (file) {
-                    e.preventDefault();
-                    setIsUploadingMedia(true);
-                    uploadFileToR2(file).then(data => {
-                      if (data) {
-                        if (data.type === 'video') setVideoUrl(data.publicUrl);
-                        else {
-                          setImageUrl(data.publicUrl);
-                          setVideoUrl('');
-                        }
-                      }
-                      setIsUploadingMedia(false);
-                    });
-                  }
-                }}
-              >
-                <Upload className="text-[#FF8A3D] w-10 h-10 mb-3" />
-                <p className="text-sm font-bold text-[#1F2937]">Drag & drop or click to upload</p>
-                <p className="text-xs font-semibold text-[#6B7280] mb-2">Supports JPEG, PNG, MP4, WebM</p>
-                <p className="text-xs font-black text-[#D45B0C] mb-4">Or press Ctrl+V to paste an image here</p>
-                <label className="px-6 py-2.5 rounded-xl bg-[#FF8A3D] text-[#1F2937] font-black text-xs uppercase tracking-wider cursor-pointer shadow-md hover:scale-105 transition-all">
-                  <span>{isUploadingMedia ? 'Uploading...' : 'Select File...'}</span>
-                  <input type="file" accept="image/*,video/mp4,video/webm" onChange={handleMediaUpload} disabled={isUploadingMedia} className="hidden" />
-                </label>
-              </div>
-
-              {imageUrl && !videoUrl && (
-                <div className="relative rounded-2xl overflow-hidden mt-4 group">
-                  <img src={imageUrl} alt="Uploaded media" className="w-full max-h-96 object-contain bg-black/5" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button type="button" onClick={() => setImageUrl('')} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
-                      Remove Image
-                    </button>
-                  </div>
-                </div>
-              )}
-              {videoUrl && (
-                <div className="relative rounded-2xl overflow-hidden mt-4 group bg-black">
-                  <video src={videoUrl} controls className="w-full max-h-96 object-contain" />
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button type="button" onClick={() => setVideoUrl('')} className="bg-white/90 p-2 rounded-full hover:bg-white text-rose-500 shadow-lg">
-                      <X size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* COVER BANNER PREVIEW (If custom image is selected AND it is an article) */}
-          {imageUrl && mediaType === 'article' && (
-            <div className="relative rounded-3xl overflow-hidden mb-6 max-h-[260px] group shadow-lg border-2 border-white">
-              <img src={imageUrl} alt="Selected cover" className="w-full h-full object-cover max-h-[260px]" />
+          {(imageUrl || videoUrl) && mediaType === 'article' && (
+            <div className="relative rounded-3xl overflow-hidden mb-6 max-h-[260px] group shadow-lg border-2 border-white bg-black">
+              {videoUrl ? (
+                <video src={videoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover max-h-[260px]" />
+              ) : (
+                <img src={imageUrl} alt="Selected cover" className="w-full h-full object-cover max-h-[260px]" />
+              )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                 <button type="button" onClick={() => setActiveDrawer('cover')} className="px-5 py-2 rounded-xl bg-white text-[#1F2937] font-black text-xs uppercase tracking-wider shadow">
                   Replace Cover Banner

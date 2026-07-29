@@ -363,7 +363,31 @@ export default function ProfilePage() {
     router.push('/');
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handlePfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setEditForm({ ...editForm, pfp: data.url });
+      } else {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed due to network error.');
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUsername = (editForm.username || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
     if (!cleanUsername) {
@@ -373,7 +397,22 @@ export default function ProfilePage() {
     
     if (cleanUsername !== customProfile.username) {
       const existingAuthors = ARTICLES.map(a => a.author.username.toLowerCase());
-      if (existingAuthors.includes(cleanUsername) && cleanUsername !== 'indian_traveler') {
+      
+      let mockUsers: any[] = [];
+      try {
+        mockUsers = JSON.parse(localStorage.getItem('brewplans_mock_users') || '[]');
+      } catch(e) {}
+      const existingMock = mockUsers.map((u: any) => (u.username || '').toLowerCase());
+      
+      // Check API blogs for usernames
+      let apiAuthors: string[] = [];
+      try {
+        const res = await fetch('/api/blogs');
+        const blogs = await res.json();
+        apiAuthors = (Array.isArray(blogs) ? blogs : []).map((b: any) => (b.author?.username || '').toLowerCase());
+      } catch (err) {}
+
+      if ((existingAuthors.includes(cleanUsername) || existingMock.includes(cleanUsername) || apiAuthors.includes(cleanUsername)) && cleanUsername !== 'indian_traveler') {
         alert(`Username @${cleanUsername} is already taken by another registered traveler. Please choose a unique username.`);
         return;
       }
@@ -384,6 +423,17 @@ export default function ProfilePage() {
     setEditForm(updatedProfile);
     if (typeof window !== 'undefined') {
       localStorage.setItem('brewplans_user_profile', JSON.stringify(updatedProfile));
+      
+      try {
+        const mockUsers = JSON.parse(localStorage.getItem('brewplans_mock_users') || '[]');
+        const existingIdx = mockUsers.findIndex((u: any) => u.username === customProfile.username);
+        if (existingIdx >= 0) {
+          mockUsers[existingIdx] = updatedProfile;
+        } else {
+          mockUsers.push(updatedProfile);
+        }
+        localStorage.setItem('brewplans_mock_users', JSON.stringify(mockUsers));
+      } catch (e) {}
     }
     
     // Persist to DB using updateProfile
@@ -914,15 +964,21 @@ export default function ProfilePage() {
                     <Camera size={18} className="text-white" />
                   </div>
                 </div>
-                <div className="flex-1">
-                  <input
-                    type="url"
-                    value={editForm.pfp}
-                    onChange={(e) => setEditForm({ ...editForm, pfp: e.target.value })}
-                    placeholder="Paste image URL here..."
-                    className="w-full h-11 px-3.5 rounded-xl bg-neutral-900 border border-white/20 text-neutral-300 font-medium text-xs focus:border-[#FF8A3D] focus:outline-none"
-                  />
-                  <p className="text-[10px] text-neutral-500 mt-2 font-medium">Use a direct image link (e.g. from Unsplash or your socials).</p>
+                <div className="flex-1 flex gap-2 w-full">
+                  <div className="flex-1">
+                    <input
+                      type="url"
+                      value={editForm.pfp}
+                      onChange={(e) => setEditForm({ ...editForm, pfp: e.target.value })}
+                      placeholder="Paste image URL here..."
+                      className="w-full h-11 px-3.5 rounded-xl bg-neutral-900 border border-white/20 text-neutral-300 font-medium text-xs focus:border-[#FF8A3D] focus:outline-none"
+                    />
+                    <p className="text-[10px] text-neutral-500 mt-2 font-medium">Use a direct link or upload an image.</p>
+                  </div>
+                  <div className="relative overflow-hidden inline-block bg-[#FF8A3D] hover:bg-[#D45B0C] text-[#1F2937] rounded-xl px-4 h-11 text-xs font-black uppercase tracking-widest shrink-0 cursor-pointer flex items-center justify-center transition-colors">
+                    Upload
+                    <input type="file" accept="image/*" className="absolute left-0 top-0 opacity-0 cursor-pointer h-full w-full" onChange={handlePfpUpload} />
+                  </div>
                 </div>
               </div>
             </div>

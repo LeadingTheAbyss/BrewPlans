@@ -46,12 +46,20 @@ export function FeaturedArticleCard({ article, onSelectArticle }: FeaturedArticl
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
           {/* Left: Large Photo with zoom effect */}
-          <div className="lg:col-span-7 relative h-[340px] sm:h-[440px] rounded-[28px] overflow-hidden shadow-lg">
-            <img 
-              src={article.imageUrl} 
-              alt={article.title} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-            />
+          <div className="lg:col-span-7 relative h-[340px] sm:h-[440px] rounded-[28px] overflow-hidden shadow-lg bg-black">
+            {article.videoUrl && (article.mediaType === 'article' || article.videoUrl.match(/\.(mp4|webm|ogg)$/i)) ? (
+              <video 
+                src={article.videoUrl} 
+                autoPlay loop muted playsInline 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+            ) : (
+              <img 
+                src={article.imageUrl} 
+                alt={article.title} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
             
             {/* Top Badge overlay */}

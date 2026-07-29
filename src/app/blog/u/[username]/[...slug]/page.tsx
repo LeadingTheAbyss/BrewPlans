@@ -550,10 +550,16 @@ export default function DedicatedArticlePage() {
           </div>
         )}
 
-        {/* Main Cover Image */}
-        <div className="rounded-[36px] overflow-hidden shadow-2xl border-4 border-white max-h-[520px] mb-10 bg-neutral-100">
-          <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
-        </div>
+        {/* Main Cover Image or Video Banner */}
+        {(article.imageUrl || (article.videoUrl && article.mediaType === 'article')) && (
+          <div className="rounded-[36px] overflow-hidden shadow-2xl border-4 border-white max-h-[520px] mb-10 bg-neutral-100 flex items-center justify-center bg-black">
+            {article.videoUrl && article.mediaType === 'article' ? (
+              <video src={article.videoUrl} autoPlay loop muted playsInline controls className="w-full h-full object-cover max-h-[520px]" />
+            ) : (
+              <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover max-h-[520px]" />
+            )}
+          </div>
+        )}
 
         {/* INTERACTIVE SATELLITE VISUAL JOURNEY MAP (#7) */}
         {article.itineraryStops && article.itineraryStops.length > 0 && (
@@ -570,8 +576,8 @@ export default function DedicatedArticlePage() {
           <RichArticleRenderer content={article.content} excerpt={article.excerpt} city={article.city} />
         </div>
 
-        {/* Video Player Display (if post contains video) */}
-        {article.videoUrl && (
+        {/* Video Player Display (if post contains video and it's not a cover video) */}
+        {article.videoUrl && article.mediaType !== 'article' && (
           <div className={`my-8 rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-black ${article.mediaType === 'short' ? 'max-w-md mx-auto aspect-[9/16]' : 'w-full aspect-video'}`}>
             {article.videoUrl.match(/\.(mp4|webm|ogg)$/i) ? (
               <video src={article.videoUrl} controls className="w-full h-full object-cover" />

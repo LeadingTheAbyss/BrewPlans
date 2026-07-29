@@ -4,17 +4,27 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Compass, ArrowUp, Heart, Map, Plane, Mail, FileText } from 'lucide-react';
 import { TRAVEL_QUOTES } from '@/data/travelQuotes';
-import { ARTICLES } from '@/data/blogData';
+import { ARTICLES, Article } from '@/data/blogData';
 
 export function BlogFooter() {
   // Initialize with index 0 (Jawaharlal Nehru quote) for clean SSR hydration
   const [quoteObj, setQuoteObj] = useState(TRAVEL_QUOTES[0]);
   const [fade, setFade] = useState(true);
+  const [blogs, setBlogs] = useState<Article[]>([]);
 
   useEffect(() => {
     // Pick a new random quote every time someone reloads or visits
     const initialIndex = Math.floor(Math.random() * TRAVEL_QUOTES.length);
     setQuoteObj(TRAVEL_QUOTES[initialIndex]);
+
+    fetch('/api/blogs')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setBlogs(data.slice(0, 5));
+        }
+      })
+      .catch(e => console.error('Failed to fetch trending blogs for footer:', e));
   }, []);
 
   const scrollToTop = () => {
@@ -107,7 +117,13 @@ export function BlogFooter() {
               Trending Blogs
             </h4>
             <ul className="space-y-3 text-sm font-bold text-[#4B5563]">
-              {ARTICLES.slice(0, 5).map(article => (
+              {blogs.length > 0 ? blogs.map(article => (
+                <li key={article.id}>
+                  <Link href={`/blog/u/${encodeURIComponent(article.author?.username || 'traveler')}/${encodeURIComponent(article.slug)}`} className="hover:text-[#FF8A3D] transition-colors line-clamp-2">
+                    {article.title}
+                  </Link>
+                </li>
+              )) : ARTICLES.slice(0, 5).map(article => (
                 <li key={article.id}>
                   <Link href={`/blog/u/${encodeURIComponent(article.author.username)}/${encodeURIComponent(article.slug)}`} className="hover:text-[#FF8A3D] transition-colors line-clamp-2">
                     {article.title}

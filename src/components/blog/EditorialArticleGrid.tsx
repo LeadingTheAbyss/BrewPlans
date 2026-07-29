@@ -158,13 +158,21 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                 <div className="h-1.5 w-full bg-gradient-to-r from-[#FF8A3D] via-[#FFB347] to-[#FFD166] opacity-80 group-hover:opacity-100 transition-opacity"></div>
 
                 {/* Card Image Cover */}
-                <div className={`relative ${heightClass} overflow-hidden bg-[#FFF3E6]`}>
-                  <img
-                    src={article.imageUrl}
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
-                    loading="lazy"
-                  />
+                <div className={`relative ${heightClass} overflow-hidden bg-black`}>
+                  {article.videoUrl && (article.mediaType === 'article' || article.videoUrl.match(/\.(mp4|webm|ogg)$/i)) ? (
+                    <video
+                      src={article.videoUrl}
+                      autoPlay loop muted playsInline
+                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+                    />
+                  ) : (
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+                      loading="lazy"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
                   
                   {/* Category Badge, Video Badge & Bookmark / Admin Delete */}
