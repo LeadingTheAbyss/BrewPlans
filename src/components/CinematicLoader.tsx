@@ -175,15 +175,17 @@ interface CinematicLoaderProps {
   isLoading: boolean;
   category: 'places' | 'food' | 'hotels';
   destination?: string;
+  customLabel?: string;
+  minDisplayMs?: number;
 }
 
 type Phase = 'entering' | 'running' | 'exiting' | 'done';
 
-export function CinematicLoader({ isLoading, category, destination }: CinematicLoaderProps) {
+export function CinematicLoader({ isLoading, category, destination, customLabel, minDisplayMs = 2500 }: CinematicLoaderProps) {
   const [phase, setPhase] = useState<Phase>(isLoading ? 'entering' : 'done');
   const [columns, setColumns] = useState<ReturnType<typeof buildColumns>>(() => isLoading ? buildColumns(category) : [[], [], []]);
   const startTimeRef = useRef<number>(Date.now());
-  const MIN_DISPLAY_MS = 2500; // Reduced from 4s to 2.5s for snappier feel without flickering
+  const MIN_DISPLAY_MS = minDisplayMs;
 
   const config = CATEGORY_CONFIG[category];
 
@@ -462,8 +464,8 @@ export function CinematicLoader({ isLoading, category, destination }: CinematicL
             {destination && (
               <div className="cinematic-destination-label">{destination}</div>
             )}
-            <div className="cinematic-title">{config.label}</div>
-            <div className="cinematic-subtitle">{config.sublabel}</div>
+            <div className="cinematic-title">{customLabel || config.label}</div>
+            <div className="cinematic-subtitle">{customLabel ? '' : config.sublabel}</div>
             <div className="cinematic-dots">
               {[0, 1, 2].map(i => (
                 <div

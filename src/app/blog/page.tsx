@@ -13,6 +13,8 @@ import { BlogNewsletter } from '@/components/blog/BlogNewsletter';
 import { BlogFooter } from '@/components/blog/BlogFooter';
 import { ArticleReaderModal } from '@/components/blog/ArticleReaderModal';
 import { CustomDropdown } from '@/components/blog/CustomDropdown';
+import { CinematicLoader } from '@/components/CinematicLoader';
+import { useCacheStore } from '@/store/cacheStore';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, DollarSign, Calendar, X } from 'lucide-react';
 
@@ -38,13 +40,22 @@ export default function BlogLandingPage() {
   // Dynamic user blogs (No hardcoded data - Item 14)
   const [articles, setArticles] = useState<Article[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+  const cache = useCacheStore();
 
   // Structured Meta-Data filter states
   const [budgetFilter, setBudgetFilter] = useState<string>('All Budgets');
   const [seasonFilter, setSeasonFilter] = useState<string>('All Seasons');
 
   useEffect(() => {
+    setIsMounted(true);
     if (typeof window !== 'undefined') {
+      const cached = cache.getCache('blogs');
+      if (cached && cached.length > 0) {
+        setArticles(cached);
+      }
+
       const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
         fetch('/api/blogs')
@@ -69,6 +80,10 @@ export default function BlogLandingPage() {
             });
             
             setArticles(customBlogs);
+            cache.setCache('blogs', customBlogs);
+          })
+          .finally(() => {
+            setIsFetching(false);
           });
 
         const profileSaved = localStorage.getItem('brewplans_user_profile');
@@ -94,10 +109,13 @@ export default function BlogLandingPage() {
 
         setIsAdmin(currentIsAdmin);
       } catch (e) {
-        setArticles([]);
+        if (!cache.getCache('blogs')) setArticles([]);
+        setIsFetching(false);
       }
     }
   }, []);
+
+  const isLoading = isMounted && articles.length === 0 && isFetching;
 
   const handleDeleteArticle = (articleToDelete: Article) => {
     if (typeof window !== 'undefined') {
@@ -179,6 +197,12 @@ export default function BlogLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF7F0] text-[#1F2937] font-sans selection:bg-[#FF8A3D]/20 overflow-x-hidden relative">
+      <CinematicLoader 
+        isLoading={isLoading} 
+        category="places" 
+        customLabel="Handpicking The Best Blogs For You" 
+        minDisplayMs={6500} 
+      />
       
       {/* Top Travel Journal Navbar */}
       <BlogNavbar />
