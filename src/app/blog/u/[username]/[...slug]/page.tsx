@@ -131,14 +131,6 @@ export default function DedicatedArticlePage() {
     }
   };
 
-  if (!article) {
-    return (
-      <div className="min-h-screen bg-[#FFF7F0] flex items-center justify-center font-bold text-xl text-[#1F2937]">
-        Loading travel dispatch...
-      </div>
-    );
-  }
-
   const hasTrackedView = useRef(false);
 
   useEffect(() => {
@@ -151,6 +143,14 @@ export default function DedicatedArticlePage() {
       }).catch(e => console.error('Failed to increment views', e));
     }
   }, [article?.id]);
+
+  if (!article) {
+    return (
+      <div className="min-h-screen bg-[#FFF7F0] flex items-center justify-center font-bold text-xl text-[#1F2937]">
+        Loading travel dispatch...
+      </div>
+    );
+  }
 
   const toggleLike = () => {
     if (liked) {
