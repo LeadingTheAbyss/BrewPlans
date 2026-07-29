@@ -287,9 +287,7 @@ export default function DedicatedArticlePage() {
             <ArrowLeft size={14} />
             <span>Back to Journal</span>
           </Link>
-
-
-
+        </div>
         {/* Title & Engagement Metadata */}
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4 text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-4">
