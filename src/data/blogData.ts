@@ -45,6 +45,7 @@ export interface Article {
   imageUrl: string;
   imageUrls?: string[]; // Used for multi-image cover carousels
   featured?: boolean;
+  featuredOrder?: number;
   likes: number;
   views: number;
   commentsCount: number;

@@ -78,6 +78,7 @@ export default function WriteBlogPage() {
 
   // Admin handle detection (Item 15)
   const [isAdmin, setIsAdmin] = useState(false);
+  const [featuredOrder, setFeaturedOrder] = useState<number>(0);
 
   // Optional Filters & Collab
   const [budget, setBudget] = useState('');
@@ -162,6 +163,7 @@ export default function WriteBlogPage() {
               if (target.author?.name) setAuthorName(target.author.name);
               if (target.author?.username) setUsername(target.author.username);
               if (target.author?.avatar) setCustomAvatar(target.author.avatar);
+              if (target.featuredOrder) setFeaturedOrder(target.featuredOrder);
               if (target.itineraryStops && target.itineraryStops.length > 0) setStops(target.itineraryStops);
               if (target.budget) setBudget(target.budget);
               if (target.bestSeason) setSeason(target.bestSeason);
@@ -190,6 +192,7 @@ export default function WriteBlogPage() {
               setContent(draft.content || '');
               if (draft.mediaType) setMediaType(draft.mediaType);
               if (draft.videoUrl) setVideoUrl(draft.videoUrl);
+              if (draft.featuredOrder !== undefined) setFeaturedOrder(draft.featuredOrder);
               if (draft.stops) setStops(draft.stops);
               if (draft.budget) setBudget(draft.budget);
               if (draft.season) setSeason(draft.season);
@@ -232,6 +235,7 @@ export default function WriteBlogPage() {
           content,
           mediaType,
           videoUrl,
+          featuredOrder,
           stops,
           budget,
           season,
@@ -499,6 +503,7 @@ export default function WriteBlogPage() {
       city: city || 'Goa & Western Ghats',
       likes: 1,
       commentsCount: 0,
+      featuredOrder: isAdmin ? featuredOrder : 0,
       timesPlanned: 1,
       itineraryStops: stops,
       budget: budget || undefined,
@@ -1051,6 +1056,18 @@ export default function WriteBlogPage() {
                           }} />
                         </label>
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase text-amber-900 mb-1">Trending Position</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={featuredOrder}
+                        onChange={e => setFeaturedOrder(parseInt(e.target.value) || 0)}
+                        placeholder="0 = Not Trending"
+                        className="w-full h-11 px-4 rounded-xl bg-amber-50 border-2 border-amber-300 font-bold text-sm text-[#1F2937] focus:outline-none"
+                      />
+                      <p className="text-[10px] text-amber-700 mt-1">Set to 1, 2, 3... to push to trending. Will auto-shift others.</p>
                     </div>
                   </div>
                 </div>

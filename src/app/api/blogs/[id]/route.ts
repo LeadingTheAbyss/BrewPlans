@@ -22,6 +22,49 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const data = await request.json();
 
+    const existingBlog = await prisma.article.findUnique({ where: { id } });
+    if (!existingBlog) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const oldOrder = existingBlog.featuredOrder || 0;
+    let newOrder = data.featuredOrder !== undefined ? parseInt(data.featuredOrder) : oldOrder;
+
+    if (newOrder !== oldOrder) {
+      if (newOrder > 0) {
+        const maxOrderBlog = await prisma.article.findFirst({
+          where: { featuredOrder: { gt: 0 } },
+          orderBy: { featuredOrder: 'desc' },
+        });
+        const maxOrder = maxOrderBlog?.featuredOrder || 0;
+        if (newOrder > maxOrder + 1) {
+          newOrder = maxOrder + 1;
+        }
+
+        if (oldOrder > 0) {
+          if (oldOrder < newOrder) {
+            await prisma.article.updateMany({
+              where: { featuredOrder: { gt: oldOrder, lte: newOrder } },
+              data: { featuredOrder: { decrement: 1 } }
+            });
+          } else {
+            await prisma.article.updateMany({
+              where: { featuredOrder: { gte: newOrder, lt: oldOrder } },
+              data: { featuredOrder: { increment: 1 } }
+            });
+          }
+        } else {
+          await prisma.article.updateMany({
+            where: { featuredOrder: { gte: newOrder } },
+            data: { featuredOrder: { increment: 1 } }
+          });
+        }
+      } else if (oldOrder > 0) {
+        await prisma.article.updateMany({
+          where: { featuredOrder: { gt: oldOrder } },
+          data: { featuredOrder: { decrement: 1 } }
+        });
+      }
+    }
+
     const updatedBlog = await prisma.article.update({
       where: { id },
       data: {
@@ -41,6 +84,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         date: data.date,
         imageUrl: data.imageUrl,
         featured: data.featured,
+        featuredOrder: newOrder,
         likes: data.likes,
         views: data.views,
         commentsCount: data.commentsCount,
@@ -72,6 +116,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     
+    const existingBlog = await prisma.article.findUnique({ where: { id } });
+    if (existingBlog && existingBlog.featuredOrder && existingBlog.featuredOrder > 0) {
+       await prisma.article.updateMany({
+          where: { featuredOrder: { gt: existingBlog.featuredOrder } },
+          data: { featuredOrder: { decrement: 1 } }
+       });
+    }
+
     await prisma.article.delete({
       where: { id }
     });

@@ -191,7 +191,9 @@ export default function BlogLandingPage() {
     (seasonFilter !== 'All Seasons' ? 1 : 0);
 
   const featuredArticles = useMemo(() => {
-    const featured = articles.filter(a => a.featured).slice(0, 3);
+    const featured = articles
+      .filter(a => a.featuredOrder && a.featuredOrder > 0)
+      .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
     return featured.length > 0 ? featured : (articles.length > 0 ? [articles[0]] : []);
   }, [articles]);
 

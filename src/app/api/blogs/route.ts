@@ -19,6 +19,23 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
     
+    let finalOrder = data.featuredOrder ? parseInt(data.featuredOrder) : 0;
+    if (finalOrder > 0) {
+      const maxOrderBlog = await prisma.article.findFirst({
+        where: { featuredOrder: { gt: 0 } },
+        orderBy: { featuredOrder: 'desc' },
+      });
+      const maxOrder = maxOrderBlog?.featuredOrder || 0;
+      if (finalOrder > maxOrder + 1) {
+        finalOrder = maxOrder + 1;
+      }
+      
+      await prisma.article.updateMany({
+        where: { featuredOrder: { gte: finalOrder } },
+        data: { featuredOrder: { increment: 1 } }
+      });
+    }
+    
     // We want to safely insert JSON
     const blog = await prisma.article.create({
       data: {
@@ -38,6 +55,7 @@ export async function POST(request: Request) {
         date: data.date,
         imageUrl: data.imageUrl,
         featured: data.featured || false,
+        featuredOrder: finalOrder,
         likes: data.likes || 0,
         views: data.views || 0,
         commentsCount: data.commentsCount || 0,

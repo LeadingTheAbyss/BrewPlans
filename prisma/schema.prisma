@@ -350,6 +350,7 @@ model Article {
   date               String
   imageUrl           String
   featured           Boolean? @default(false)
+  featuredOrder      Int?     @default(0)
   likes              Int      @default(0)
   views              Int      @default(0)
   commentsCount      Int      @default(0)
