@@ -430,7 +430,8 @@ export default function WriteBlogPage() {
     }
 
     setPublishing(true);
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    let slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    if (!slug) slug = `post-${Date.now()}`;
     const cleanedCollab = collabUsername.trim().replace('@', '');
 
     let generatedExcerpt = title;
