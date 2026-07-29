@@ -63,6 +63,12 @@ export default function BlogLandingPage() {
               };
             });
             
+            customBlogs.sort((a, b) => {
+              if (a.featured && !b.featured) return -1;
+              if (!a.featured && b.featured) return 1;
+              return (b.likes || 0) - (a.likes || 0);
+            });
+            
             setArticles(customBlogs);
           });
 
@@ -167,7 +173,10 @@ export default function BlogLandingPage() {
     (budgetFilter !== 'All Budgets' ? 1 : 0) +
     (seasonFilter !== 'All Seasons' ? 1 : 0);
 
-  const featuredArticle = articles.length > 0 ? articles[0] : null;
+  const featuredArticles = useMemo(() => {
+    const featured = articles.filter(a => a.featured).slice(0, 3);
+    return featured.length > 0 ? featured : (articles.length > 0 ? [articles[0]] : []);
+  }, [articles]);
 
   return (
     <div className="min-h-screen bg-[#FFF7F0] text-[#1F2937] font-sans selection:bg-[#FF8A3D]/20 overflow-x-hidden relative">
@@ -176,11 +185,27 @@ export default function BlogLandingPage() {
       <BlogNavbar />
 
       {/* Featured Article Section (Trending Top) */}
-      {featuredArticle && (
-        <FeaturedArticleCard 
-          article={featuredArticle} 
-          onSelectArticle={handleSelectArticle} 
-        />
+      {featuredArticles.length > 0 && (
+        <div className="relative group">
+          <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4">
+            {featuredArticles.map((article, idx) => (
+              <div key={article.id || idx} className="min-w-full flex-shrink-0 snap-center">
+                <FeaturedArticleCard 
+                  article={article} 
+                  onSelectArticle={handleSelectArticle} 
+                />
+              </div>
+            ))}
+          </div>
+          {/* Indicator dots if more than 1 */}
+          {featuredArticles.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 pointer-events-none">
+              {featuredArticles.map((_, idx) => (
+                <div key={idx} className="w-2 h-2 rounded-full bg-white/50 border border-black/20" />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Horizontal Trending Destinations Showcase */}

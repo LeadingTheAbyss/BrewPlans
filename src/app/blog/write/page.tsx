@@ -66,6 +66,7 @@ export default function WriteBlogPage() {
   const [city, setCity] = useState('');
   const [category, setCategory] = useState('Offbeat Valleys');
   const [imageUrl, setImageUrl] = useState(PRESET_IMAGES[1].url);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [content, setContent] = useState('');
   const [authorName, setAuthorName] = useState('Indian Explorer');
   const [username, setUsername] = useState('indian_traveler');
@@ -154,6 +155,7 @@ export default function WriteBlogPage() {
               setCity(target.city || '');
               setCategory(target.category || 'Offbeat Valleys');
               setImageUrl(target.imageUrl || 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80');
+              if (target.imageUrls) setImageUrls(target.imageUrls);
               setContent(target.content || '');
               if (target.mediaType) setMediaType(target.mediaType as any);
               if (target.videoUrl) setVideoUrl(target.videoUrl);
@@ -184,6 +186,7 @@ export default function WriteBlogPage() {
               setCity(draft.city || '');
               setCategory(draft.category || 'Offbeat Valleys');
               setImageUrl(draft.imageUrl || PRESET_IMAGES[1].url);
+              if (draft.imageUrls) setImageUrls(draft.imageUrls);
               setContent(draft.content || '');
               if (draft.mediaType) setMediaType(draft.mediaType);
               if (draft.videoUrl) setVideoUrl(draft.videoUrl);
@@ -225,6 +228,7 @@ export default function WriteBlogPage() {
           city,
           category,
           imageUrl: imageUrl && imageUrl.startsWith('data:image') ? 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80' : imageUrl,
+          imageUrls,
           content,
           mediaType,
           videoUrl,
@@ -363,19 +367,30 @@ export default function WriteBlogPage() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
     setIsUploadingMedia(true);
-    const data = await uploadFileToR2(file);
-    if (data) {
-      if (data.type === 'video') {
-        setVideoUrl(data.publicUrl);
-        setImageUrl('');
-      } else {
-        setImageUrl(data.publicUrl);
-        setVideoUrl('');
+    const newUrls = [...imageUrls];
+    let newVideoUrl = videoUrl;
+
+    for (let i = 0; i < files.length; i++) {
+      const data = await uploadFileToR2(files[i]);
+      if (data) {
+        if (data.type === 'video') {
+          newVideoUrl = data.publicUrl;
+        } else {
+          newUrls.push(data.publicUrl);
+        }
       }
+    }
+
+    if (newUrls.length > 0) {
+      setImageUrls(newUrls);
+      setImageUrl(newUrls[0]);
+    }
+    if (newVideoUrl) {
+      setVideoUrl(newVideoUrl);
     }
     setIsUploadingMedia(false);
   };
@@ -769,18 +784,39 @@ export default function WriteBlogPage() {
                     </div>
                   </div>
 
-                  {imageUrl || videoUrl ? (
-                    <div className="relative rounded-2xl overflow-hidden shadow-md group bg-black">
-                      {videoUrl ? (
-                        <video src={videoUrl} autoPlay loop muted playsInline className="w-full h-40 object-cover" />
-                      ) : (
-                        <img src={imageUrl} alt="Cover Preview" className="w-full h-40 object-cover" />
+                  {imageUrl || imageUrls.length > 0 || videoUrl ? (
+                    <div className="space-y-3">
+                      {videoUrl && (
+                        <div className="relative rounded-2xl overflow-hidden shadow-md group bg-black h-40 w-full">
+                          <video src={videoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onClick={() => setVideoUrl('')} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
+                              Remove Video
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button type="button" onClick={() => { setImageUrl(''); setVideoUrl(''); }} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
-                          Remove Cover
-                        </button>
-                      </div>
+                      
+                      {(imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : []).map((url, idx) => (
+                        <div key={idx} className="relative rounded-2xl overflow-hidden shadow-md group bg-black h-40 w-full">
+                          <img src={url} alt="Cover Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onClick={() => {
+                              const active = imageUrls.length > 0 ? imageUrls : [imageUrl];
+                              const newUrls = active.filter((_, i) => i !== idx);
+                              setImageUrls(newUrls);
+                              setImageUrl(newUrls[0] || '');
+                            }} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
+                              Remove Image
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <label className="inline-block px-6 py-2.5 rounded-xl bg-[#FFF3E6] border border-[#FF8A3D]/40 text-[#D45B0C] font-black text-xs uppercase tracking-wider cursor-pointer shadow-sm hover:scale-105 transition-transform w-full text-center">
+                        <span>+ Add More Covers (Multiple allowed)</span>
+                        <input type="file" accept="image/*,video/mp4,video/webm" multiple onChange={(e) => handleFileUpload(e)} className="hidden" />
+                      </label>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -788,7 +824,7 @@ export default function WriteBlogPage() {
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => { setImageUrl(preset.url); setVideoUrl(''); setActiveDrawer('none'); }}
+                          onClick={() => { setImageUrl(preset.url); setImageUrls([preset.url]); setVideoUrl(''); setActiveDrawer('none'); }}
                           className={`relative rounded-2xl overflow-hidden h-24 border-3 transition-all ${imageUrl === preset.url ? 'border-[#FF8A3D] shadow-lg scale-102' : 'border-transparent opacity-80 hover:opacity-100'}`}
                         >
                           <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
@@ -798,36 +834,39 @@ export default function WriteBlogPage() {
                     </div>
                   )}
 
-                  {!imageUrl && !videoUrl && (
+                  {!imageUrl && imageUrls.length === 0 && !videoUrl && (
                     <div 
                       className="p-6 rounded-2xl bg-[#FFF3E6]/60 border-2 border-dashed border-[#FF8A3D]/40 text-center space-y-2 mt-4 hover:bg-[#FFF3E6] transition-colors focus:outline-none"
                       tabIndex={0}
-                      onPaste={(e) => {
+                      onPaste={async (e) => {
                         const items = e.clipboardData?.items;
                         if (!items) return;
-                        let file: File | null = null;
+                        const files: File[] = [];
                         for (let i = 0; i < items.length; i++) {
                           if (items[i].type.indexOf('image') !== -1 || items[i].type.indexOf('video') !== -1) {
-                            file = items[i].getAsFile();
-                            break;
+                            const f = items[i].getAsFile();
+                            if (f) files.push(f);
                           }
                         }
-                        if (file) {
+                        if (files.length > 0) {
                           e.preventDefault();
                           setIsUploadingMedia(true);
-                          uploadFileToR2(file).then(data => {
-                            if (data) {
-                              if (data.type === 'video') {
-                                setVideoUrl(data.publicUrl);
-                                setImageUrl('');
-                              } else {
-                                setImageUrl(data.publicUrl);
-                                setVideoUrl('');
-                              }
+                          const newUrls = [...imageUrls];
+                          let newVid = videoUrl;
+                          for(const file of files) {
+                            const data = await uploadFileToR2(file);
+                            if(data) {
+                              if(data.type === 'video') newVid = data.publicUrl;
+                              else newUrls.push(data.publicUrl);
                             }
-                            setIsUploadingMedia(false);
-                            setActiveDrawer('none');
-                          });
+                          }
+                          if(newUrls.length > 0) {
+                            setImageUrls(newUrls);
+                            setImageUrl(newUrls[0]);
+                          }
+                          if(newVid) setVideoUrl(newVid);
+                          setIsUploadingMedia(false);
+                          setActiveDrawer('none');
                         }
                       }}
                     >
@@ -835,8 +874,8 @@ export default function WriteBlogPage() {
                       <div className="font-bold text-sm text-[#1F2937]">Upload high-res photo or video (Max 50 MB)</div>
                       <div className="text-xs text-[#D45B0C] font-black mb-2">Or press Ctrl+V to paste media here</div>
                       <label className="inline-block px-6 py-2.5 rounded-xl bg-[#FF8A3D] text-[#1F2937] font-black text-xs uppercase tracking-wider cursor-pointer shadow hover:scale-105 transition-transform">
-                        <span>Select Media...</span>
-                        <input type="file" accept="image/*,video/mp4,video/webm" onChange={(e) => { handleFileUpload(e); setActiveDrawer('none'); }} className="hidden" />
+                        <span>Select Media (Multiple allowed)...</span>
+                        <input type="file" multiple accept="image/*,video/mp4,video/webm" onChange={(e) => { handleFileUpload(e); setActiveDrawer('none'); }} className="hidden" />
                       </label>
                     </div>
                   )}

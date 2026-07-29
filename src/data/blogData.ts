@@ -43,6 +43,7 @@ export interface Article {
   collaborators?: Collaborator[];
   date: string;
   imageUrl: string;
+  imageUrls?: string[]; // Used for multi-image cover carousels
   featured?: boolean;
   likes: number;
   views: number;

@@ -160,10 +160,13 @@ $$Total\\_Budget = \\sum (Stay_{₹2500} + Transit_{₹1400} + Food_{₹1200}) \
               style={{ width: `${widthPct}%` }}
             >
               <img
-                src={block.meta?.imageUrl?.includes('Special:FilePath') || block.meta?.imageUrl?.includes('wikimedia.org') ? `/api/proxy-image?url=${encodeURIComponent(block.meta.imageUrl)}` : block.meta?.imageUrl}
+                src={block.meta?.imageUrl?.includes('Special:FilePath') || block.meta?.imageUrl?.includes('wikimedia.org') ? `/api/proxy-image?url=${encodeURIComponent(block.meta.imageUrl)}` : block.meta?.imageUrl || block.content}
                 alt={block.meta?.imageCaption || 'Story visual upload'}
                 className="w-full h-auto max-h-[850px] object-contain block mx-auto"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
               />
               {block.meta?.imageCaption && (
                 <p className="text-center text-sm text-neutral-500 py-2 px-4 italic bg-white/50">

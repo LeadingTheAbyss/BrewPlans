@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Article, Comment } from '@/data/blogData';
 import { Heart, MessageCircle, X, Play, MoreHorizontal } from 'lucide-react';
+import { ImageCarousel } from '@/components/blog/ImageCarousel';
 
 interface MediaModalProps {
   article: Article;
@@ -107,7 +108,30 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
     } catch (e) {}
   };
 
-  const isVideo = article.mediaType === 'video' || article.videoUrl;
+  // Extract images from rich content
+  let contentImages: string[] = [];
+  try {
+    if (article.content) {
+      const blocks = JSON.parse(article.content);
+      if (Array.isArray(blocks)) {
+        blocks.forEach((block: any) => {
+          if (block.type === 'image' && block.meta?.imageUrl) {
+            contentImages.push(block.meta.imageUrl);
+          } else if (block.type === 'image' && block.content && block.content.startsWith('http')) {
+            contentImages.push(block.content);
+          }
+        });
+      }
+    }
+  } catch(e) {}
+
+  const allImages = [
+    ...(article.imageUrls && article.imageUrls.length > 0 ? article.imageUrls : article.imageUrl ? [article.imageUrl] : []),
+    ...contentImages
+  ];
+
+  // We consider it a primary video only if videoUrl exists and it's explicitly a media type video
+  const isVideo = (article.mediaType === 'video' || article.mediaType === 'short') && article.videoUrl;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-0 sm:p-4 md:p-8 animate-in fade-in duration-200">
@@ -153,18 +177,32 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
         <div className="w-full md:w-[60%] lg:w-[65%] h-auto md:h-full bg-black flex items-center justify-center relative group border-b md:border-b-0 md:border-r border-white/10">
           {isVideo ? (
             <div className="relative w-full h-full flex items-center justify-center">
-              <img 
-                src={article.imageUrl || `https://images.unsplash.com/photo-1506929562872-bb421503ef21?auto=format&fit=crop&w=1200&q=80`}
-                alt={article.title}
-                className="w-full h-full object-contain opacity-50"
-              />
-              <button className="absolute bg-white/10 hover:bg-white/20 backdrop-blur-md p-4 rounded-full text-white transition-all transform group-hover:scale-110">
-                <Play size={32} fill="currentColor" />
-              </button>
+              {article.videoUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
+                <video src={article.videoUrl} autoPlay controls playsInline className="w-full h-full object-contain" />
+              ) : (
+                <iframe
+                  src={article.videoUrl?.includes('youtube.com/watch?v=') 
+                    ? `https://www.youtube.com/embed/${article.videoUrl.split('v=')[1]?.split('&')[0]}` 
+                    : article.videoUrl?.includes('youtu.be/') 
+                    ? `https://www.youtube.com/embed/${article.videoUrl.split('youtu.be/')[1]?.split('?')[0]}`
+                    : article.videoUrl?.includes('youtube.com/shorts/')
+                    ? `https://www.youtube.com/embed/${article.videoUrl.split('shorts/')[1]?.split('?')[0]}`
+                    : article.videoUrl}
+                  className="w-full h-full border-0 aspect-video md:aspect-auto"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
             </div>
+          ) : allImages.length > 1 ? (
+            <ImageCarousel 
+              urls={allImages} 
+              alt={article.title} 
+              className="w-full h-auto max-h-[70vh] md:max-h-none md:h-full"
+            />
           ) : (
             <img 
-              src={article.imageUrl}
+              src={allImages[0] || article.imageUrl}
               alt={article.title}
               className="w-full h-auto max-h-[70vh] md:max-h-none md:h-full object-contain"
             />

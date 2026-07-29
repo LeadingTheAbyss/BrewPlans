@@ -8,6 +8,7 @@ import { BlogFooter } from '@/components/blog/BlogFooter';
 import { InteractiveItineraryMap } from '@/components/blog/InteractiveItineraryMap';
 import { BlogVisualMap } from '@/components/blog/BlogVisualMap';
 import { RichArticleRenderer } from '@/components/blog/RichArticleRenderer';
+import { ImageCarousel } from '@/components/blog/ImageCarousel';
 import { calculateProgressiveMetrics } from '@/lib/blogMetrics';
 import { isAdminEmail } from '@/lib/admin';
 import { useAuthStore } from '@/store/authStore';
@@ -30,6 +31,7 @@ export default function DedicatedArticlePage() {
   const [viewsCount, setViewsCount] = useState(0);
   const [shared, setShared] = useState(false);
   const [timesPlanned, setTimesPlanned] = useState(150);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isOwner, setIsOwner] = useState(false);
@@ -76,6 +78,7 @@ export default function DedicatedArticlePage() {
       setLikesCount(metrics.likesCount);
       setViewsCount(metrics.viewsCount);
       setTimesPlanned(displayArticle.timesPlanned || 0);
+      setIsFeatured(displayArticle.featured || false);
       setComments(displayArticle.comments || []);
       checkAdminOwnerStatus(displayArticle);
     };
@@ -344,11 +347,30 @@ export default function DedicatedArticlePage() {
                 {/* 2. DELETE BUTTON */}
                 <button
                   onClick={handleDeleteArticle}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border-2 border-rose-200 font-black text-xs uppercase tracking-wider transition-all shadow-xs"
-                  title="Delete Blog Post"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-xs uppercase tracking-wider transition-colors shadow-sm"
+                  title="Delete Article"
                 >
                   <Trash2 size={14} />
                   <span>Delete</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const newFeatured = !isFeatured;
+                    setIsFeatured(newFeatured);
+                    if (article?.id) {
+                      fetch(`/api/blogs/${article.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ featured: newFeatured })
+                      }).catch(e => console.error(e));
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border font-black text-xs uppercase tracking-wider transition-colors shadow-sm ${
+                    isFeatured ? 'border-purple-300 bg-purple-100 text-purple-700 hover:bg-purple-200' : 'border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600'
+                  }`}
+                  title={isFeatured ? "Remove from Trending" : "Mark as Trending"}
+                >
+                  <span>{isFeatured ? '★ Trending' : '☆ Trend'}</span>
                 </button>
               </>
             )}
@@ -551,15 +573,21 @@ export default function DedicatedArticlePage() {
         )}
 
         {/* Main Cover Image or Video Banner */}
-        {(article.imageUrl || (article.videoUrl && article.mediaType === 'article')) && (
+        {(article.imageUrl || article.imageUrls?.length || (article.videoUrl && article.mediaType === 'article')) ? (
           <div className="rounded-[36px] overflow-hidden shadow-2xl border-4 border-white max-h-[520px] mb-10 bg-neutral-100 flex items-center justify-center bg-black">
             {article.videoUrl && article.mediaType === 'article' ? (
               <video src={article.videoUrl} autoPlay loop muted playsInline controls className="w-full h-full object-cover max-h-[520px]" />
+            ) : article.imageUrls && article.imageUrls.length > 1 ? (
+              <ImageCarousel 
+                urls={article.imageUrls} 
+                alt={article.title} 
+                className="w-full h-full max-h-[520px]"
+              />
             ) : (
               <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover max-h-[520px]" />
             )}
           </div>
-        )}
+        ) : null}
 
         {/* INTERACTIVE SATELLITE VISUAL JOURNEY MAP (#7) */}
         {article.itineraryStops && article.itineraryStops.length > 0 && (

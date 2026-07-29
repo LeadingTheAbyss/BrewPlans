@@ -32,13 +32,26 @@ export function MediaFeed({ articles }: MediaFeedProps) {
             onClick={() => setSelectedArticle(article)}
           >
             {article.mediaType === 'video' || article.videoUrl ? (
-              <div className="relative w-full h-full bg-black flex items-center justify-center">
-                <Play className="absolute text-white w-10 h-10 z-20 opacity-80" fill="currentColor" />
-                <img 
-                  src={article.imageUrl || `https://images.unsplash.com/photo-1506929562872-bb421503ef21?auto=format&fit=crop&w=600&q=80`} 
-                  alt={article.title} 
-                  className="w-full h-full object-cover opacity-70"
-                />
+              <div className="relative w-full h-full bg-black flex items-center justify-center group/video">
+                {article.videoUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video 
+                    src={article.videoUrl} 
+                    className="w-full h-full object-cover opacity-70 group-hover/video:opacity-100 transition-opacity"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <>
+                    <Play className="absolute text-white w-10 h-10 z-20 opacity-80" fill="currentColor" />
+                    <img 
+                      src={article.imageUrl || `https://images.unsplash.com/photo-1506929562872-bb421503ef21?auto=format&fit=crop&w=600&q=80`} 
+                      alt={article.title} 
+                      className="w-full h-full object-cover opacity-70"
+                    />
+                  </>
+                )}
               </div>
             ) : (
               <div className="relative w-full h-full">

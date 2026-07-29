@@ -4,6 +4,7 @@ import React from 'react';
 import { Article } from '@/data/blogData';
 import { motion } from 'framer-motion';
 import { Clock, ArrowUpRight, Bookmark, Share2, Heart, Eye, MessageSquare } from 'lucide-react';
+import { ImageCarousel } from '@/components/blog/ImageCarousel';
 
 interface FeaturedArticleCardProps {
   article: Article;
@@ -52,6 +53,12 @@ export function FeaturedArticleCard({ article, onSelectArticle }: FeaturedArticl
                 src={article.videoUrl} 
                 autoPlay loop muted playsInline 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+            ) : article.imageUrls && article.imageUrls.length > 1 ? (
+              <ImageCarousel 
+                urls={article.imageUrls} 
+                alt={article.title} 
+                className="w-full h-full"
               />
             ) : (
               <img 

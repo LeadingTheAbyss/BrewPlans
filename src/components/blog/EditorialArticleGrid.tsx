@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Article } from '@/data/blogData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Bookmark, Heart, ArrowUpRight, Check, Eye, MessageSquare, Flame } from 'lucide-react';
+import { ImageCarousel } from '@/components/blog/ImageCarousel';
 import Link from 'next/link';
 
 interface EditorialArticleGridProps {
@@ -165,6 +166,12 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                       autoPlay loop muted playsInline
                       className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                     />
+                  ) : article.imageUrls && article.imageUrls.length > 1 ? (
+                    <ImageCarousel 
+                      urls={article.imageUrls} 
+                      alt={article.title} 
+                      className="w-full h-full"
+                    />
                   ) : (
                     <img
                       src={article.imageUrl}
@@ -173,7 +180,7 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                       loading="lazy"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity pointer-events-none"></div>
                   
                   {/* Category Badge, Video Badge & Bookmark / Admin Delete */}
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
