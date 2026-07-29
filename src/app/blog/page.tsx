@@ -59,9 +59,13 @@ export default function BlogLandingPage() {
       const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
         fetch('/api/blogs')
-          .then(res => res.json())
+          .then(async res => {
+            if (!res.ok) throw new Error('API Error');
+            return res.json();
+          })
           .then(data => {
-            let customBlogs: Article[] = Array.isArray(data) ? data : [];
+            if (!Array.isArray(data)) throw new Error('Invalid data format');
+            let customBlogs: Article[] = data;
             
             // Apply progressive metrics
             customBlogs = customBlogs.map(b => {
@@ -81,6 +85,10 @@ export default function BlogLandingPage() {
             
             setArticles(customBlogs);
             cache.setCache('blogs', customBlogs);
+          })
+          .catch(e => {
+            console.error(e);
+            if (!cache.getCache('blogs')) setArticles([]);
           })
           .finally(() => {
             setIsFetching(false);

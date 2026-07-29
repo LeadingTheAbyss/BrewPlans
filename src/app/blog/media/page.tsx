@@ -24,13 +24,19 @@ export default function BlogMediaPage() {
 
       try {
         fetch('/api/blogs')
-          .then(res => res.json())
-          .then(data => {
-            const arr = Array.isArray(data) ? data : [];
-            setArticles(arr);
-            cache.setCache('blogs', arr);
+          .then(async res => {
+            if (!res.ok) throw new Error('API Error');
+            return res.json();
           })
-          .catch(() => { if (!cache.getCache('blogs')) setArticles([]); })
+          .then(data => {
+            if (!Array.isArray(data)) throw new Error('Invalid data format');
+            setArticles(data);
+            cache.setCache('blogs', data);
+          })
+          .catch(e => {
+            console.error(e);
+            if (!cache.getCache('blogs')) setArticles([]);
+          })
           .finally(() => setIsFetching(false));
       } catch (e) {
         if (!cache.getCache('blogs')) setArticles([]);

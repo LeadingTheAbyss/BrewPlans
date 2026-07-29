@@ -4,12 +4,15 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
-import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
+import { Users, Compass, Activity, ArrowLeft, RefreshCw, BarChart2, TrendingUp, AlertTriangle, Search, Filter, ShieldCheck, Database, DollarSign, CloudLightning, MessageSquare, CheckCircle, XCircle, Heart, Eye } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { isAdminEmail } from '@/lib/admin';
 
 interface StatsData {
   stats: {
+    totalBlogs: number;
+    totalLikes: number;
+    totalViews: number;
     totalUsers: number;
     activeUsersToday: number;
     newSignupsToday: number;
@@ -311,6 +314,18 @@ export default function AdminStatsPage() {
               <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                 <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Users size={14} /> Global Users</div>
                 <div className="text-4xl font-light text-white"><Counter value={data.stats.totalUsers} /></div>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><BarChart2 size={14} /> Total Blogs</div>
+                <div className="text-4xl font-light text-[#FF8A3D]"><Counter value={data.stats.totalBlogs} /></div>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Heart size={14} /> Total Likes</div>
+                <div className="text-4xl font-light text-rose-400"><Counter value={data.stats.totalLikes} /></div>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Eye size={14} /> Total Views</div>
+                <div className="text-4xl font-light text-blue-400"><Counter value={data.stats.totalViews} /></div>
               </motion.div>
               <motion.div variants={itemVariants} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                 <div className="text-white/40 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-4"><Activity size={14} /> Active Today</div>

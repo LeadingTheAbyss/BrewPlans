@@ -281,8 +281,21 @@ export async function GET(req: Request) {
       D30: d30Total > 0 ? (d30Retained / d30Total) * 100 : 0,
     };
 
+    const totalBlogs = await prisma.article.count();
+    const blogStats = await prisma.article.aggregate({
+      _sum: {
+        likes: true,
+        views: true
+      }
+    });
+    const totalLikes = blogStats._sum.likes || 0;
+    const totalViews = blogStats._sum.views || 0;
+
     return NextResponse.json({
       stats: {
+        totalBlogs,
+        totalLikes,
+        totalViews,
         totalUsers,
         activeUsersToday,
         newSignupsToday,
