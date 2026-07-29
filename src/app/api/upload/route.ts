@@ -1,57 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Limits based on user requirements: Images < 5MB, Videos < 50MB (max 2 mins roughly)
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+  },
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    
-    if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    const { filename, contentType } = await request.json();
+
+    if (!filename || !contentType) {
+      return NextResponse.json({ error: 'Filename and contentType are required' }, { status: 400 });
     }
 
-    const isVideo = file.type.startsWith('video/');
-    const isImage = file.type.startsWith('image/');
+    const isVideo = contentType.startsWith('video/');
+    const isImage = contentType.startsWith('image/');
 
     if (!isVideo && !isImage) {
       return NextResponse.json({ error: 'Invalid file type. Only images and videos are allowed.' }, { status: 400 });
     }
 
-    // Size Validations
-    if (isImage && file.size > MAX_IMAGE_SIZE) {
-      return NextResponse.json({ error: `Image too large. Max size is 5MB.` }, { status: 400 });
-    }
+    const uniqueFilename = `${Date.now()}-${filename.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '')}`;
+    
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: uniqueFilename,
+      ContentType: contentType,
+    });
 
-    if (isVideo && file.size > MAX_VIDEO_SIZE) {
-      return NextResponse.json({ error: `Video too large. Max size is 50MB (strictly < 2 mins).` }, { status: 400 });
-    }
+    // Presigned URL expires in 5 minutes
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
 
-    // Convert to buffer and save to public/uploads
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (e) {}
-
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '')}`;
-    const path = join(uploadDir, filename);
-    await writeFile(path, buffer);
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${uniqueFilename}`;
 
     return NextResponse.json({
       success: true,
-      url: `/uploads/${filename}`,
+      uploadUrl,
+      publicUrl,
       type: isVideo ? 'video' : 'image'
     });
 
   } catch (error) {
-    console.error('Upload Error:', error);
-    return NextResponse.json({ error: 'Failed to process upload' }, { status: 500 });
+    console.error('Presign Error:', error);
+    return NextResponse.json({ error: 'Failed to generate upload URL' }, { status: 500 });
   }
 }

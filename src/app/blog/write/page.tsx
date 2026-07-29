@@ -330,32 +330,48 @@ export default function WriteBlogPage() {
     setIsSmartFilling(false);
   };
 
+  const uploadFileToR2 = async (file: File) => {
+    try {
+      const presignRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type })
+      });
+      const presignData = await presignRes.json();
+      
+      if (!presignRes.ok) {
+        alert(presignData.error || 'Failed to get upload URL');
+        return null;
+      }
+
+      const uploadRes = await fetch(presignData.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        alert('Failed to upload file to storage bucket');
+        return null;
+      }
+      return presignData;
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed due to network error.');
+      return null;
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     setIsUploadingMedia(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      
-      if (!res.ok) {
-        alert(data.error || 'Upload failed');
-      } else {
-        setImageUrl(data.url);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Upload failed due to network error.');
-    } finally {
-      setIsUploadingMedia(false);
+    const data = await uploadFileToR2(file);
+    if (data) {
+      setImageUrl(data.publicUrl);
     }
+    setIsUploadingMedia(false);
   };
 
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -363,33 +379,48 @@ export default function WriteBlogPage() {
     if (!file) return;
 
     setIsUploadingMedia(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      
-      if (!res.ok) {
-        alert(data.error || 'Upload failed');
+    const data = await uploadFileToR2(file);
+    if (data) {
+      if (data.type === 'video') {
+        setVideoUrl(data.publicUrl);
       } else {
-        if (data.type === 'video') {
-          setVideoUrl(data.url);
-        } else {
-          setImageUrl(data.url);
-          setVideoUrl('');
+        setImageUrl(data.publicUrl);
+        setVideoUrl('');
+      }
+    }
+    setIsUploadingMedia(false);
+  };
+
+  useEffect(() => {
+    const handleGlobalPaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      let file: File | null = null;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          file = items[i].getAsFile();
+          break;
         }
       }
-    } catch (err) {
-      console.error(err);
-      alert('Upload failed due to network error.');
-    } finally {
+      
+      if (!file) return;
+      
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.closest('[contenteditable="true"]')) {
+        return; 
+      }
+
+      setIsUploadingMedia(true);
+      const data = await uploadFileToR2(file);
+      if (data) {
+        setImageUrl(data.publicUrl);
+      }
       setIsUploadingMedia(false);
-    }
-  };
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
 
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -741,12 +772,21 @@ export default function WriteBlogPage() {
                     </div>
                   </div>
 
-                  {photoMode === 'presets' ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                  {imageUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden shadow-md group">
+                      <img src={imageUrl} alt="Cover Preview" className="w-full h-40 object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button type="button" onClick={() => setImageUrl('')} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
+                          Remove Cover
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {PRESET_IMAGES.map((preset, idx) => (
                         <button
-                          type="button"
                           key={idx}
+                          type="button"
                           onClick={() => { setImageUrl(preset.url); setActiveDrawer('none'); }}
                           className={`relative rounded-2xl overflow-hidden h-24 border-3 transition-all ${imageUrl === preset.url ? 'border-[#FF8A3D] shadow-lg scale-102' : 'border-transparent opacity-80 hover:opacity-100'}`}
                         >
@@ -755,11 +795,37 @@ export default function WriteBlogPage() {
                         </button>
                       ))}
                     </div>
-                  ) : (
-                    <div className="p-6 rounded-2xl bg-[#FFF3E6]/60 border-2 border-dashed border-[#FF8A3D]/40 text-center space-y-2">
+                  )}
+
+                  {!imageUrl && (
+                    <div 
+                      className="p-6 rounded-2xl bg-[#FFF3E6]/60 border-2 border-dashed border-[#FF8A3D]/40 text-center space-y-2 mt-4 hover:bg-[#FFF3E6] transition-colors focus:outline-none"
+                      tabIndex={0}
+                      onPaste={(e) => {
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+                        let file: File | null = null;
+                        for (let i = 0; i < items.length; i++) {
+                          if (items[i].type.indexOf('image') !== -1) {
+                            file = items[i].getAsFile();
+                            break;
+                          }
+                        }
+                        if (file) {
+                          e.preventDefault();
+                          setIsUploadingMedia(true);
+                          uploadFileToR2(file).then(data => {
+                            if (data) setImageUrl(data.publicUrl);
+                            setIsUploadingMedia(false);
+                            setActiveDrawer('none');
+                          });
+                        }
+                      }}
+                    >
                       <Upload size={24} className="mx-auto text-[#D45B0C]" />
                       <div className="font-bold text-sm text-[#1F2937]">Upload high-res photo file (Max 10 MB)</div>
-                      <label className="inline-block px-6 py-2.5 rounded-xl bg-[#FF8A3D] text-[#1F2937] font-black text-xs uppercase tracking-wider cursor-pointer shadow">
+                      <div className="text-xs text-[#D45B0C] font-black mb-2">Or press Ctrl+V to paste an image here</div>
+                      <label className="inline-block px-6 py-2.5 rounded-xl bg-[#FF8A3D] text-[#1F2937] font-black text-xs uppercase tracking-wider cursor-pointer shadow hover:scale-105 transition-transform">
                         <span>Select Photo...</span>
                         <input type="file" accept="image/*" onChange={(e) => { handleFileUpload(e); setActiveDrawer('none'); }} className="hidden" />
                       </label>
@@ -986,15 +1052,65 @@ export default function WriteBlogPage() {
                 <span className="text-[11px] font-bold text-[#6B7280]">Limits: Images &lt; 5MB | Videos &lt; 2 minutes (strictly max 50MB)</span>
               </div>
               
-              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-[#FF8A3D]/40 rounded-2xl bg-white/60 hover:bg-white transition-colors">
+              <div 
+                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-[#FF8A3D]/40 rounded-2xl bg-white/60 hover:bg-white transition-colors focus:outline-none"
+                tabIndex={0}
+                onPaste={(e) => {
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  let file: File | null = null;
+                  for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                      file = items[i].getAsFile();
+                      break;
+                    }
+                  }
+                  if (file) {
+                    e.preventDefault();
+                    setIsUploadingMedia(true);
+                    uploadFileToR2(file).then(data => {
+                      if (data) {
+                        if (data.type === 'video') setVideoUrl(data.publicUrl);
+                        else {
+                          setImageUrl(data.publicUrl);
+                          setVideoUrl('');
+                        }
+                      }
+                      setIsUploadingMedia(false);
+                    });
+                  }
+                }}
+              >
                 <Upload className="text-[#FF8A3D] w-10 h-10 mb-3" />
                 <p className="text-sm font-bold text-[#1F2937]">Drag & drop or click to upload</p>
-                <p className="text-xs font-semibold text-[#6B7280] mb-4">Supports JPEG, PNG, MP4, WebM</p>
+                <p className="text-xs font-semibold text-[#6B7280] mb-2">Supports JPEG, PNG, MP4, WebM</p>
+                <p className="text-xs font-black text-[#D45B0C] mb-4">Or press Ctrl+V to paste an image here</p>
                 <label className="px-6 py-2.5 rounded-xl bg-[#FF8A3D] text-[#1F2937] font-black text-xs uppercase tracking-wider cursor-pointer shadow-md hover:scale-105 transition-all">
                   <span>{isUploadingMedia ? 'Uploading...' : 'Select File...'}</span>
                   <input type="file" accept="image/*,video/mp4,video/webm" onChange={handleMediaUpload} disabled={isUploadingMedia} className="hidden" />
                 </label>
               </div>
+
+              {imageUrl && !videoUrl && (
+                <div className="relative rounded-2xl overflow-hidden mt-4 group">
+                  <img src={imageUrl} alt="Uploaded media" className="w-full max-h-96 object-contain bg-black/5" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button type="button" onClick={() => setImageUrl('')} className="px-4 py-2 bg-white text-rose-600 rounded-xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-transform">
+                      Remove Image
+                    </button>
+                  </div>
+                </div>
+              )}
+              {videoUrl && (
+                <div className="relative rounded-2xl overflow-hidden mt-4 group bg-black">
+                  <video src={videoUrl} controls className="w-full max-h-96 object-contain" />
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button type="button" onClick={() => setVideoUrl('')} className="bg-white/90 p-2 rounded-full hover:bg-white text-rose-500 shadow-lg">
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
