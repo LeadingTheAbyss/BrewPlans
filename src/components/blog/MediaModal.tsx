@@ -130,8 +130,8 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
     ...contentImages
   ];
 
-  // We consider it a primary video only if videoUrl exists and it's explicitly a media type video
-  const isVideo = (article.mediaType === 'video' || article.mediaType === 'short') && article.videoUrl;
+  // We consider it a primary video if videoUrl exists
+  const isVideo = !!article.videoUrl;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-0 sm:p-4 md:p-8 animate-in fade-in duration-200">
@@ -146,7 +146,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
 
       {/* Modal Container */}
       <div 
-        className="flex flex-col md:flex-row w-full max-w-6xl min-h-full md:min-h-0 md:h-[85vh] sm:h-[90vh] bg-[#0A0A0A] rounded-none sm:rounded-md overflow-y-auto md:overflow-hidden border-0 sm:border border-white/10 shadow-2xl pb-16 md:pb-0"
+        className="flex flex-col md:flex-row w-full max-w-6xl min-h-full md:min-h-0 md:h-[85vh] sm:h-[90vh] bg-transparent rounded-none overflow-y-auto md:overflow-hidden pb-16 md:pb-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* MOBILE ONLY: Header (Above Media) */}
@@ -174,7 +174,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
         </div>
 
         {/* Left Side: Media Viewer */}
-        <div className="w-full md:w-[60%] lg:w-[65%] h-auto md:h-full bg-black flex items-center justify-center relative group border-b md:border-b-0 md:border-r border-white/10">
+        <div className="w-full md:w-[60%] lg:w-[65%] h-auto md:h-full bg-transparent flex items-center justify-center relative group">
           {isVideo ? (
             <div className="relative w-full h-full flex items-center justify-center">
               {article.videoUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
@@ -210,7 +210,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
         </div>
 
         {/* Right Side: Details & Comments */}
-        <div className="w-full md:w-[40%] lg:w-[35%] flex-1 md:h-full flex flex-col bg-[#0A0A0A]">
+        <div className="w-full md:w-[40%] lg:w-[35%] flex-1 md:h-full flex flex-col bg-[#0A0A0A] sm:rounded-r-md border-0 sm:border sm:border-white/10 sm:border-l-0 shadow-2xl">
           
           {/* DESKTOP ONLY: Header */}
           <div className="hidden md:flex items-center justify-between p-4 border-b border-white/10 shrink-0">

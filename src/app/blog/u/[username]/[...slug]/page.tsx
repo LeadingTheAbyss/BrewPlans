@@ -289,7 +289,8 @@ export default function DedicatedArticlePage() {
           </Link>
         </div>
         {/* Title & Engagement Metadata */}
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-6">
+          <div className="flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4 text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-4">
             <span className="bg-[#FFF3E6] px-2 py-1 rounded-md">{article.date}</span>
             <span className="flex items-center gap-1.5 text-[#6B7280] bg-gray-100 px-2 py-1 rounded-md">
@@ -403,116 +404,98 @@ export default function DedicatedArticlePage() {
                   <Trash2 size={12} />
                   <span>Delete</span>
                 </button>
+
+                <button
+                  onClick={() => {
+                    const newFeatured = !isFeatured;
+                    setIsFeatured(newFeatured);
+                    if (article?.id) {
+                      fetch(`/api/blogs/${article.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ featured: newFeatured })
+                      }).catch(e => console.error(e));
+                    }
+                  }}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full border font-bold text-[10px] sm:text-xs uppercase tracking-wider transition-colors ${
+                    isFeatured ? 'border-purple-300 bg-purple-100 text-purple-700 hover:bg-purple-200' : 'border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600'
+                  }`}
+                  title={isFeatured ? "Remove from Trending" : "Mark as Trending"}
+                >
+                  <span>{isFeatured ? '★ Trending' : '☆ Trend'}</span>
+                </button>
               </>
             )}
+
+            {isAdmin && (
+              <input
+                type="date"
+                title="Change publish date"
+                className="px-2 py-1 rounded-full border border-gray-200 text-[10px] sm:text-xs font-bold text-gray-700 bg-white focus:outline-none focus:border-[#FF8A3D] cursor-pointer"
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  const newDateStr = new Date(e.target.value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  fetch(`/api/blogs/${article.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: newDateStr })
+                  }).then(() => {
+                    setArticle({ ...article, date: newDateStr });
+                  });
+                }}
+              />
+            )}
           </div>
+        </div>
+        
+        <div className="w-full md:w-auto shrink-0 flex flex-col gap-3">
+             <Link
+                href={`/u/${encodeURIComponent(article.author.username || 'traveler')}`}
+                className="p-3 pr-5 rounded-3xl bg-[#FFF3E6] border border-[#FF8A3D]/30 flex items-center gap-3 hover:bg-amber-50 hover:border-[#FF8A3D]/60 transition-all shadow-sm group"
+             >
+                <img 
+                  src={article.author.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
+                  alt={article.author.name} 
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm group-hover:scale-105 transition-transform" 
+                />
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="font-black text-sm text-[#1F2937] leading-none">{article.author.name}</h4>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#FF8A3D] text-white font-bold uppercase">Author</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-[#D45B0C] mt-0.5">@{article.author.username || username || 'writer'}</p>
+                </div>
+             </Link>
+
+             {/* Display Collaborator if available */}
+             {activeCollabs.map((collab, idx) => (
+                <Link
+                  key={idx}
+                  href={`/u/${encodeURIComponent(collab.username)}`}
+                  className="p-3 pr-5 rounded-3xl bg-[#EEF7FF] border border-blue-200 flex items-center gap-3 hover:bg-blue-50 transition-all shadow-sm group"
+                >
+                  <img 
+                    src={collab.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80'} 
+                    alt={collab.name} 
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm group-hover:scale-105 transition-transform" 
+                  />
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-black text-sm text-[#1F2937] leading-none">{collab.name}</h4>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#0284C7] text-white font-bold uppercase">Companion</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-[#0284C7] mt-0.5">@{collab.username}</p>
+                  </div>
+                </Link>
+             ))}
+          </div>
+        </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#1F2937] tracking-tight leading-[1.1] mb-8">
             {article.title}
           </h1>
 
-          {/* Author & Collaborator Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <Link
-              href={`/u/${encodeURIComponent(article.author.username || 'traveler')}`}
-              className="p-5 rounded-3xl bg-[#FFF3E6] border-2 border-[#FF8A3D]/30 flex items-center justify-between hover:bg-amber-50 hover:border-[#FF8A3D]/60 transition-all shadow-sm group"
-            >
-              <div className="flex items-center gap-4">
-                <img 
-                  src={article.author.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
-                  alt={article.author.name} 
-                  className="w-14 h-14 rounded-full object-cover ring-4 ring-white shadow-md group-hover:scale-105 transition-transform" 
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-black text-base text-[#1F2937] leading-none">{article.author.name}</h4>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#FF8A3D] text-white font-bold uppercase">Author</span>
-                  </div>
-                  <p className="text-xs font-bold text-[#D45B0C] mt-1">@{article.author.username || username || 'writer'}</p>
-                  <p className="text-[11px] text-[#6B7280] font-medium">{article.author.role || 'Verified Indian Explorer'}</p>
-                </div>
-              </div>
-            </Link>
 
-            {/* Display Collaborator if available */}
-            {activeCollabs.map((collab, idx) => (
-              <Link
-                key={idx}
-                href={`/u/${encodeURIComponent(collab.username)}`}
-                className="p-5 rounded-3xl bg-[#EEF7FF] border-2 border-blue-200 flex items-center justify-between hover:bg-blue-50 transition-all shadow-sm group"
-              >
-                <div className="flex items-center gap-4">
-                  <img 
-                    src={collab.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80'} 
-                    alt={collab.name} 
-                    className="w-14 h-14 rounded-full object-cover ring-4 ring-white shadow-md group-hover:scale-105 transition-transform" 
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-black text-base text-[#1F2937] leading-none">{collab.name}</h4>
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#0284C7] text-white font-bold uppercase">Companion</span>
-                    </div>
-                    <p className="text-xs font-bold text-[#0284C7] mt-1">@{collab.username}</p>
-                    <p className="text-[11px] text-[#6B7280] font-medium">Approved Co-Author & Collab</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* STRUCTURED META-DATA TOKEN SPEC GRID (Optional - only displayed when specified by author) */}
-        {(article.budget || article.bestSeason || article.accommodation || article.transportMode) && (
-          <div className="flex flex-wrap gap-2 sm:gap-3 mb-10">
-            {article.budget && (
-              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
-                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
-                  <DollarSign size={12} className="text-[#FF8A3D]" />
-                  <span>Budget Tier</span>
-                </span>
-                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
-                  {article.budget}
-                </span>
-              </div>
-            )}
-
-            {article.bestSeason && (
-              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
-                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
-                  <Calendar size={12} className="text-emerald-600" />
-                  <span>Best Season</span>
-                </span>
-                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
-                  {article.bestSeason}
-                </span>
-              </div>
-            )}
-
-            {article.accommodation && (
-              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
-                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
-                  <Home size={12} className="text-sky-600" />
-                  <span>Stay Vibe</span>
-                </span>
-                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
-                  {article.accommodation}
-                </span>
-              </div>
-            )}
-
-            {article.transportMode && (
-              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
-                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
-                  <Navigation size={12} className="text-purple-600" />
-                  <span>Transit Mode</span>
-                </span>
-                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
-                  {article.transportMode}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Main Cover Image or Video Banner */}
         {(article.imageUrl || article.imageUrls?.length || (article.videoUrl && article.mediaType === 'article')) ? (
@@ -564,6 +547,59 @@ export default function DedicatedArticlePage() {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
+            )}
+          </div>
+        )}
+
+        {/* STRUCTURED META-DATA TOKEN SPEC GRID (Moved to bottom) */}
+        {(article.budget || article.bestSeason || article.accommodation || article.transportMode) && (
+          <div className="flex flex-wrap gap-2 sm:gap-3 mt-12 mb-6">
+            {article.budget && (
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <DollarSign size={12} className="text-[#FF8A3D]" />
+                  <span>Budget Tier</span>
+                </span>
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
+                  {article.budget}
+                </span>
+              </div>
+            )}
+
+            {article.bestSeason && (
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <Calendar size={12} className="text-emerald-600" />
+                  <span>Best Season</span>
+                </span>
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
+                  {article.bestSeason}
+                </span>
+              </div>
+            )}
+
+            {article.accommodation && (
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <Home size={12} className="text-sky-600" />
+                  <span>Stay Vibe</span>
+                </span>
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
+                  {article.accommodation}
+                </span>
+              </div>
+            )}
+
+            {article.transportMode && (
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <Navigation size={12} className="text-purple-600" />
+                  <span>Transit Mode</span>
+                </span>
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
+                  {article.transportMode}
+                </span>
+              </div>
             )}
           </div>
         )}

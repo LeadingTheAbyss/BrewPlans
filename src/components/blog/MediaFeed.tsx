@@ -24,7 +24,7 @@ export function MediaFeed({ articles }: MediaFeedProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-0 sm:px-4 md:px-8 py-1 sm:py-10 min-h-screen">
-      <div className="grid grid-cols-3 gap-0.5 sm:gap-2">
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-0.5 sm:gap-2">
         {mediaItems.map((article, idx) => (
           <div 
             key={article.id || idx} 
