@@ -850,7 +850,13 @@ export default function LandingPage() {
           </div>
 
           {/* Links */}
-          <div className="hidden lg:flex items-center gap-10 ml-20">
+          <div className="hidden lg:flex items-center gap-7 lg:gap-8 ml-8 xl:ml-14">
+            <button 
+              onClick={() => router.push('/blog')} 
+              className="text-base tracking-wide font-bold bg-gradient-to-r from-[#FF8A3D] to-[#FFD166] bg-clip-text text-transparent hover:scale-105 transition-all flex items-center gap-1.5 drop-shadow"
+            >
+              Discover Blogs & Videos
+            </button>
             <button 
               onClick={() => handleNavigation('/recommend')} 
               className="text-base tracking-wide font-bold text-white/80 hover:text-white hover:scale-105 transition-all"
@@ -891,7 +897,7 @@ export default function LandingPage() {
                 <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest">Send Us Feedback</span>
               </button>
               <button 
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push('/u/1')}
                 className="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white transition-all overflow-hidden flex items-center justify-center shrink-0"
                 title="Profile"
               >
@@ -910,6 +916,12 @@ export default function LandingPage() {
         {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 w-full bg-[#282828] border-b border-[#3e3e3e] z-[99] flex flex-col px-6 py-6 gap-6 shadow-2xl animate-in slide-in-from-top-2">
+          <button 
+            onClick={() => { setMobileMenuOpen(false); router.push('/blog'); }} 
+            className="text-lg tracking-wide font-bold bg-gradient-to-r from-[#FF8A3D] to-[#FFD166] bg-clip-text text-transparent hover:opacity-80 text-left transition-all"
+          >
+            Discover Blogs & Videos
+          </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); handleNavigation('/recommend'); }} 
             className="text-lg tracking-wide font-bold text-white/90 hover:text-white text-left transition-colors"

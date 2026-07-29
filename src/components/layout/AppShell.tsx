@@ -14,6 +14,7 @@ import { FeedbackModal } from '@/components/FeedbackModal';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isBlogRoute = pathname.startsWith('/blog');
   const budget = useBudgetStore();
   const { user, fetchUser } = useAuthStore();
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
@@ -63,10 +64,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className={`flex flex-col ${pathname === '/' ? 'min-h-screen' : 'h-screen overflow-hidden'} bg-white dark:bg-[#050505] text-neutral-900 dark:text-[#EDEDED] font-sans selection:bg-black/10 dark:selection:bg-white/30 transition-colors duration-300`} style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className={`flex flex-col ${pathname === '/' || isBlogRoute ? 'min-h-screen' : 'h-screen overflow-hidden'} ${isBlogRoute ? '!bg-[#FFF7F0] !text-[#1F2937] selection:!bg-[#FF8A3D]/20' : 'bg-white dark:bg-[#050505] text-neutral-900 dark:text-[#EDEDED] selection:bg-black/10 dark:selection:bg-white/30'} font-sans transition-colors duration-300`} style={{ fontFamily: "'Outfit', sans-serif" }}>
       
       {/* Horizontal Progression Track */}
-      {pathname !== '/profile' && pathname !== '/' && (
+      {!pathname.startsWith('/profile') && !pathname.startsWith('/u') && pathname !== '/' && !isBlogRoute && (
         <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 md:gap-3 shrink-0">
@@ -164,7 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <MessageSquare size={13} />
               <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
             </button>
-            <Link href="/profile" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
+            <Link href="/u/1" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
               {user ? (
                 <UserAvatar user={user} className="w-full h-full text-[10px]" />
               ) : (
@@ -207,8 +208,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col relative ${pathname === '/' ? '' : 'h-[calc(100vh-3.5rem)] overflow-hidden'}`}>
-        <div id="main-scroll-container" className={`flex-1 bg-transparent ${pathname === '/' ? '' : 'overflow-y-auto'}`}>
+      <main className={`flex-1 flex flex-col relative ${pathname === '/' || isBlogRoute ? '' : 'h-[calc(100vh-3.5rem)] overflow-hidden'}`}>
+        <div id="main-scroll-container" className={`flex-1 bg-transparent ${pathname === '/' || isBlogRoute ? '' : 'overflow-y-auto'}`}>
           {children}
         </div>
 

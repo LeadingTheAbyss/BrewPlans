@@ -276,13 +276,14 @@ export default function RecommendPage() {
                 <input 
                   type="number" min="1" placeholder="100000" className="w-32 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.budget || ''} onChange={e => {
-                    const raw = e.target.value;
-                    if (raw === '') setForm({...form, budget: '' as any});
+                    const cleanStr = e.target.value.replace(/\D/g, '');
+                    if (cleanStr === '') setForm({...form, budget: '' as any});
                     else {
-                      const val = parseInt(raw);
-                      if (!isNaN(val)) setForm({...form, budget: val});
+                      const val = parseInt(cleanStr);
+                      if (!isNaN(val)) setForm({...form, budget: Math.max(1, val)});
                     }
                   }}
+                  onKeyDown={e => { if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault(); }}
                 />
               </div>
             </div>
@@ -291,15 +292,22 @@ export default function RecommendPage() {
               <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Travelers</label>
               <div className="flex items-center gap-3 border-b border-neutral-300 dark:border-neutral-800 pb-3 transition-colors">
                 <input 
-                  type="number" min={form.passengers.length} max="20" placeholder="1" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
+                  type="number" min={Math.max(1, form.passengers.length)} max="20" placeholder="1" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.groupSize || ''} onChange={e => {
-                    const raw = e.target.value;
-                    if (raw === '') setForm({...form, groupSize: '' as any});
+                    const cleanStr = e.target.value.replace(/\D/g, '');
+                    if (cleanStr === '') setForm({...form, groupSize: '' as any});
                     else {
-                      const val = parseInt(raw);
-                      if (!isNaN(val)) setForm({...form, groupSize: val});
+                      const val = parseInt(cleanStr);
+                      if (!isNaN(val)) setForm({...form, groupSize: Math.max(1, val)});
                     }
                   }}
+                  onBlur={() => {
+                    const minAllowed = Math.max(1, form.passengers.length);
+                    if (!form.groupSize || form.groupSize < minAllowed) {
+                      setForm({...form, groupSize: minAllowed});
+                    }
+                  }}
+                  onKeyDown={e => { if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault(); }}
                 />
                 <span className="text-neutral-600 text-sm font-light uppercase tracking-widest">People</span>
               </div>
@@ -311,13 +319,19 @@ export default function RecommendPage() {
                 <input 
                   type="number" min="1" placeholder="4" className="w-16 bg-transparent border-none focus:outline-none text-2xl text-neutral-900 dark:text-white font-light text-center placeholder:text-neutral-300 dark:placeholder:text-neutral-800"
                   value={form.days || ''} onChange={e => {
-                    const raw = e.target.value;
-                    if (raw === '') setForm({...form, days: '' as any});
+                    const cleanStr = e.target.value.replace(/\D/g, '');
+                    if (cleanStr === '') setForm({...form, days: '' as any});
                     else {
-                      const val = parseInt(raw);
-                      if (!isNaN(val)) setForm({...form, days: val});
+                      const val = parseInt(cleanStr);
+                      if (!isNaN(val)) setForm({...form, days: Math.max(1, val)});
                     }
                   }}
+                  onBlur={() => {
+                    if (!form.days || form.days < 1) {
+                      setForm({...form, days: 1});
+                    }
+                  }}
+                  onKeyDown={e => { if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault(); }}
                 />
                 <span className="text-neutral-600 text-sm font-light uppercase tracking-widest">Days</span>
               </div>

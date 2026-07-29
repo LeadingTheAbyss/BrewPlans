@@ -538,6 +538,7 @@ export default function AdminStatsPage() {
                                 )}
                                 <div>
                                   <div className="text-sm font-medium text-white/90">{u.name}</div>
+                                  <div className="text-[11px] font-bold text-[#FF8A3D] mt-0.5">@{u.email.split('@')[0]}</div>
                                   <div className="text-[10px] text-white/30 font-mono mt-0.5">Joined: {new Date(u.createdAt).toLocaleDateString()}</div>
                                 </div>
                               </div>
