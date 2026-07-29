@@ -3,17 +3,31 @@
 import React from 'react';
 import { Article } from '@/data/blogData';
 import { motion } from 'framer-motion';
-import { Clock, ArrowUpRight, Bookmark, Share2, Heart, Eye, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, ArrowUpRight, Bookmark, Share2, Heart, Eye, MessageSquare } from 'lucide-react';
 import { ImageCarousel } from '@/components/blog/ImageCarousel';
 
 interface FeaturedArticleCardProps {
-  article: Article;
+  articles: Article[];
   onSelectArticle: (article: Article) => void;
 }
 
-export function FeaturedArticleCard({ article, onSelectArticle }: FeaturedArticleCardProps) {
-  const [likes, setLikes] = React.useState(article.likes ?? 0);
+export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArticleCardProps) {
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  
+  React.useEffect(() => {
+    if (activeIndex >= articles.length) setActiveIndex(0);
+  }, [articles, activeIndex]);
+
+  const article = articles[activeIndex] || articles[0];
+  const [likes, setLikes] = React.useState(article?.likes ?? 0);
   const [liked, setLiked] = React.useState(false);
+
+  React.useEffect(() => {
+    if (article) {
+      setLikes(article.likes ?? 0);
+      setLiked(false);
+    }
+  }, [article]);
 
   const toggleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -26,13 +40,25 @@ export function FeaturedArticleCard({ article, onSelectArticle }: FeaturedArticl
     }
   };
 
+  if (!article) return null;
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveIndex((prev) => (prev === articles.length - 1 ? 0 : prev + 1));
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveIndex((prev) => (prev === 0 ? articles.length - 1 : prev - 1));
+  };
+
   return (
-    <section className="py-12 px-4 md:px-8 max-w-7xl mx-auto">
+    <section className="py-12 px-4 md:px-8 max-w-7xl mx-auto relative group">
         <div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-[#1F2937] tracking-tight">
-            Featured Expedition
+            Trending Blogs
           </h2>
-          <p className="text-sm text-[#6B7280] font-medium mt-0.5">This month&apos;s spotlight story from the editorial team</p>
+          <p className="text-sm text-[#6B7280] font-medium mt-0.5">The most loved stories from our community</p>
         </div>
 
       <motion.div
@@ -177,6 +203,36 @@ export function FeaturedArticleCard({ article, onSelectArticle }: FeaturedArticl
           </div>
         </div>
       </motion.div>
+
+      {/* Navigation Arrows */}
+      {articles.length > 1 && (
+        <>
+          <button 
+            onClick={handlePrev}
+            className="absolute left-0 md:-left-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-0 group-hover:opacity-100"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button 
+            onClick={handleNext}
+            className="absolute right-0 md:-right-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-0 group-hover:opacity-100"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+          {/* Indicator Dots */}
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-20">
+            {articles.map((_, idx) => (
+              <button 
+                key={idx} 
+                onClick={(e) => { e.stopPropagation(); setActiveIndex(idx); }}
+                className={`h-2.5 rounded-full transition-all border border-[#FF8A3D]/30 ${idx === activeIndex ? 'bg-[#FF8A3D] w-8' : 'bg-[#FF8A3D]/30 w-2.5 hover:bg-[#FF8A3D]/60'}`} 
+              />
+            ))}
+          </div>
+        </>
+      )}
+
     </section>
   );
 }

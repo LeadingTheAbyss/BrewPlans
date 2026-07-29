@@ -9,7 +9,6 @@ import { BlogHero } from '@/components/blog/BlogHero';
 import { FeaturedArticleCard } from '@/components/blog/FeaturedArticleCard';
 import { CategoryPills } from '@/components/blog/CategoryPills';
 import { EditorialArticleGrid } from '@/components/blog/EditorialArticleGrid';
-import { PopularDestinationsScroll } from '@/components/blog/PopularDestinationsScroll';
 import { BlogNewsletter } from '@/components/blog/BlogNewsletter';
 import { BlogFooter } from '@/components/blog/BlogFooter';
 import { ArticleReaderModal } from '@/components/blog/ArticleReaderModal';
@@ -186,30 +185,21 @@ export default function BlogLandingPage() {
 
       {/* Featured Article Section (Trending Top) */}
       {featuredArticles.length > 0 && (
-        <div className="relative group">
-          <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4">
-            {featuredArticles.map((article, idx) => (
-              <div key={article.id || idx} className="min-w-full flex-shrink-0 snap-center">
-                <FeaturedArticleCard 
-                  article={article} 
-                  onSelectArticle={handleSelectArticle} 
-                />
-              </div>
-            ))}
-          </div>
-          {/* Indicator dots if more than 1 */}
-          {featuredArticles.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 pointer-events-none">
-              {featuredArticles.map((_, idx) => (
-                <div key={idx} className="w-2 h-2 rounded-full bg-white/50 border border-black/20" />
-              ))}
-            </div>
-          )}
-        </div>
+        <FeaturedArticleCard 
+          articles={featuredArticles} 
+          onSelectArticle={handleSelectArticle} 
+        />
       )}
 
-      {/* Horizontal Trending Destinations Showcase */}
-      <PopularDestinationsScroll />
+      {/* View More Popular Blogs (Unfiltered) */}
+      <EditorialArticleGrid 
+        title="View More Popular Blogs"
+        articles={articles} 
+        onSelectArticle={handleSelectArticle} 
+        selectedCategory={selectedCategory} 
+        onDeleteArticle={handleDeleteArticle}
+        isAdmin={isAdmin}
+      />
 
       {/* Indian City Search & Structured Filters Console */}
       <section className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
@@ -319,14 +309,19 @@ export default function BlogLandingPage() {
         </div>
       </section>
 
-      {/* Editorial Masonry Grid of Articles & Videos */}
-      <EditorialArticleGrid 
-        articles={displayedArticles} 
-        onSelectArticle={handleSelectArticle} 
-        selectedCategory={selectedCategory} 
-        onDeleteArticle={handleDeleteArticle}
-        isAdmin={isAdmin}
-      />
+      {/* Filtered Editorial Masonry Grid of Articles & Videos */}
+      {(activeFilterCount > 0 || searchCity.trim() !== '') && (
+        <div className="mt-8">
+          <EditorialArticleGrid 
+            title="Filtered Results"
+            articles={displayedArticles} 
+            onSelectArticle={handleSelectArticle} 
+            selectedCategory={selectedCategory} 
+            onDeleteArticle={handleDeleteArticle}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
 
       {/* Travel Journal Footer */}
       <BlogFooter />

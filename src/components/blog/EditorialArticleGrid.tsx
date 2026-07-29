@@ -13,11 +13,12 @@ interface EditorialArticleGridProps {
   selectedCategory: string;
   onDeleteArticle?: (article: Article) => void;
   isAdmin?: boolean;
+  title?: string;
 }
 
 type SortMode = 'default' | 'likes' | 'controversial' | 'views';
 
-export function EditorialArticleGrid({ articles, onSelectArticle, selectedCategory, onDeleteArticle, isAdmin }: EditorialArticleGridProps) {
+export function EditorialArticleGrid({ articles, onSelectArticle, selectedCategory, onDeleteArticle, isAdmin, title = "Trending Blogs" }: EditorialArticleGridProps) {
   const [likes, setLikes] = useState<Record<string, number>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortMode>('default');
@@ -66,7 +67,7 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
       </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h2 className="text-3xl font-black text-[#1F2937] tracking-tight">Trending Blogs</h2>
+        {title && <h2 className="text-3xl font-black text-[#1F2937] tracking-tight">{title}</h2>}
       </div>
 
       {/* Sorting Navigation Bar */}
