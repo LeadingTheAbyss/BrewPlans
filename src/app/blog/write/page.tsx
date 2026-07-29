@@ -441,7 +441,7 @@ export default function WriteBlogPage() {
       author: {
         name: authorName || 'Indian Explorer',
         username: username || 'indian_explorer',
-        avatar: customAvatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`
+        avatar: customAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName || username || 'Indian Explorer')}&background=random&color=fff&size=100`
       },
       city: city || 'Goa & Western Ghats',
       likes: 1,

@@ -349,7 +349,19 @@ export default function DedicatedArticlePage() {
               title="Like Article"
             >
               <Heart size={15} fill={liked ? "currentColor" : "none"} className={liked ? "text-white" : "text-rose-500"} />
-              <span>{likesCount}</span>
+              {isAdmin ? (
+                <input 
+                  type="number" 
+                  value={likesCount} 
+                  onChange={(e) => setLikesCount(parseInt(e.target.value) || 0)} 
+                  onBlur={() => {
+                    if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ likes: likesCount }) });
+                  }}
+                  className={`w-14 px-1 py-0.5 text-center font-black ml-1 rounded ${liked ? 'bg-white/20 text-white' : 'bg-gray-100 text-[#1F2937]'}`}
+                />
+              ) : (
+                <span>{likesCount}</span>
+              )}
             </button>
           </div>
         </div>
@@ -366,7 +378,19 @@ export default function DedicatedArticlePage() {
             <span>•</span>
             <span className="flex items-center gap-1.5 text-[#0284C7]">
               <Eye size={13} />
-              {viewsCount.toLocaleString()} views
+              {isAdmin ? (
+                <input 
+                  type="number" 
+                  value={viewsCount} 
+                  onChange={(e) => setViewsCount(parseInt(e.target.value) || 0)} 
+                  onBlur={() => {
+                    if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ views: viewsCount }) });
+                  }}
+                  className="w-16 px-1 py-0.5 text-[#1F2937] rounded text-center font-black bg-gray-100"
+                />
+              ) : (
+                <>{viewsCount.toLocaleString()}</>
+              )} views
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5 text-amber-700">
@@ -374,8 +398,21 @@ export default function DedicatedArticlePage() {
               {comments.length} comments
             </span>
             <span>•</span>
-            <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black">
-              ✈️ Planned {timesPlanned}x
+            <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black flex items-center">
+              ✈️ Planned 
+              {isAdmin ? (
+                <input 
+                  type="number" 
+                  value={timesPlanned} 
+                  onChange={(e) => setTimesPlanned(parseInt(e.target.value) || 0)} 
+                  onBlur={() => {
+                    if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ timesPlanned }) });
+                  }}
+                  className="w-14 px-1 py-0.5 mx-1 text-[#1F2937] rounded text-center font-black bg-white/50 border border-emerald-200"
+                />
+              ) : (
+                ` ${timesPlanned}`
+              )}x
             </span>
           </div>
 
