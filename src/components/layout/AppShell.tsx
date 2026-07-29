@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isBlogRoute = pathname.startsWith('/blog');
   const budget = useBudgetStore();
-  const { user, fetchUser } = useAuthStore();
+  const { user, fetchUser, isLoading } = useAuthStore();
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
   const [isBudgetDropdownOpen, setIsBudgetDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
