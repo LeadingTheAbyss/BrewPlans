@@ -209,13 +209,13 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
         <>
           <button 
             onClick={handlePrev}
-            className="absolute left-0 md:-left-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-0 group-hover:opacity-100"
+            className="absolute left-0 md:-left-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-100 md:opacity-0 group-hover:opacity-100"
           >
             <ChevronLeft size={24} />
           </button>
           <button 
             onClick={handleNext}
-            className="absolute right-0 md:-right-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-0 group-hover:opacity-100"
+            className="absolute right-0 md:-right-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-100 md:opacity-0 group-hover:opacity-100"
           >
             <ChevronRight size={24} />
           </button>

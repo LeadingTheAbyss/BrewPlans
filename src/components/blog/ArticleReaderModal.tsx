@@ -279,21 +279,18 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
             
             {/* Title & Stats */}
             <div>
-              <div className="flex flex-wrap items-center gap-3 text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-3">
-                <span>{article.date}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-[#6B7280]">
-                  <Clock size={12} />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4 text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-4">
+                <span className="bg-[#FFF3E6] px-2 py-1 rounded-md">{article.date}</span>
+                <span className="flex items-center gap-1.5 text-[#6B7280] bg-gray-100 px-2 py-1 rounded-md">
+                  <Clock size={13} className="text-[#FF8A3D]" />
                   {article.readingTime}
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1.5 text-[#0284C7]">
+                <span className="flex items-center gap-1.5 text-[#0284C7] bg-sky-50 px-2 py-1 rounded-md">
                   <Eye size={13} />
                   {viewsCount.toLocaleString()} views
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-amber-700">
-                  <MessageSquare size={12} />
+                <span className="flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
+                  <MessageSquare size={13} />
                   {comments.length} comments
                 </span>
               </div>
@@ -343,41 +340,41 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
 
             {/* Structured Meta-data Grid (Optional - only displayed if specified by author) */}
             {(article.budget || article.bestSeason || article.accommodation || article.transportMode) && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {article.budget && (
-                  <div className="p-3.5 rounded-2xl bg-white border border-[#FF8A3D]/25 shadow-xs">
-                    <span className="text-[10px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                      <DollarSign size={13} className="text-[#FF8A3D]" />
+                  <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white border border-[#FF8A3D]/25 shadow-xs flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                    <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                      <DollarSign size={12} className="text-[#FF8A3D]" />
                       <span>Budget Tier</span>
                     </span>
-                    <span className="font-black text-xs text-[#1F2937]">{article.budget}</span>
+                    <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">{article.budget}</span>
                   </div>
                 )}
                 {article.bestSeason && (
-                  <div className="p-3.5 rounded-2xl bg-white border border-[#FF8A3D]/25 shadow-xs">
-                    <span className="text-[10px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                      <Calendar size={13} className="text-emerald-600" />
+                  <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white border border-[#FF8A3D]/25 shadow-xs flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                    <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                      <Calendar size={12} className="text-emerald-600" />
                       <span>Best Season</span>
                     </span>
-                    <span className="font-black text-xs text-[#1F2937]">{article.bestSeason}</span>
+                    <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">{article.bestSeason}</span>
                   </div>
                 )}
                 {article.accommodation && (
-                  <div className="p-3.5 rounded-2xl bg-white border border-[#FF8A3D]/25 shadow-xs">
-                    <span className="text-[10px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                      <Home size={13} className="text-sky-600" />
+                  <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white border border-[#FF8A3D]/25 shadow-xs flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                    <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                      <Home size={12} className="text-sky-600" />
                       <span>Stay Vibe</span>
                     </span>
-                    <span className="font-black text-xs text-[#1F2937]">{article.accommodation}</span>
+                    <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">{article.accommodation}</span>
                   </div>
                 )}
                 {article.transportMode && (
-                  <div className="p-3.5 rounded-2xl bg-white border border-[#FF8A3D]/25 shadow-xs">
-                    <span className="text-[10px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                      <Navigation size={13} className="text-purple-600" />
+                  <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white border border-[#FF8A3D]/25 shadow-xs flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                    <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                      <Navigation size={12} className="text-purple-600" />
                       <span>Transit Mode</span>
                     </span>
-                    <span className="font-black text-xs text-[#1F2937]">{article.transportMode}</span>
+                    <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">{article.transportMode}</span>
                   </div>
                 )}
               </div>

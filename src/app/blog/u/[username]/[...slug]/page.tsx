@@ -313,7 +313,7 @@ export default function DedicatedArticlePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
             {isAdmin && (
               <input
                 type="date"
@@ -417,15 +417,13 @@ export default function DedicatedArticlePage() {
 
         {/* Title & Engagement Metadata */}
         <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-3 text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-4">
-            <span>{article.date}</span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5 text-[#6B7280]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4 text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-4">
+            <span className="bg-[#FFF3E6] px-2 py-1 rounded-md">{article.date}</span>
+            <span className="flex items-center gap-1.5 text-[#6B7280] bg-gray-100 px-2 py-1 rounded-md">
               <Clock size={13} className="text-[#FF8A3D]" />
               {article.readingTime}
             </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5 text-[#0284C7]">
+            <span className="flex items-center gap-1.5 text-[#0284C7] bg-sky-50 px-2 py-1 rounded-md">
               <Eye size={13} />
               {isAdmin ? (
                 <input 
@@ -435,19 +433,17 @@ export default function DedicatedArticlePage() {
                   onBlur={() => {
                     if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ views: viewsCount }) });
                   }}
-                  className="w-16 px-1 py-0.5 text-[#1F2937] rounded text-center font-black bg-gray-100"
+                  className="w-14 px-1 py-0.5 text-[#1F2937] rounded text-center font-black bg-white border border-sky-200"
                 />
               ) : (
                 <>{viewsCount.toLocaleString()}</>
               )} views
             </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5 text-amber-700">
+            <span className="flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
               <MessageSquare size={13} />
               {comments.length} comments
             </span>
-            <span>•</span>
-            <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black flex items-center">
+            <span className="text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md font-black flex items-center gap-1">
               ✈️ Planned 
               {isAdmin ? (
                 <input 
@@ -457,7 +453,7 @@ export default function DedicatedArticlePage() {
                   onBlur={() => {
                     if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ timesPlanned }) });
                   }}
-                  className="w-14 px-1 py-0.5 mx-1 text-[#1F2937] rounded text-center font-black bg-white/50 border border-emerald-200"
+                  className="w-12 px-1 py-0.5 text-[#1F2937] rounded text-center font-black bg-white border border-emerald-200"
                 />
               ) : (
                 ` ${timesPlanned}`
@@ -521,50 +517,50 @@ export default function DedicatedArticlePage() {
 
         {/* STRUCTURED META-DATA TOKEN SPEC GRID (Optional - only displayed when specified by author) */}
         {(article.budget || article.bestSeason || article.accommodation || article.transportMode) && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
+          <div className="flex flex-wrap gap-2 sm:gap-3 mb-10">
             {article.budget && (
-              <div className="p-4 rounded-3xl bg-white/95 border-2 border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center">
-                <span className="text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                  <DollarSign size={13} className="text-[#FF8A3D]" />
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <DollarSign size={12} className="text-[#FF8A3D]" />
                   <span>Budget Tier</span>
                 </span>
-                <span className="font-black text-xs sm:text-sm text-[#1F2937] leading-tight">
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
                   {article.budget}
                 </span>
               </div>
             )}
 
             {article.bestSeason && (
-              <div className="p-4 rounded-3xl bg-white/95 border-2 border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center">
-                <span className="text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                  <Calendar size={13} className="text-emerald-600" />
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <Calendar size={12} className="text-emerald-600" />
                   <span>Best Season</span>
                 </span>
-                <span className="font-black text-xs sm:text-sm text-[#1F2937] leading-tight">
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
                   {article.bestSeason}
                 </span>
               </div>
             )}
 
             {article.accommodation && (
-              <div className="p-4 rounded-3xl bg-white/95 border-2 border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center">
-                <span className="text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                  <Home size={13} className="text-sky-600" />
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <Home size={12} className="text-sky-600" />
                   <span>Stay Vibe</span>
                 </span>
-                <span className="font-black text-xs sm:text-sm text-[#1F2937] leading-tight">
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
                   {article.accommodation}
                 </span>
               </div>
             )}
 
             {article.transportMode && (
-              <div className="p-4 rounded-3xl bg-white/95 border-2 border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center">
-                <span className="text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-1">
-                  <Navigation size={13} className="text-purple-600" />
+              <div className="px-3 py-2 sm:p-4 rounded-xl sm:rounded-3xl bg-white/95 border border-[#FF8A3D]/25 shadow-sm flex flex-col justify-center flex-1 min-w-[130px] sm:min-w-[180px]">
+                <span className="text-[9px] sm:text-[11px] font-extrabold uppercase text-[#D45B0C] flex items-center gap-1 mb-0.5 sm:mb-1">
+                  <Navigation size={12} className="text-purple-600" />
                   <span>Transit Mode</span>
                 </span>
-                <span className="font-black text-xs sm:text-sm text-[#1F2937] leading-tight">
+                <span className="font-black text-[10px] sm:text-sm text-[#1F2937] leading-tight">
                   {article.transportMode}
                 </span>
               </div>
