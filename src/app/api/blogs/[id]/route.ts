@@ -30,9 +30,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         excerpt: data.excerpt,
         category: data.category,
         city: data.city,
-        categoryIcon: data.categoryIcon,
-        categoryBadgeBg: data.categoryBadgeBg,
-        categoryBadgeText: data.categoryBadgeText,
+        categoryIcon: data.categoryIcon || '🌍',
+        categoryBadgeBg: data.categoryBadgeBg || 'bg-gray-100',
+        categoryBadgeText: data.categoryBadgeText || 'text-gray-800',
         readingTime: data.readingTime,
         
         author: data.author,

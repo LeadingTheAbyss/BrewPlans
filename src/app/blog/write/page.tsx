@@ -421,6 +421,8 @@ export default function WriteBlogPage() {
       }
     }
 
+    const matchedCategory = CATEGORIES.find(c => c.label === category) || CATEGORIES.find(c => c.slug !== 'all') || CATEGORIES[0];
+
     const newArticle = {
       id: editingId || `blog-${Date.now()}`,
       slug,
@@ -430,6 +432,9 @@ export default function WriteBlogPage() {
       mediaType,
       videoUrl: videoUrl.trim() || undefined,
       category,
+      categoryIcon: matchedCategory?.icon || '🌍',
+      categoryBadgeBg: matchedCategory?.bg || 'bg-gray-100',
+      categoryBadgeText: matchedCategory?.text || 'text-gray-800',
       imageUrl: imageUrl || 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       readingTime: mediaType !== 'article' ? `${mediaType === 'upload' ? 'Media Upload' : 'Video'}` : `${Math.max(1, Math.ceil((content || '').split(' ').length / 150))} min read`,
@@ -444,9 +449,9 @@ export default function WriteBlogPage() {
       timesPlanned: 1,
       itineraryStops: stops,
       budget: budget || undefined,
-      season: season || undefined,
-      stay: stay || undefined,
-      transit: transit || undefined,
+      bestSeason: season || undefined,
+      accommodation: stay || undefined,
+      transportMode: transit || undefined,
       collaborator: cleanedCollab || undefined,
       collabStatus: cleanedCollab ? 'pending' : undefined
     };

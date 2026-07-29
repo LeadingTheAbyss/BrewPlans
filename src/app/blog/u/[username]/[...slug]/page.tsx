@@ -41,6 +41,45 @@ export default function DedicatedArticlePage() {
   const [customCommentAvatar, setCustomCommentAvatar] = useState('');
 
   useEffect(() => {
+    const checkAdminOwnerStatus = (displayArticle: Article | null) => {
+      if (typeof window !== 'undefined') {
+        try {
+          const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
+          const profileSaved = localStorage.getItem('brewplans_user_profile');
+          const parsedProfile = profileSaved ? JSON.parse(profileSaved) : {};
+
+          // Get username from profile OR authStore
+          const myUsername = parsedProfile.username || user?.name || '';
+          
+          // Use email from authStore (server-verified) as source of truth
+          const myEmail = user?.email || parsedProfile.email || '';
+
+          const adminCheck = Boolean(
+            isAdminEmail(myEmail) ||
+            user?.isAdmin ||
+            parsedProfile.isAdmin ||
+            (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase()))
+          );
+          setIsAdmin(adminCheck);
+
+          const isOwnAuthor = Boolean(myUsername && (myUsername.toLowerCase() === username.toLowerCase()));
+          const isCollab = Boolean(displayArticle?.collaborators?.some(c => c.username.toLowerCase() === myUsername?.toLowerCase()));
+          
+          setIsOwner(Boolean(isOwnAuthor || isCollab || adminCheck));
+        } catch (e) {}
+      }
+    };
+
+    const setupArticleState = (displayArticle: Article) => {
+      setArticle(displayArticle);
+      const metrics = calculateProgressiveMetrics(displayArticle);
+      setLikesCount(metrics.likesCount);
+      setViewsCount(metrics.viewsCount);
+      setTimesPlanned(displayArticle.timesPlanned || 0);
+      setComments(displayArticle.comments || []);
+      checkAdminOwnerStatus(displayArticle);
+    };
+
     // Check in standard articles
     const allArticles = [FEATURED_ARTICLE, ...ARTICLES];
     let found = allArticles.find(a => 
@@ -49,66 +88,30 @@ export default function DedicatedArticlePage() {
       a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleSlug
     );
 
-    // If not found in default data, check API for custom written blogs or collaborated blogs
-    if (!found && typeof window !== 'undefined') {
+    if (found) {
+      setupArticleState(found);
+    } else if (typeof window !== 'undefined') {
+      // If not found in default data, check API for custom written blogs or collaborated blogs
       fetch('/api/blogs')
         .then(res => res.json())
         .then(data => {
           let customBlogs: Article[] = Array.isArray(data) ? data : [];
           const customFound = customBlogs.find(a => 
             a.slug === articleSlug || 
-            a.author.username === username ||
-            a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleSlug
+            (a.author?.username === username && a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === articleSlug) ||
+            a.id === articleSlug
           );
+          
           if (customFound) {
-            setArticle(customFound);
-            const metrics = calculateProgressiveMetrics(customFound);
-            setLikesCount(metrics.likesCount);
-            setViewsCount(metrics.viewsCount);
-            setTimesPlanned(customFound.timesPlanned || 0);
-            setComments(customFound.comments || []);
+            setupArticleState(customFound);
+          } else {
+            setupArticleState(FEATURED_ARTICLE);
           }
         })
-        .catch(e => console.error('Failed to fetch user custom blogs', e));
-    }
-
-    const displayArticle = found || FEATURED_ARTICLE;
-    
-    setArticle(displayArticle);
-    
-    // Apply progressive metrics
-    const metrics = calculateProgressiveMetrics(displayArticle);
-    setLikesCount(metrics.likesCount);
-    setViewsCount(metrics.viewsCount);
-    
-    setTimesPlanned(displayArticle.timesPlanned || 0);
-    setComments(displayArticle.comments || []);
-
-    if (typeof window !== 'undefined') {
-      try {
-        const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
-        const profileSaved = localStorage.getItem('brewplans_user_profile');
-        const parsedProfile = profileSaved ? JSON.parse(profileSaved) : {};
-
-        // Get username from profile OR authStore
-        const myUsername = parsedProfile.username || user?.name || '';
-        
-        // Use email from authStore (server-verified) as source of truth
-        const myEmail = user?.email || parsedProfile.email || '';
-
-        const adminCheck = Boolean(
-          isAdminEmail(myEmail) ||
-          user?.isAdmin ||
-          parsedProfile.isAdmin ||
-          (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase()))
-        );
-        setIsAdmin(adminCheck);
-
-        const isOwnAuthor = Boolean(myUsername && (myUsername.toLowerCase() === username.toLowerCase()));
-        const isCollab = Boolean(displayArticle?.collaborators?.some(c => c.username.toLowerCase() === myUsername?.toLowerCase()));
-        
-        setIsOwner(Boolean(isOwnAuthor || isCollab || adminCheck));
-      } catch (e) {}
+        .catch(e => {
+          console.error('Failed to fetch user custom blogs', e);
+          setupArticleState(FEATURED_ARTICLE);
+        });
     }
   }, [articleSlug, username, user]);
 

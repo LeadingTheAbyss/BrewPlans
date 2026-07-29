@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { isAdminEmail } from '@/lib/admin';
 import { Article, BUDGET_FILTER_OPTIONS, SEASON_FILTER_OPTIONS } from '@/data/blogData';
-import { INITIAL_CUSTOM_BLOGS } from '@/data/seedBlogs';
 import { calculateProgressiveMetrics } from '@/lib/blogMetrics';
 import { BlogNavbar } from '@/components/blog/BlogNavbar';
 import { BlogHero } from '@/components/blog/BlogHero';
@@ -63,9 +62,6 @@ export default function BlogLandingPage() {
                 views: metrics.viewsCount
               };
             });
-            
-            // Temporary cleanup block to remove all blogs except the Jammu one
-            customBlogs = customBlogs.filter(b => b.title.toLowerCase().includes('jammu'));
             
             setArticles(customBlogs);
           });
