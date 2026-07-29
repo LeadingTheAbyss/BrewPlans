@@ -6,7 +6,11 @@ import { Compass, ArrowUp, Heart, Map, Plane, Mail, FileText } from 'lucide-reac
 import { TRAVEL_QUOTES } from '@/data/travelQuotes';
 import { ARTICLES, Article } from '@/data/blogData';
 
-export function BlogFooter() {
+interface BlogFooterProps {
+  showQuote?: boolean;
+}
+
+export function BlogFooter({ showQuote = false }: BlogFooterProps) {
   // Initialize with index 0 (Jawaharlal Nehru quote) for clean SSR hydration
   const [quoteObj, setQuoteObj] = useState(TRAVEL_QUOTES[0]);
   const [fade, setFade] = useState(true);
@@ -36,18 +40,20 @@ export function BlogFooter() {
       <div className="max-w-7xl mx-auto">
         
         {/* Top section: Random Quote Banner (New quote on every visit/reload) */}
-        <div className="pb-14 border-b border-[#FF8A3D]/20 text-center max-w-4xl mx-auto relative group">
-          <div className="transition-opacity duration-300 opacity-100">
-            <p className="font-serif italic text-2xl sm:text-3xl lg:text-4xl font-normal tracking-tight text-[#1F2937] leading-relaxed px-4">
-              &ldquo;{quoteObj.quote}&rdquo;
-            </p>
-            <div className="mt-4 flex items-center justify-center">
-              <span className="text-xs font-black uppercase tracking-widest text-[#D45B0C]">
-                — {quoteObj.author}
-              </span>
+        {showQuote && (
+          <div className="pb-14 border-b border-[#FF8A3D]/20 text-center max-w-4xl mx-auto relative group">
+            <div className="transition-opacity duration-300 opacity-100">
+              <p className="font-serif italic text-2xl sm:text-3xl lg:text-4xl font-normal tracking-tight text-[#1F2937] leading-relaxed px-4">
+                &ldquo;{quoteObj.quote}&rdquo;
+              </p>
+              <div className="mt-4 flex items-center justify-center">
+                <span className="text-xs font-black uppercase tracking-widest text-[#D45B0C]">
+                  — {quoteObj.author}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Main Footer Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 py-12 border-b border-[#FF8A3D]/15">

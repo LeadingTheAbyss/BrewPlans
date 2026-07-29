@@ -288,132 +288,7 @@ export default function DedicatedArticlePage() {
             <span>Back to Journal</span>
           </Link>
 
-          {/* Times Used to Plan Itinerary Prominent Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#1F2937] to-black text-[#FFD166] border border-[#FF8A3D]/30 shadow-md">
-            <Zap size={15} className="text-[#FF8A3D] animate-bounce-slow" fill="currentColor" />
-            <span className="text-xs font-extrabold tracking-wide">
-              Used by <strong className="text-white underline font-black">{timesPlanned} travelers</strong> to plan their trip!
-            </span>
-          </div>
-        </div>
 
-        {/* Top Engagement Header Bar */}
-        <div className="p-5 bg-white/90 backdrop-blur-md rounded-3xl border border-[#FF8A3D]/20 flex flex-wrap items-center justify-between gap-4 shadow-sm mb-8">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF8A3D]/15 text-[#D45B0C] border border-[#FF8A3D]/30 flex items-center gap-1.5">
-              <span>{article.categoryIcon}</span>
-              <span>{article.category}</span>
-            </span>
-
-            {article.city && (
-              <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-[#1F2937] text-white flex items-center gap-1.5 shadow">
-                <span>📍</span>
-                <span>{article.city}</span>
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-            {isAdmin && (
-              <input
-                type="date"
-                title="Change publish date"
-                className="px-3 py-1.5 rounded-xl border-2 border-gray-200 text-xs font-black text-gray-700 bg-white focus:outline-none focus:border-[#FF8A3D] cursor-pointer"
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  const newDateStr = new Date(e.target.value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                  fetch(`/api/blogs/${article.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date: newDateStr })
-                  }).then(() => {
-                    setArticle({ ...article, date: newDateStr });
-                  });
-                }}
-              />
-            )}
-            {isOwner && (
-              <>
-                {/* 1. EDIT BUTTON */}
-                <button
-                  onClick={() => router.push(`/blog/write?edit=${encodeURIComponent(article.id || article.slug)}`)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#FFF3E6] hover:bg-[#FF8A3D] text-[#D45B0C] hover:text-white border-2 border-[#FF8A3D]/40 font-black text-xs uppercase tracking-wider transition-all shadow-xs"
-                  title="Edit Blog Post"
-                >
-                  <Pencil size={14} />
-                  <span>Edit</span>
-                </button>
-
-                {/* 2. DELETE BUTTON */}
-                <button
-                  onClick={handleDeleteArticle}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-xs uppercase tracking-wider transition-colors shadow-sm"
-                  title="Delete Article"
-                >
-                  <Trash2 size={14} />
-                  <span>Delete</span>
-                </button>
-                <button
-                  onClick={() => {
-                    const newFeatured = !isFeatured;
-                    setIsFeatured(newFeatured);
-                    if (article?.id) {
-                      fetch(`/api/blogs/${article.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ featured: newFeatured })
-                      }).catch(e => console.error(e));
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border font-black text-xs uppercase tracking-wider transition-colors shadow-sm ${
-                    isFeatured ? 'border-purple-300 bg-purple-100 text-purple-700 hover:bg-purple-200' : 'border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-600'
-                  }`}
-                  title={isFeatured ? "Remove from Trending" : "Mark as Trending"}
-                >
-                  <span>{isFeatured ? '★ Trending' : '☆ Trend'}</span>
-                </button>
-              </>
-            )}
-
-            {/* 3. SHARE BUTTON */}
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-neutral-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider transition-all shadow-md relative"
-              title="Share Link to Article"
-            >
-              <Share2 size={14} className="text-[#FFD166]" />
-              <span>Share</span>
-              {shared && (
-                <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-3 rounded-lg font-black whitespace-nowrap shadow-xl border border-white/20">
-                  Link Copied!
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={toggleLike}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border font-extrabold text-xs transition-all ${
-                liked ? 'bg-rose-500 border-rose-600 text-white shadow-md scale-105' : 'bg-white border-[#FF8A3D]/20 hover:bg-[#FFF3E6] text-[#1F2937]'
-              }`}
-              title="Like Article"
-            >
-              <Heart size={15} fill={liked ? "currentColor" : "none"} className={liked ? "text-white" : "text-rose-500"} />
-              {isAdmin ? (
-                <input 
-                  type="number" 
-                  value={likesCount} 
-                  onChange={(e) => setLikesCount(parseInt(e.target.value) || 0)} 
-                  onBlur={() => {
-                    if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ likes: likesCount }) });
-                  }}
-                  className={`w-14 px-1 py-0.5 text-center font-black ml-1 rounded ${liked ? 'bg-white/20 text-white' : 'bg-gray-100 text-[#1F2937]'}`}
-                />
-              ) : (
-                <span>{likesCount}</span>
-              )}
-            </button>
-          </div>
-        </div>
 
         {/* Title & Engagement Metadata */}
         <div className="mb-8">
@@ -459,6 +334,79 @@ export default function DedicatedArticlePage() {
                 ` ${timesPlanned}`
               )}x
             </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#FF8A3D]/15 text-[#D45B0C] border border-[#FF8A3D]/30 flex items-center gap-1.5">
+              <span>{article.categoryIcon}</span>
+              <span>{article.category}</span>
+            </span>
+
+            {article.city && (
+              <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-black bg-[#1F2937] text-white flex items-center gap-1.5 shadow">
+                <span>📍</span>
+                <span>{article.city}</span>
+              </span>
+            )}
+
+            <button
+              onClick={toggleLike}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full border font-extrabold text-[10px] sm:text-xs transition-all ${
+                liked ? 'bg-rose-500 border-rose-600 text-white shadow-md' : 'bg-white border-[#FF8A3D]/20 hover:bg-rose-50 text-rose-600'
+              }`}
+              title="Like Article"
+            >
+              <Heart size={13} fill={liked ? "currentColor" : "none"} className={liked ? "text-white" : "text-rose-500"} />
+              {isAdmin ? (
+                <input 
+                  type="number" 
+                  value={likesCount} 
+                  onChange={(e) => setLikesCount(parseInt(e.target.value) || 0)} 
+                  onBlur={() => {
+                    if (article) fetch(`/api/blogs/${article.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ likes: likesCount }) });
+                  }}
+                  className={`w-12 px-1 py-0.5 text-center font-black ml-1 rounded ${liked ? 'bg-white/20 text-white' : 'bg-gray-100 text-[#1F2937]'}`}
+                />
+              ) : (
+                <span>{likesCount}</span>
+              )}
+            </button>
+
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 hover:bg-black text-white font-black text-[10px] sm:text-xs uppercase tracking-wider transition-all shadow-md relative"
+              title="Share Link to Article"
+            >
+              <Share2 size={12} className="text-[#FFD166]" />
+              <span>Share</span>
+              {shared && (
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-3 rounded-lg font-black whitespace-nowrap shadow-xl border border-white/20 z-10">
+                  Copied!
+                </span>
+              )}
+            </button>
+
+            {isOwner && (
+              <>
+                <button
+                  onClick={() => router.push(`/blog/write?edit=${encodeURIComponent(article.id || article.slug)}`)}
+                  className="flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 font-bold text-[10px] sm:text-xs uppercase tracking-wider transition-all"
+                  title="Edit Blog Post"
+                >
+                  <Pencil size={12} />
+                  <span>Edit</span>
+                </button>
+
+                <button
+                  onClick={handleDeleteArticle}
+                  className="flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-[10px] sm:text-xs uppercase tracking-wider transition-all"
+                  title="Delete Article"
+                >
+                  <Trash2 size={12} />
+                  <span>Delete</span>
+                </button>
+              </>
+            )}
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#1F2937] tracking-tight leading-[1.1] mb-8">

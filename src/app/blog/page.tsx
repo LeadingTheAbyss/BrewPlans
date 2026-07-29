@@ -358,7 +358,7 @@ export default function BlogLandingPage() {
       )}
 
       {/* Travel Journal Footer */}
-      <BlogFooter />
+      <BlogFooter showQuote={true} />
 
       {/* Fallback Reader Modal */}
       <ArticleReaderModal 
