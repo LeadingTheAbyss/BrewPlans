@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ARTICLES, FEATURED_ARTICLE, Article, Comment } from '@/data/blogData';
 import { BlogNavbar } from '@/components/blog/BlogNavbar';
@@ -139,13 +139,40 @@ export default function DedicatedArticlePage() {
     );
   }
 
+  const hasTrackedView = useRef(false);
+
+  useEffect(() => {
+    if (article?.id && !hasTrackedView.current) {
+      hasTrackedView.current = true;
+      fetch(`/api/blogs/${article.id}/metrics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'view' })
+      }).catch(e => console.error('Failed to increment views', e));
+    }
+  }, [article?.id]);
+
   const toggleLike = () => {
     if (liked) {
       setLikesCount(l => l - 1);
       setLiked(false);
+      if (article?.id) {
+        fetch(`/api/blogs/${article.id}/metrics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unlike' })
+        }).catch(e => console.error('Failed to decrement likes', e));
+      }
     } else {
       setLikesCount(l => l + 1);
       setLiked(true);
+      if (article?.id) {
+        fetch(`/api/blogs/${article.id}/metrics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'like' })
+        }).catch(e => console.error('Failed to increment likes', e));
+      }
     }
   };
 

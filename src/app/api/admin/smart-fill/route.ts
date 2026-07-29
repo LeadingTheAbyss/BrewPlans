@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const prompt = `Analyze the following travel blog details and generate a smart-fill response.
 Categorize the trip into exactly one option from the budget, season, stay, transit, and category lists based on the vibe and details.
 Also identify the primary Indian City or State for the destination.
-Finally, generate an array of up to 20 itinerary stops based on the content (each with day (number, MUST be sequential starting from 1, 2, 3...), title (string), location (string), description (string), lat (number, accurate latitude of the place), lng (number, accurate longitude of the place)).
+Finally, generate an array of itinerary stops based on the content. CRITICAL: ONLY generate stops for places explicitly mentioned or strongly implied by the content. Do NOT hallucinate extra days. A short blog should typically have 1 to 3 stops. (each with day (number, MUST be sequential starting from 1), title (string), location (string), description (string), lat (number), lng (number)).
 
 Return ONLY a valid JSON object with the keys "budget", "season", "stay", "transit", "city", "category", and "stops". Do not include any markdown, code blocks, or explanations.
 
