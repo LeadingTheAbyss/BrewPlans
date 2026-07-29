@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const blog = await prisma.article.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
     if (!blog) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(blog);
@@ -14,9 +15,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const data = await request.json();
 
     const updatedBlog = await prisma.article.update({
@@ -65,9 +66,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await params;
     
     await prisma.article.delete({
       where: { id }

@@ -139,33 +139,37 @@ export default function WriteBlogPage() {
 
       // 2. If editing existing article, pre-fill all fields
       if (editId) {
-        try {
-          const fetchRes = await fetch(`/api/blogs/${editId}`);
-          let customBlogs: Article[] = [];
-          if (fetchRes.ok) {
-            customBlogs = [await fetchRes.json()];
+        (async () => {
+          try {
+            const fetchRes = await fetch(`/api/blogs/${editId}`);
+            let customBlogs: Article[] = [];
+            if (fetchRes.ok) {
+              customBlogs = [await fetchRes.json()];
+            }
+            const allArticles = [...customBlogs, ...ARTICLES, FEATURED_ARTICLE];
+            const target = allArticles.find(a => a?.id === editId || a?.slug === editId);
+            if (target) {
+              setEditingId(target.id || target.slug);
+              setTitle(target.title || '');
+              setCity(target.city || '');
+              setCategory(target.category || 'Offbeat Valleys');
+              setImageUrl(target.imageUrl || 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80');
+              setContent(target.content || '');
+              if (target.mediaType) setMediaType(target.mediaType as any);
+              if (target.videoUrl) setVideoUrl(target.videoUrl);
+              if (target.author?.name) setAuthorName(target.author.name);
+              if (target.author?.username) setUsername(target.author.username);
+              if (target.author?.avatar) setCustomAvatar(target.author.avatar);
+              if (target.itineraryStops && target.itineraryStops.length > 0) setStops(target.itineraryStops);
+              if (target.budget) setBudget(target.budget);
+              if (target.bestSeason) setSeason(target.bestSeason);
+              if (target.accommodation) setStay(target.accommodation);
+              if (target.transportMode) setTransit(target.transportMode);
+            }
+          } catch(e) {
+            console.error(e);
           }
-          const allArticles = [...customBlogs, ...ARTICLES, FEATURED_ARTICLE];
-          const target = allArticles.find(a => a?.id === editId || a?.slug === editId);
-          if (target) {
-            setEditingId(target.id || target.slug);
-            setTitle(target.title || '');
-            setCity(target.city || '');
-            setCategory(target.category || 'Offbeat Valleys');
-            setImageUrl(target.imageUrl || 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1200&q=80');
-            setContent(target.content || '');
-            if (target.mediaType) setMediaType(target.mediaType as any);
-            if (target.videoUrl) setVideoUrl(target.videoUrl);
-            if (target.author?.name) setAuthorName(target.author.name);
-            if (target.author?.username) setUsername(target.author.username);
-            if (target.author?.avatar) setCustomAvatar(target.author.avatar);
-            if (target.itineraryStops && target.itineraryStops.length > 0) setStops(target.itineraryStops);
-            if (target.budget) setBudget(target.budget);
-            if (target.bestSeason) setSeason(target.bestSeason);
-            if (target.accommodation) setStay(target.accommodation);
-            if (target.transportMode) setTransit(target.transportMode);
-          }
-        } catch (e) {}
+        })();
       } else {
         // If not editing an existing published post, see if there's a draft query
         const urlParams = new URLSearchParams(window.location.search);
