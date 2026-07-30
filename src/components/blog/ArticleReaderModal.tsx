@@ -166,7 +166,7 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
       id: `c-${Date.now()}`,
       author: finalName,
       avatar: finalAvatar,
-      date: 'Just now',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       content: newComment.trim(),
       likes: 1,
     };
@@ -503,13 +503,6 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
                       <p className="text-xs sm:text-sm text-[#374151] font-medium leading-relaxed mb-3">
                         {comment.content}
                       </p>
-                      <button
-                        onClick={() => toggleCommentLike(comment.id)}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#4B5563] hover:text-[#D45B0C] transition-colors bg-[#FFF7F0] px-3 py-1 rounded-full border border-gray-200"
-                      >
-                        <ThumbsUp size={12} className="text-[#FF8A3D]" />
-                        <span>Helpful ({comment.likes})</span>
-                      </button>
                     </div>
                   </div>
                 ))}

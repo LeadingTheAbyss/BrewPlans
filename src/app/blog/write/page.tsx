@@ -58,6 +58,19 @@ export default function WriteBlogPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
+  
+  // Redirect to login if not logged in
+  useEffect(() => {
+    if (user === null) {
+      // Give it a moment to hydrate
+      const t = setTimeout(() => {
+        if (!useAuthStore.getState().user) {
+          router.push('/login?redirect=/blog/write');
+        }
+      }, 1500);
+      return () => clearTimeout(t);
+    }
+  }, [user, router]);
   const editId = searchParams ? searchParams.get('edit') : null;
   const [editingId, setEditingId] = useState<string | null>(null);
 

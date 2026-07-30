@@ -770,7 +770,15 @@ export default function ProfilePage() {
                     >
                       <div>
                         <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 relative bg-neutral-800">
-                          <img src={story.imageUrl} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          {story.videoUrl && (story.mediaType === 'article' || story.videoUrl.match(/\\.(mp4|webm|ogg)$/i)) ? (
+                            <video
+                              src={story.videoUrl}
+                              autoPlay loop muted playsInline
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <img src={story.imageUrl} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          )}
                           <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-white font-bold text-[11px] uppercase tracking-wider">
                             📍 {story.city || 'India'}
                           </span>

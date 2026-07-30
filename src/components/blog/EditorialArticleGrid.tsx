@@ -16,7 +16,7 @@ interface EditorialArticleGridProps {
   title?: string;
 }
 
-type SortMode = 'default' | 'likes' | 'controversial' | 'views';
+type SortMode = 'default' | 'newest' | 'likes' | 'controversial' | 'views';
 
 export function EditorialArticleGrid({ articles, onSelectArticle, selectedCategory, onDeleteArticle, isAdmin, title = "Trending Blogs" }: EditorialArticleGridProps) {
   const [likes, setLikes] = useState<Record<string, number>>({});
@@ -32,6 +32,11 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
 
   // Sort articles according to the active filter
   const sortedArticles = [...articles].sort((a, b) => {
+    if (sortBy === 'newest') {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA; // Descending
+    }
     if (sortBy === 'likes') {
       const aLikes = likes[a.id] ?? a.likes ?? 0;
       const bLikes = likes[b.id] ?? b.likes ?? 0;
@@ -86,6 +91,16 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
             }`}
           >
             <span>🔥 Trending</span>
+          </button>
+          <button
+            onClick={() => setSortBy('newest')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1 ${
+              sortBy === 'newest'
+                ? 'bg-purple-600 text-white shadow-md scale-105'
+                : 'bg-white text-[#4B5563] hover:bg-purple-50 border border-purple-200'
+            }`}
+          >
+            <span>✨ Newest</span>
           </button>
           <button
             onClick={() => setSortBy('likes')}

@@ -26,6 +26,7 @@ export const config = {
     '/profile',
     '/recommend',
     '/quick-trip',
-    '/stats'
+    '/stats',
+    '/blog/write'
   ],
 };

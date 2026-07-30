@@ -1062,10 +1062,55 @@ export default function LandingPage() {
             </div>
 
             {/* Footer Links */}
-            <div className="mt-16 mb-8 flex flex-wrap gap-4 justify-center relative z-10">
+            <div className="mt-16 mb-6 flex flex-wrap gap-4 justify-center relative z-10">
               <a href="/terms" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Terms of Service</a>
               <a href="/privacy" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Privacy Policy</a>
               <a href="mailto:support@brewplans.com" className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-semibold border border-white/30 hover:bg-black/80 hover:border-white/60 hover:scale-105 transition-all duration-200">Contact Us : support@brewplans.com</a>
+            </div>
+
+            {/* Social Links */}
+            <div className="mb-12 flex flex-wrap items-center justify-center gap-3 relative z-10 text-white">
+              <a 
+                href="https://instagram.com/brewplansdotcom" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm hover:bg-[#FF8A3D] hover:border-[#FF8A3D] border border-white/30 flex items-center justify-center transition-all shadow-xs" 
+                title="Instagram: @brewplansdotcom"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+              </a>
+              <a 
+                href="https://x.com/BrewPlans" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm hover:bg-[#FF8A3D] hover:border-[#FF8A3D] border border-white/30 flex items-center justify-center transition-all shadow-xs" 
+                title="X (Twitter): @BrewPlans"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+              </a>
+              <a 
+                href="https://facebook.com/BrewPlans" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm hover:bg-[#FF8A3D] hover:border-[#FF8A3D] border border-white/30 flex items-center justify-center transition-all shadow-xs" 
+                title="Facebook: BrewPlans"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+              <a 
+                href="mailto:support@brewplans.com" 
+                className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm hover:bg-[#FF8A3D] hover:border-[#FF8A3D] border border-white/30 flex items-center justify-center transition-all shadow-xs" 
+                title="Email: support@brewplans.com"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </a>
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm hover:bg-[#FF8A3D] hover:border-[#FF8A3D] border border-white/30 flex items-center justify-center transition-all shadow-xs" 
+                title="YouTube (Link coming soon)"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3v6Z"/></svg>
+              </a>
             </div>
 
           </div>
