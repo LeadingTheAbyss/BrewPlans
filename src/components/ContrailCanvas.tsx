@@ -42,7 +42,7 @@ export function ContrailCanvas() {
     drawPuff(84, 80, 30, 180, 200, 220, 0.2);
 
     let points: { x: number, y: number, spawnTime: number, sizeMult: number }[] = [];
-    const MAX_LIFETIME_MS = 5500; // 5.5 seconds exact lifespan
+    const MAX_LIFETIME_MS = 3000; // 3 seconds exact lifespan
     let animationFrameId: number;
     
     let lastE1X = 0;
@@ -183,7 +183,7 @@ export function ContrailCanvas() {
   return (
     <canvas 
       ref={canvasRef} 
-      className="fixed inset-0 z-[50] pointer-events-none"
+      className="fixed inset-0 z-[20] pointer-events-none contrail-canvas"
     />
   );
 }

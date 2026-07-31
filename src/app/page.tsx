@@ -456,9 +456,9 @@ export default function LandingPage() {
       
       tl.to(scene.light.position, { duration: sectionDuration * 3, x: 0, y: 0, z: 0 }, delay);
 
-      // Fade the entire WebGL canvas to zero once the plane has flown away
+      // Fade the entire WebGL canvas and ContrailCanvas to zero once the plane has flown away
       // This ensures nothing bleeds through into the content sections below
-      tl.to(canvasRef.current!, { autoAlpha: 0, duration: sectionDuration * 0.8, ease: 'power1.in' }, delay + sectionDuration * 2.5);
+      tl.to([canvasRef.current!, '.contrail-canvas'], { autoAlpha: 0, duration: sectionDuration * 0.8, ease: 'power1.in' }, delay + sectionDuration * 2.5);
 
       // Start continuous render loop for live tracking and contrails
       let isVisible = true;
