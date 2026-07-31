@@ -37,9 +37,12 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const latestQueryRef = useRef(value);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
+    latestQueryRef.current = val;
 
     if (val === '') {
       onChange('');
@@ -51,10 +54,13 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
       setLoading(true);
       timeoutRef.current = setTimeout(async () => {
         const apiResults = await api.searchCity(val);
-        setResults(apiResults);
-        setIsOpen(true);
-        setLoading(false);
-      }, 0);
+        // Only update state if this is still the most recent query the user typed
+        if (latestQueryRef.current === val) {
+          setResults(apiResults);
+          setIsOpen(true);
+          setLoading(false);
+        }
+      }, 150); // Small 150ms debounce prevents API spam while staying very fast
     } else {
       setResults([]);
       setIsOpen(false);
