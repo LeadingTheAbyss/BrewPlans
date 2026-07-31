@@ -695,7 +695,8 @@ async def _fetch_ola_cities_autocomplete(q: str) -> List[Dict[str, Any]]:
     url = f"https://api.olamaps.io/places/v1/autocomplete?input={urllib.parse.quote(q)}&api_key={api_key}"
     
     try:
-        response = await _shared_async_client.get(url, timeout=5.0)
+        # Reduced timeout to 1.5s to prevent long hangs if Ola API is slow
+        response = await _shared_async_client.get(url, timeout=1.5)
         response.raise_for_status()
         data = response.json()
         
@@ -742,18 +743,30 @@ async def _fetch_ola_cities_autocomplete(q: str) -> List[Dict[str, Any]]:
                     "osrm_coords": f"{lng},{lat}"
                 })
                 
-        if not results:
-            return await _fetch_photon_cities(q)
-            
         return results
     except Exception as e:
         print(f"[Warning] Failed to fetch ola cities: {e}")
-        # fallback to photon
-        return await _fetch_photon_cities(q)
+        return []
 
 @app.get("/api/search-city")
-async def api_search_city(q: str = Query(..., min_length=1)):
-    return await _fetch_ola_cities_autocomplete(q)
+async def search_city(q: str = ""):
+    if not q:
+        return []
+    
+    import asyncio
+    # Run both Ola and Open-Meteo concurrently. We prefer Ola, but if it takes too long or fails, we have Open-Meteo ready immediately.
+    ola_task = asyncio.create_task(_fetch_ola_cities_autocomplete(q))
+    photon_task = asyncio.create_task(_fetch_photon_cities(q))
+    
+    ola_cities, photon_cities = await asyncio.gather(ola_task, photon_task, return_exceptions=True)
+    
+    if isinstance(ola_cities, list) and ola_cities:
+        return ola_cities
+        
+    if isinstance(photon_cities, list) and photon_cities:
+        return photon_cities
+        
+    return []
 
 @app.get("/api/test-redbus")
 async def test_redbus(q: str = Query(...)):
