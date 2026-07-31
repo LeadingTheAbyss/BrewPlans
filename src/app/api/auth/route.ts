@@ -54,26 +54,30 @@ export async function POST(req: Request) {
       }
     });
 
-    // Track daily login
-    const nowIST = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-    const today = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
-    if (prisma.dailyUserStat) {
-      await prisma.dailyUserStat.upsert({
-        where: {
-          userId_date: {
+    // Track daily login - wrapped in try/catch to avoid breaking login if stats fail (e.g. missing db table)
+    try {
+      const nowIST = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+      const today = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
+      if (prisma.dailyUserStat) {
+        await prisma.dailyUserStat.upsert({
+          where: {
+            userId_date: {
+              userId: user.id,
+              date: today,
+            }
+          },
+          update: {
+            loginCount: { increment: 1 }
+          },
+          create: {
             userId: user.id,
             date: today,
+            loginCount: 1,
           }
-        },
-        update: {
-          loginCount: { increment: 1 }
-        },
-        create: {
-          userId: user.id,
-          date: today,
-          loginCount: 1,
-        }
-      });
+        });
+      }
+    } catch (statError) {
+      console.warn("Failed to update daily user stats during login:", statError);
     }
 
     // Set cookie
