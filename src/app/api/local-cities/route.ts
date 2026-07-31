@@ -15,7 +15,7 @@ export async function GET() {
     const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-    const cities = [];
+    const cities: any[] = [];
     let currentCity: any = null;
 
     for (const line of lines) {
