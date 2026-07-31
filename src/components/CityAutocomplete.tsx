@@ -38,6 +38,15 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
   }, []);
 
   const latestQueryRef = useRef(value);
+  const [localCities, setLocalCities] = useState<any[]>([]);
+
+  // Fetch all 750+ cities ONCE on mount for absolute 0ms instant autocomplete
+  useEffect(() => {
+    fetch('/api/local-cities')
+      .then(res => res.json())
+      .then(data => setLocalCities(data))
+      .catch(err => console.error("Failed to load local cities", err));
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -46,26 +55,20 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
 
     if (val === '') {
       onChange('');
-    }
-
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-    if (val.length >= 1) {
-      setLoading(true);
-      timeoutRef.current = setTimeout(async () => {
-        const apiResults = await api.searchCity(val);
-        // Only update state if this is still the most recent query the user typed
-        if (latestQueryRef.current === val) {
-          setResults(apiResults);
-          setIsOpen(true);
-          setLoading(false);
-        }
-      }, 150); // Small 150ms debounce prevents API spam while staying very fast
-    } else {
       setResults([]);
       setIsOpen(false);
-      setLoading(false);
+      return;
     }
+
+    // Instantly filter locally with NO delay! 
+    const searchVal = val.toLowerCase();
+    const filtered = localCities.filter(c => 
+      c.name.toLowerCase().startsWith(searchVal) || 
+      c.display.toLowerCase().includes(searchVal)
+    ).slice(0, 15); // Show top 15 matches
+
+    setResults(filtered);
+    setIsOpen(filtered.length > 0);
   };
 
   const handleSelect = (city: string) => {
