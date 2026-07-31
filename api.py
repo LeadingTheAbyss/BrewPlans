@@ -682,9 +682,78 @@ async def _fetch_photon_cities(q: str) -> List[Dict[str, Any]]:
         print(f"[Warning] Failed to fetch open-meteo cities: {e}")
         return []
 
+async def _fetch_ola_cities_autocomplete(q: str) -> List[Dict[str, Any]]:
+    if not q or len(q) < 1:
+        return []
+    
+    import os
+    import urllib.parse
+    api_key = os.environ.get("OLA_MAPS_API_KEY", "")
+    if not api_key:
+        return await _fetch_photon_cities(q)
+    
+    url = f"https://api.olamaps.io/places/v1/autocomplete?input={urllib.parse.quote(q)}&api_key={api_key}"
+    
+    try:
+        response = await _shared_async_client.get(url, timeout=5.0)
+        response.raise_for_status()
+        data = response.json()
+        
+        results = []
+        predictions = data.get('predictions', [])
+        
+        seen = set()
+        for p in predictions:
+            if not isinstance(p, dict):
+                continue
+                
+            sf = p.get('structured_formatting', {})
+            name = sf.get('main_text') or p.get('description', '').split(',')[0]
+            
+            desc_parts = p.get('description', '').split(',')
+            state = desc_parts[1].strip() if len(desc_parts) > 1 else ""
+            
+            display = p.get('description', name)
+            
+            geom = p.get('geometry', {}).get('location', {})
+            lat = geom.get('lat')
+            lng = geom.get('lng')
+            
+            if not lat or not lng:
+                continue
+                
+            types = p.get('types', [])
+            layer = p.get('layer', [])
+            
+            # Filter out non-cities like airports, points of interest, etc.
+            exclude_layers = {'venue', 'address', 'street', 'stop', 'poi', 'transport', 'airport', 'building', 'company'}
+            if set(types).intersection(exclude_layers) or set(layer).intersection(exclude_layers):
+                continue
+                
+            # Basic deduplication
+            if display not in seen:
+                seen.add(display)
+                results.append({
+                    "name": name,
+                    "display": display,
+                    "state": state,
+                    "lat": float(lat),
+                    "lng": float(lng),
+                    "osrm_coords": f"{lng},{lat}"
+                })
+                
+        if not results:
+            return await _fetch_photon_cities(q)
+            
+        return results
+    except Exception as e:
+        print(f"[Warning] Failed to fetch ola cities: {e}")
+        # fallback to photon
+        return await _fetch_photon_cities(q)
+
 @app.get("/api/search-city")
 async def api_search_city(q: str = Query(..., min_length=1)):
-    return await _fetch_photon_cities(q)
+    return await _fetch_ola_cities_autocomplete(q)
 
 @app.get("/api/test-redbus")
 async def test_redbus(q: str = Query(...)):

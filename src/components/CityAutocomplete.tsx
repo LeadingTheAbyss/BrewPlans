@@ -54,7 +54,7 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
         setResults(apiResults);
         setIsOpen(true);
         setLoading(false);
-      }, 500);
+      }, 0);
     } else {
       setResults([]);
       setIsOpen(false);
