@@ -43,24 +43,28 @@ export async function GET(req: Request) {
       where: userEmailFilter ? { email: userEmailFilter } : undefined
     });
     
-    // API Calls All Time (Sum of lifetime specific metrics)
+    // API Calls All Time (True sum of user API calls plus sub-metrics)
     const apiMetricsAggr = await prisma.user.aggregate({
       where: userEmailFilter ? { email: userEmailFilter } : undefined,
       _sum: {
+        apiCalls: true,
         apiCallsFlights: true,
         apiCallsTrains: true,
         apiCallsBusses: true,
         apiCallsHotels: true,
         apiCallsPlaces: true,
+        apiCallsRecommendations: true,
       }
     });
-    
-    const totalApiCallsAllTime = 
-      (apiMetricsAggr._sum.apiCallsFlights || 0) +
+
+    const categoryHitsSum = (apiMetricsAggr._sum.apiCallsFlights || 0) +
       (apiMetricsAggr._sum.apiCallsTrains || 0) +
       (apiMetricsAggr._sum.apiCallsBusses || 0) +
       (apiMetricsAggr._sum.apiCallsHotels || 0) +
-      (apiMetricsAggr._sum.apiCallsPlaces || 0);
+      (apiMetricsAggr._sum.apiCallsPlaces || 0) +
+      (apiMetricsAggr._sum.apiCallsRecommendations || 0);
+    const userApiCallsSum = apiMetricsAggr._sum.apiCalls || 0;
+    const totalApiCallsAllTime = Math.max(userApiCallsSum, categoryHitsSum);
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -159,12 +163,20 @@ export async function GET(req: Request) {
     const tripsPlannedToday = detailedStats.DAILY.tripsPlanned + detailedStats.DAILY.quickTripsPlanned;
     const totalTripsLifetime = detailedStats.ALL.tripsPlanned + detailedStats.ALL.quickTripsPlanned;
 
+    const flightsCalls = apiMetricsAggr._sum.apiCallsFlights || 0;
+    const trainsCalls = apiMetricsAggr._sum.apiCallsTrains || 0;
+    const busesCalls = apiMetricsAggr._sum.apiCallsBusses || 0;
+    const hotelsCalls = apiMetricsAggr._sum.apiCallsHotels || 0;
+    const placesCalls = apiMetricsAggr._sum.apiCallsPlaces || 0;
+    const recommendCalls = apiMetricsAggr._sum.apiCallsRecommendations || 0;
+
     const apiBreakdown = {
-      "Flights": apiMetricsAggr._sum.apiCallsFlights || 0,
-      "Trains": apiMetricsAggr._sum.apiCallsTrains || 0,
-      "Buses": apiMetricsAggr._sum.apiCallsBusses || 0,
-      "Hotels": apiMetricsAggr._sum.apiCallsHotels || 0,
-      "Places": apiMetricsAggr._sum.apiCallsPlaces || 0,
+      "Flights": flightsCalls,
+      "Trains": trainsCalls,
+      "Buses": busesCalls,
+      "Hotels": hotelsCalls,
+      "Places": placesCalls,
+      "Recommendations": recommendCalls,
     };
 
     // Calculate approximate cost (Google Places = $0.03, OSRM/Hotels = Free, etc)

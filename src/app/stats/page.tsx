@@ -593,25 +593,34 @@ export default function AdminStatsPage() {
                           <AnimatePresence>
                             {expandedUserId === u.id && u.apiCalls > 0 && (
                               <motion.tr initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-black/60 border-t border-white/5 shadow-inner">
-                                <td colSpan={5} className="p-0">
-                                  <div className="px-6 py-4 flex flex-col md:flex-row gap-8 justify-end items-end text-xs w-full">
+                                <td colSpan={7} className="p-0">
+                                  <div className="px-6 py-4 flex flex-col md:flex-row gap-8 justify-end items-start md:items-end text-xs w-full bg-neutral-950/40">
                                     
                                     <div className="flex flex-col gap-2 items-end w-full md:w-auto">
-                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/10 pb-1 w-full text-right md:min-w-[160px]">Lifetime Activity</span>
-                                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 w-full md:min-w-[160px]">
-                                        <span className="text-white/50 text-right">Flights:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsFlights}</span>
-                                        <span className="text-white/50 text-right">Trains:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsTrains}</span>
-                                        <span className="text-white/50 text-right">Buses:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsBusses}</span>
-                                        <span className="text-white/50 text-right">Hotels:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsHotels}</span>
-                                        <span className="text-white/50 text-right">Places:</span> <span className="font-mono text-white/80 text-right">{u.apiCallsPlaces}</span>
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 border-b border-white/10 pb-1 w-full text-right md:min-w-[210px]">Lifetime Service Queries</span>
+                                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 w-full md:min-w-[210px]">
+                                        <span className="text-white/60 text-right">Flights:</span> <span className="font-mono text-white/90 text-right">{u.apiCallsFlights || 0}</span>
+                                        <span className="text-white/60 text-right">Trains:</span> <span className="font-mono text-white/90 text-right">{u.apiCallsTrains || 0}</span>
+                                        <span className="text-white/60 text-right">Buses:</span> <span className="font-mono text-white/90 text-right">{u.apiCallsBusses || 0}</span>
+                                        <span className="text-white/60 text-right">Hotels:</span> <span className="font-mono text-white/90 text-right">{u.apiCallsHotels || 0}</span>
+                                        <span className="text-white/60 text-right">Places:</span> <span className="font-mono text-white/90 text-right">{u.apiCallsPlaces || 0}</span>
+                                        <span className="text-white/60 text-right">Recommendations:</span> <span className="font-mono text-white/90 text-right">{u.apiCallsRecommendations || 0}</span>
+                                        <div className="col-span-2 border-t border-white/10 my-0.5"></div>
+                                        <span className="text-emerald-400 font-bold text-right text-[11px] uppercase tracking-wider">Total Service Hits:</span> 
+                                        <span className="font-mono text-emerald-400 font-bold text-right">{(u.apiCallsFlights || 0) + (u.apiCallsTrains || 0) + (u.apiCallsBusses || 0) + (u.apiCallsHotels || 0) + (u.apiCallsPlaces || 0) + (u.apiCallsRecommendations || 0)}</span>
                                       </div>
                                     </div>
 
                                     <div className="flex flex-col gap-2 items-end w-full md:w-auto">
-                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/10 pb-1 w-full text-right md:min-w-[160px]">Status</span>
-                                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 w-full md:min-w-[160px]">
-                                        <span className="text-white/50 text-right">Last Login:</span> <span className="font-mono text-white/80 text-right">{new Date(u.lastApiCallDate).toLocaleDateString()}</span>
-                                        <span className="text-white/50 text-right">Total Req:</span> <span className="font-mono text-white/80 text-right">{(u.apiCallsFlights || 0) + (u.apiCallsTrains || 0) + (u.apiCallsBusses || 0) + (u.apiCallsHotels || 0) + (u.apiCallsPlaces || 0)}</span>
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 border-b border-white/10 pb-1 w-full text-right md:min-w-[210px]">Status & Quota Tracker</span>
+                                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 w-full md:min-w-[210px]">
+                                        <span className="text-white/60 text-right">Last Active:</span> <span className="font-mono text-white/90 text-right">{new Date(u.lastApiCallDate).toLocaleDateString()}</span>
+                                        <span className="text-blue-400 font-bold text-right text-[11px] uppercase tracking-wider">Total API Requests:</span> <span className="font-mono text-blue-400 font-bold text-right">{u.apiCalls || 0}</span>
+                                      </div>
+                                      <div className="mt-1 bg-white/[0.03] border border-white/5 rounded-lg p-2.5 max-w-[240px]">
+                                        <p className="text-[10px] text-white/50 font-mono leading-relaxed text-right">
+                                          *Note: Transport searches check Flights, Trains & Buses simultaneously (+3 service hits per call). Total API Requests counts raw HTTP calls & rate limits.*
+                                        </p>
                                       </div>
                                     </div>
 
