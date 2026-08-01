@@ -752,7 +752,7 @@ export default function RecommendPage() {
                         <div className="flex items-start gap-2 mt-1">
                           <span className="text-white/60 text-sm md:text-base font-medium mt-[2px] md:mt-[3px]">*</span>
                           <p className="text-sm md:text-base text-white/60 font-medium tracking-wide leading-relaxed">
-                            Budget estimates dynamically adapt trip style to strictly respect your ₹{form.budget.toLocaleString('en-IN')} limit.
+                            Trip cost is adjusted to fit within your ₹{form.budget.toLocaleString('en-IN')} limit.
                           </p>
                         </div>
                       )}
