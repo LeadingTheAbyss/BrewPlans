@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\Kamlesh Singh\Desktop\Proj\ghumi-ghumi\services\live_flights_api.py", line 334, in search_live_flights
+    return await _search_live_flights_impl(origin_city, dest_city, date, check_only)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Kamlesh Singh\Desktop\Proj\ghumi-ghumi\services\live_flights_api.py", line 368, in _search_live_flights_impl
+    coords = await get_coordinates(origin_city)
+                   ^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'get_coordinates' where it is not associated with a value

@@ -1520,3 +1520,77 @@ Total 752 Cities found. Page 5
 22.572645,88.363892
 📍Meerut, Uttar Pradesh, India
 28.984644,77.705956
+📍Amaravati, Andhra Pradesh, India
+16.5149,80.5163
+📍Itanagar, Arunachal Pradesh, India
+27.0844,93.6053
+📍Dispur, Assam, India
+26.1408,91.7898
+📍Patna, Bihar, India
+25.5941,85.1376
+📍Raipur, Chhattisgarh, India
+21.2514,81.6296
+📍Panaji, Goa, India
+15.4909,73.8278
+📍Gandhinagar, Gujarat, India
+23.2156,72.6369
+📍Chandigarh, Haryana, India
+30.7333,76.7794
+📍Shimla, Himachal Pradesh, India
+31.1048,77.1734
+📍Ranchi, Jharkhand, India
+23.3441,85.3096
+📍Bengaluru, Karnataka, India
+12.9716,77.5946
+📍Thiruvananthapuram, Kerala, India
+8.5241,76.9366
+📍Bhopal, Madhya Pradesh, India
+23.2599,77.4126
+📍Mumbai, Maharashtra, India
+19.0760,72.8777
+📍Imphal, Manipur, India
+24.8170,93.9368
+📍Shillong, Meghalaya, India
+25.5788,91.8933
+📍Aizawl, Mizoram, India
+23.7271,92.7176
+📍Kohima, Nagaland, India
+25.6751,94.1086
+📍Bhubaneswar, Odisha, India
+20.2961,85.8245
+📍Chandigarh, Punjab, India
+30.7333,76.7794
+📍Jaipur, Rajasthan, India
+26.9124,75.7873
+📍Gangtok, Sikkim, India
+27.3314,88.6138
+📍Chennai, Tamil Nadu, India
+13.0827,80.2707
+📍Hyderabad, Telangana, India
+17.3850,78.4867
+📍Agartala, Tripura, India
+23.8315,91.2868
+📍Lucknow, Uttar Pradesh, India
+26.8467,80.9462
+📍Dehradun, Uttarakhand, India
+30.3165,78.0322
+📍Kolkata, West Bengal, India
+22.5726,88.3639
+📍Sri Vijaya Puram (formerly Port Blair), Andaman and Nicobar Islands, India
+11.6234,92.7265
+📍Chandigarh, Chandigarh, India
+30.7333,76.7794
+📍Daman, Dadra & Nagar Haveli and Daman & Diu, India
+20.3974,72.8328
+📍New Delhi, Delhi (NCT), India
+28.6139,77.2090
+📍Srinagar (Summer), Jammu and Kashmir, India
+34.0837,74.7973
+📍Jammu (Winter), Jammu and Kashmir, India
+32.7266,74.8570
+📍Leh, Ladakh, India
+34.1526,77.5770
+📍Kavaratti, Lakshadweep, India
+10.5593,72.6358
+📍Puducherry, Puducherry, India
+11.9416,79.8083

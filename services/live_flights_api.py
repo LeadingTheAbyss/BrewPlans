@@ -3,14 +3,17 @@ import json
 import math
 import httpx
 import urllib.parse
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
 import random
+import heapq
 from models.entities import TransportOption
 from models.enums import TransportType
 from services.dgca_pdf_parser import CITY_TO_IATA
 from services.db import get_db_connection
 import uuid
+
+IATA_TO_CITY = {v: k.title() for k, v in CITY_TO_IATA.items()}
 
 # Priority mapping: destinations that should always route through a well-connected hub.
 major_airports = {
@@ -77,46 +80,30 @@ def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-async def _get_city_coords(city_name: str) -> Optional[Dict[str, float]]:
-    """Fetch a city's lat/lon from Nominatim."""
-    encoded = urllib.parse.quote(f"{city_name}, India")
-    url = f"https://nominatim.openstreetmap.org/search?q={encoded}&format=json&limit=1"
-    headers = {"User-Agent": "Tripeasy-FlightBot/1.0"}
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, headers=headers, timeout=10.0)
-            resp.raise_for_status()
-            data = resp.json()
-            if data:
-                return {"lat": float(data[0]["lat"]), "lon": float(data[0]["lon"])}
-    except Exception as e:
-        print(f"[Warning] Failed to geocode city '{city_name}': {e}")
-    return None
+from services.osrm_cab_api import get_coordinates
 
 
-def _get_nearest_airport(lat: float, lon: float) -> Optional[Dict[str, Any]]:
-    """Find the nearest IATA airport to the given coordinates using airport_coords.json."""
+def _get_nearest_airports(lat: float, lon: float, limit: int = 3) -> List[Dict[str, Any]]:
+    """Find the nearest IATA airports to the given coordinates using airport_coords.json."""
     airport_coords = _get_all_airport_coords()
     if not airport_coords:
-        return None
+        return []
 
-    nearest = None
-    min_dist = float("inf")
+    airports = []
     for iata, info in airport_coords.items():
         dist = _haversine(lat, lon, info["lat"], info["lon"])
-        if dist < min_dist:
-            min_dist = dist
-            nearest = {
-                "iata": iata,
-                "city": info.get("city", iata),
-                "lat": info["lat"],
-                "lon": info["lon"],
-                "distance_km": dist,
-            }
-    return nearest
+        airports.append({
+            "iata": iata,
+            "city": info.get("city", iata),
+            "lat": info["lat"],
+            "lon": info["lon"],
+            "distance_km": dist,
+        })
+    airports.sort(key=lambda x: x["distance_km"])
+    return airports[:limit]
 
 
-async def _fetch_flights_for_iata(origin_iata: str, dest_iata: str, date: str, check_only: bool) -> List[TransportOption]:
+async def _fetch_flights_for_iata(origin_iata: str, dest_iata: str, date: str, check_only: bool, disable_fallback: bool = False) -> List[TransportOption]:
     """Core flight fetcher: NeonDB DGCA first, then FlightAPI fallback. Returns a list (may be empty)."""
     options = []
     try:
@@ -127,10 +114,11 @@ async def _fetch_flights_for_iata(origin_iata: str, dest_iata: str, date: str, c
         target_weekday = base_date.weekday()
 
     try:
+        target_day_str = str(target_weekday + 1)
         conn = await get_db_connection()
         rows = await conn.fetch(
-            'SELECT flight_no, origin, dest, airline, freq, dep_time, arr_time FROM "Flight" WHERE origin = $1 AND dest = $2',
-            origin_iata.upper(), dest_iata.upper()
+            'SELECT flight_no, origin, dest, airline, freq, dep_time, arr_time FROM "Flight" WHERE origin = $1 AND dest = $2 AND freq LIKE \'%\' || $3 || \'%\'',
+            origin_iata.upper(), dest_iata.upper(), target_day_str
         )
         cached_flights = [
             {"flight_no": r['flight_no'], "origin": r['origin'], "dest": r['dest'],
@@ -176,222 +164,332 @@ async def _fetch_flights_for_iata(origin_iata: str, dest_iata: str, date: str, c
                 price=float(round(price, -2)),
                 safety_score=9,
                 comfort_score=8,
-                provider=f"{flight['airline']} {flight['flight_no']} *"
+                provider=f"{flight['airline']} {flight['flight_no']} ({origin_iata} -> {dest_iata}) *"
             ))
 
-    # Fallback to FlightAPI if NeonDB had nothing
-    if not options:
-        if check_only:
-            return []
-        print(f"[API Call] Route {origin_iata} -> {dest_iata} not found in DGCA. Falling back to FlightAPI...")
-        api_key = os.environ.get("FLIGHTAPI_KEY", "6a40cc228466d4877c15a08c")
-        url = f"https://api.flightapi.io/onewaytrip/{api_key}/{origin_iata}/{dest_iata}/{date}/1/0/0/Economy/USD"
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(url, timeout=10.0)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    carriers = {c['id']: c.get('name', c.get('display_code', 'Unknown Airline')) for c in data.get('carriers', [])}
-                    segments = {s['id']: s for s in data.get('segments', [])}
-                    new_flights = []
-                    for leg in data.get('legs', []):
-                        if leg.get('stop_count', 0) <= 1 and leg.get('segment_ids'):
-                            segment_id = leg['segment_ids'][0]
-                            segment = segments.get(segment_id)
-                            if segment:
-                                carrier_name = carriers.get(segment.get('marketing_carrier_id'), 'Unknown Airline')
-                                flight_no = f"{carrier_name[:2].upper()} {segment.get('marketing_flight_number', '')}".strip()
-                                
-                                dep_time_full = leg.get('departure', segment.get('departure', ''))
-                                arr_time_full = leg.get('arrival', segment.get('arrival', ''))
-                                
-                                if 'T' in dep_time_full and 'T' in arr_time_full:
-                                    dep_time = dep_time_full.split('T')[1][:5]
-                                    arr_time = arr_time_full.split('T')[1][:5]
-                                    
-                                    stops = leg.get('stop_count', 0)
-                                    provider_name = carrier_name
-                                    if stops > 0:
-                                        provider_name += f" ({stops} Stop)"
-                                        
-                                    new_flights.append({
-                                        "flight_no": flight_no,
-                                        "origin": origin_iata.upper(),
-                                        "dest": dest_iata.upper(),
-                                        "airline": provider_name,
-                                        "freq": "1234567",
-                                        "arr_time": arr_time,
-                                        "dep_time": dep_time
-                                    })
-                    if new_flights:
-                        unique_flights = list({f["flight_no"] + f["dep_time"]: f for f in new_flights}.values())
-                        try:
-                            conn = await get_db_connection()
-                            for flight in unique_flights:
-                                flight_id = uuid.uuid4().hex
-                                await conn.execute("""
-                                    INSERT INTO "Flight" (id, flight_no, origin, dest, airline, freq, dep_time, arr_time)
-                                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                                    ON CONFLICT (flight_no, origin, dest, dep_time, arr_time) DO NOTHING
-                                """, flight_id, flight["flight_no"], flight["origin"], flight["dest"], flight["airline"], flight["freq"], flight["dep_time"], flight["arr_time"])
-                            await conn.close()
-                        except Exception as e:
-                            print(f"[DB Error] Failed to insert fallback flights into NeonDB: {e}")
-                        for idx, flight in enumerate(unique_flights):
-                            try:
-                                dep_dt = datetime.strptime(f"{date} {flight['dep_time']}", "%Y-%m-%d %H:%M")
-                                arr_dt = datetime.strptime(f"{date} {flight['arr_time']}", "%Y-%m-%d %H:%M")
-                                if arr_dt < dep_dt:
-                                    arr_dt += timedelta(days=1)
-                                duration_hours = (arr_dt - dep_dt).total_seconds() / 3600.0
-                                price = 3000 + (duration_hours * 1500)
-                                options.append(TransportOption(
-                                    id=f"dgca_fl_fb_{idx}",
-                                    type=TransportType.FLIGHT,
-                                    departure=dep_dt,
-                                    arrival=arr_dt,
-                                    duration_hours=duration_hours,
-                                    price=float(round(price, -2)),
-                                    safety_score=9,
-                                    comfort_score=8,
-                                    provider=f"{flight['airline']} {flight['flight_no']} *"
-                                ))
-                            except Exception as e:
-                                print(f"[Fallback Error] Parsing new flight failed: {e}")
-        except Exception as e:
-            print(f"[API Error] FlightAPI fallback failed: {e}")
     return options
 
+async def _find_time_expanded_routes(sa_candidates: List[Dict], sb_candidates: List[Dict], date: str) -> List[Tuple[TransportOption, Optional[Dict], Optional[Dict]]]:
+    sa_iatas = [c["iata"] for c in sa_candidates]
+    sb_iatas = [c["iata"] for c in sb_candidates]
+    
+    sa_map = {c["iata"]: c for c in sa_candidates}
+    sb_map = {c["iata"]: c for c in sb_candidates}
+    
+    try:
+        base_date = datetime.strptime(date, "%Y-%m-%d")
+        target_weekday = base_date.weekday()
+    except ValueError:
+        base_date = datetime.now()
+        target_weekday = base_date.weekday()
+        
+    target_day_str = str(target_weekday + 1)
+
+    try:
+        conn = await get_db_connection()
+        # Depth 1: Direct Flights
+        direct_rows = await conn.fetch('''
+            SELECT flight_no, origin, dest, airline, dep_time, arr_time 
+            FROM "Flight" 
+            WHERE origin = ANY($1::text[]) 
+              AND dest = ANY($2::text[])
+              AND freq LIKE '%' || $3 || '%'
+        ''', sa_iatas, sb_iatas, target_day_str)
+        
+        # Depth 2: 1-Stop Flights
+        one_stop_rows = await conn.fetch('''
+            SELECT 
+                f1.flight_no AS leg1_flight, f1.origin AS leg1_origin, f1.dest AS hub, f1.dep_time AS leg1_dep, f1.arr_time AS leg1_arr, f1.airline AS leg1_airline,
+                f2.flight_no AS leg2_flight, f2.dest AS leg2_dest, f2.dep_time AS leg2_dep, f2.arr_time AS leg2_arr, f2.airline AS leg2_airline
+            FROM "Flight" f1
+            INNER JOIN "Flight" f2 ON f1.dest = f2.origin
+            WHERE f1.origin = ANY($1::text[]) 
+              AND f2.dest = ANY($2::text[])
+              AND f1.freq LIKE '%' || $3 || '%'
+              AND f2.freq LIKE '%' || $3 || '%'
+        ''', sa_iatas, sb_iatas, target_day_str)
+        await conn.close()
+    except Exception as e:
+        print(f"[DB Error] Failed to fetch time-expanded flights via SQL JOIN: {e}")
+        return []
+
+    def get_drive_time(distance_km: float) -> float:
+        return distance_km / 40.0
+        
+    def parse_time(time_raw: str, travel_date: str) -> datetime:
+        if len(time_raw) >= 4 and ':' not in time_raw:
+            time_raw = f"{time_raw[:2]}:{time_raw[2:4]}"
+        elif len(time_raw) > 5:
+            time_raw = time_raw[:5]
+        return datetime.strptime(f"{travel_date} {time_raw}", "%Y-%m-%d %H:%M")
+
+    all_raw_options = []
+
+    # Process Direct Flights
+    for r in direct_rows:
+        try:
+            dep_dt = parse_time(r["dep_time"], date)
+            arr_dt = parse_time(r["arr_time"], date)
+            if arr_dt < dep_dt:
+                arr_dt += timedelta(days=1)
+            duration_hours = (arr_dt - dep_dt).total_seconds() / 3600.0
+            price = 3000 + (duration_hours * 1500)
+            
+            sa_cand = sa_map[r["origin"]]
+            sb_cand = sb_map[r["dest"]]
+            
+            drive_a = get_drive_time(sa_cand["distance_km"])
+            drive_b = get_drive_time(sb_cand["distance_km"])
+            total_duration = drive_a + duration_hours + drive_b
+            
+            opt = TransportOption(
+                id=f"direct_{r['flight_no']}",
+                type=TransportType.FLIGHT,
+                departure=dep_dt,
+                arrival=arr_dt,
+                duration_hours=round(duration_hours, 1),
+                price=round(price, 2),
+                safety_score=9,
+                comfort_score=8,
+                provider=f"{r['airline']} {r['flight_no']} | {sa_cand['city'].title()} ({r['origin']}) → {sb_cand['city'].title()} ({r['dest']}) *"
+            )
+            all_raw_options.append((opt, sa_cand if not sa_cand.get("is_direct") else None, sb_cand if not sb_cand.get("is_direct") else None, total_duration))
+        except Exception:
+            continue
+
+    # Process 1-Stop Flights
+    for r in one_stop_rows:
+        try:
+            l1_dep = parse_time(r["leg1_dep"], date)
+            l1_arr = parse_time(r["leg1_arr"], date)
+            if l1_arr < l1_dep:
+                l1_arr += timedelta(days=1)
+                
+            l2_dep = parse_time(r["leg2_dep"], date)
+            # If leg2 departure is technically the next day after leg1 arrival, we should shift the date parsing
+            if l2_dep < l1_arr:
+                l2_dep += timedelta(days=1)
+                
+            l2_arr = parse_time(r["leg2_arr"], date)
+            # adjust l2_arr to be same day as l2_dep if possible
+            if l2_arr.time() < l2_dep.time():
+                # l2 crossed midnight
+                l2_arr += timedelta(days=2 if l2_dep.date() > l1_dep.date() else 1)
+            else:
+                l2_arr += timedelta(days=1 if l2_dep.date() > l1_dep.date() else 0)
+                
+            layover_hours = (l2_dep - l1_arr).total_seconds() / 3600.0
+            
+            if 2.0 <= layover_hours <= 8.0:
+                l1_dur = (l1_arr - l1_dep).total_seconds() / 3600.0
+                l2_dur = (l2_arr - l2_dep).total_seconds() / 3600.0
+                
+                l1_price = 3000 + (l1_dur * 1500)
+                l2_price = 3000 + (l2_dur * 1500)
+                total_price = l1_price + l2_price
+                
+                sa_cand = sa_map[r["leg1_origin"]]
+                sb_cand = sb_map[r["leg2_dest"]]
+                
+                drive_a = get_drive_time(sa_cand["distance_km"])
+                drive_b = get_drive_time(sb_cand["distance_km"])
+                
+                total_flight_time = l1_dur + layover_hours + l2_dur
+                total_duration = drive_a + total_flight_time + drive_b
+                
+                hub = r["hub"]
+                hub_city = IATA_TO_CITY.get(hub, hub)
+                provider_str = f"{r['leg1_airline']} {r['leg1_flight']} & {r['leg2_airline']} {r['leg2_flight']} | {sa_cand['city'].title()} ({r['leg1_origin']}) → {hub_city} ({hub}) → {sb_cand['city'].title()} ({r['leg2_dest']}) *"
+                
+                opt = TransportOption(
+                    id=f"hub_{r['leg1_flight']}_{r['leg2_flight']}",
+                    type=TransportType.FLIGHT,
+                    departure=l1_dep,
+                    arrival=l2_arr,
+                    duration_hours=round(total_flight_time, 1),
+                    price=round(total_price, 2),
+                    safety_score=8,
+                    comfort_score=7,
+                    provider=provider_str
+                )
+                all_raw_options.append((opt, sa_cand if not sa_cand.get("is_direct") else None, sb_cand if not sb_cand.get("is_direct") else None, total_duration))
+        except Exception as e:
+            continue
+
+    all_raw_options.sort(key=lambda x: x[3])
+    
+    # Ensure uniqueness based on provider + departure
+    seen = set()
+    unique_options = []
+    for o in all_raw_options:
+        key = (o[0].provider, o[0].departure)
+        if key not in seen:
+            seen.add(key)
+            unique_options.append((o[0], o[1], o[2]))
+            
+    return unique_options[:10]
+
 async def search_live_flights(origin_city: str, dest_city: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
+    try:
+        return await _search_live_flights_impl(origin_city, dest_city, date, check_only)
+    except Exception as e:
+        import traceback
+        with open("api_debug.txt", "w") as f:
+            f.write(traceback.format_exc())
+        raise e
+
+async def _search_live_flights_impl(origin_city: str, dest_city: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
     """
     Main entry point. Accepts city names (not IATA codes).
     Resolves IATA codes from CITY_TO_IATA. If a city has no direct airport,
     finds the nearest airport and creates a Flight + Cab combo route.
     """
-    print(f"\n[API Call] Fetching live flights: {origin_city} -> {dest_city} on {date}...")
+    from services.osrm_cab_api import calculate_cab_fare, get_coordinates
+    import asyncio
+    
+    print(f"\n[DB Fetch] Searching database for flights: {origin_city} -> {dest_city} on {date}...")
 
     clean_origin = origin_city.upper().strip()
     clean_dest_lower = dest_city.lower().strip()
     clean_dest = dest_city.upper().strip()
 
-    origin_iata = CITY_TO_IATA.get(clean_origin)
-    dest_iata = CITY_TO_IATA.get(clean_dest)
-    nearest_origin = None
-    nearest_dest = None
-
-    # Resolve origin if not in CITY_TO_IATA
-    if not origin_iata:
-        coords = await _get_city_coords(origin_city)
+    origin_iata_direct = CITY_TO_IATA.get(clean_origin)
+    dest_iata_direct = CITY_TO_IATA.get(clean_dest)
+    
+    origin_candidates = []
+    if origin_iata_direct:
+        ac = _get_all_airport_coords().get(origin_iata_direct, {})
+        origin_candidates.append({
+            "iata": origin_iata_direct,
+            "city": origin_city,
+            "lat": ac.get("lat", 0.0),
+            "lon": ac.get("lon", 0.0),
+            "distance_km": 0.0,
+            "is_direct": True
+        })
+    else:
+        coords = await get_coordinates(origin_city)
         if coords:
-            nearest_origin = _get_nearest_airport(coords["lat"], coords["lon"])
-            if nearest_origin:
-                origin_iata = nearest_origin["iata"]
-                print(f"[Combo] No direct airport for '{origin_city}'. Using nearest: {origin_iata} ({nearest_origin['city']}, {nearest_origin['distance_km']:.0f} km away)")
+            origin_candidates = _get_nearest_airports(coords["lat"], coords["lng"], limit=3)
 
-    # Resolve destination if not in CITY_TO_IATA
-    if not dest_iata:
-        coords = await _get_city_coords(dest_city)
+    dest_candidates = []
+    if dest_iata_direct:
+        ac = _get_all_airport_coords().get(dest_iata_direct, {})
+        dest_candidates.append({
+            "iata": dest_iata_direct,
+            "city": dest_city,
+            "lat": ac.get("lat", 0.0),
+            "lon": ac.get("lon", 0.0),
+            "distance_km": 0.0,
+            "is_direct": True
+        })
+    else:
+        coords = await get_coordinates(dest_city)
         if coords:
-            nearest_dest = _get_nearest_airport(coords["lat"], coords["lon"])
-            if nearest_dest:
-                dest_iata = nearest_dest["iata"]
-                print(f"[Combo] No direct airport for '{dest_city}'. Using nearest: {dest_iata} ({nearest_dest['city']}, {nearest_dest['distance_km']:.0f} km away)")
+            dest_candidates = _get_nearest_airports(coords["lat"], coords["lng"], limit=3)
 
-    if not origin_iata or not dest_iata:
+    if not origin_candidates or not dest_candidates:
         print(f"[Warning] Could not resolve airports for '{origin_city}' or '{dest_city}'. No flights available.")
         return [] if not check_only else None
 
-    options = await _fetch_flights_for_iata(origin_iata, dest_iata, date, check_only)
+    all_raw_options = await _find_time_expanded_routes(origin_candidates, dest_candidates, date)
+    
+    # (External API Fallback removed as per user request)
 
-    # If no flights found, check if destination has a major hub fallback
-    if not options and clean_dest_lower in major_airports:
-        hub = major_airports[clean_dest_lower]
-        dest_iata = hub["iata"]
-        airport_data = _get_all_airport_coords().get(dest_iata, {})
-        nearest_dest = {
-            "iata": dest_iata,
-            "city": hub["city"],
-            "lat": airport_data.get("lat", 0.0),
-            "lon": airport_data.get("lon", 0.0),
-            "distance_km": 0.0,
-        }
-        print(f"[MajorAirport] No flights to primary. Routing '{dest_city}' through hub {dest_iata} ({hub['city']})")
-        options = await _fetch_flights_for_iata(origin_iata, dest_iata, date, check_only)
-
-    if check_only and not options:
+    if check_only and not all_raw_options:
         return None
 
     # --- Post-process: bolt on cab leg for combo routes ---
-    if options and (nearest_origin or nearest_dest):
-        from services.osrm_cab_api import calculate_cab_fare, get_coordinates
+    combo_options = []
+    
+    # We will cache the cab fares to avoid re-calling OSRM for the same city->airport pairs multiple times
+    cab_fare_cache = {} # (from_lat, from_lon, to_lat, to_lon) -> fare_data
+    dest_city_coords = await get_coordinates(dest_city)
+    origin_city_coords = await get_coordinates(origin_city)
 
-        combo_options = []
-        for opt in options:
-            try:
-                cab_duration_hours = 0.0
-                cab_price = 0.0
-                cab_label = ""
+    # Pre-calculate required cab routes to fetch concurrently
+    cab_requests = set()
+    for opt, nearest_origin, nearest_dest in all_raw_options:
+        if nearest_dest and dest_city_coords:
+            cab_requests.add((nearest_dest["lat"], nearest_dest["lon"], dest_city_coords["lat"], dest_city_coords["lng"]))
+        if nearest_origin and origin_city_coords:
+            cab_requests.add((origin_city_coords["lat"], origin_city_coords["lng"], nearest_origin["lat"], nearest_origin["lon"]))
+            
+    # Fetch cab fares concurrently
+    if cab_requests:
+        async def fetch_fare(req_key):
+            res = await calculate_cab_fare(*req_key)
+            return req_key, res
+            
+        tasks = [fetch_fare(req) for req in cab_requests]
+        results = await asyncio.gather(*tasks)
+        for req_key, res in results:
+            cab_fare_cache[req_key] = res
 
-                if nearest_dest:
-                    # Cab from destination airport → actual destination city
-                    airport_coords = {"lat": nearest_dest["lat"], "lng": nearest_dest["lon"]}
-                    dest_coords = await get_coordinates(dest_city)
-                    if dest_coords:
-                        fare = await calculate_cab_fare(
-                            nearest_dest["lat"], nearest_dest["lon"],
-                            dest_coords["lat"], dest_coords["lng"]
-                        )
-                        if fare.get("status") == "success":
-                            cab_duration_hours = fare["duration_hours"]
-                            cab_price = fare["fares"]["sedan"]
-                            cab_label = f"Cab to {dest_city.title()}"
+    for opt, nearest_origin, nearest_dest in all_raw_options:
+        try:
+            cab_duration_hours = 0.0
+            cab_price = 0.0
+            cab_label = ""
+            
+            if nearest_dest and dest_city_coords:
+                key = (nearest_dest["lat"], nearest_dest["lon"], dest_city_coords["lat"], dest_city_coords["lng"])
+                fare = cab_fare_cache.get(key, {})
+                
+                if fare.get("status") == "success":
+                    cab_duration_hours = fare["duration_hours"]
+                    cab_price = fare["fares"]["sedan"]
+                    cab_label = f"Cab to {dest_city.title()}"
 
-                if nearest_origin:
-                    # Cab from actual origin city → origin airport
-                    origin_coords = await get_coordinates(origin_city)
-                    if origin_coords:
-                        fare = await calculate_cab_fare(
-                            origin_coords["lat"], origin_coords["lng"],
-                            nearest_origin["lat"], nearest_origin["lon"]
-                        )
-                        if fare.get("status") == "success":
-                            cab_duration_hours += fare["duration_hours"]
-                            cab_price += fare["fares"]["sedan"]
-                            if cab_label:
-                                cab_label = f"Cab to {nearest_origin['city']} Airport + {cab_label}"
-                            else:
-                                cab_label = f"Cab to {nearest_origin['city']} Airport"
+            if nearest_origin and origin_city_coords:
+                key = (origin_city_coords["lat"], origin_city_coords["lng"], nearest_origin["lat"], nearest_origin["lon"])
+                fare = cab_fare_cache.get(key, {})
+                
+                if fare.get("status") == "success":
+                    cab_duration_hours += fare["duration_hours"]
+                    cab_price += fare["fares"]["sedan"]
+                    if cab_label:
+                        cab_label = f"Cab to {nearest_origin['city']} Airport + {cab_label}"
+                    else:
+                        cab_label = f"Cab to {nearest_origin['city']} Airport"
 
-                if cab_price > 0:
-                    new_arrival = opt.arrival + timedelta(hours=cab_duration_hours)
-                    new_duration = opt.duration_hours + cab_duration_hours
-                    new_price = opt.price + cab_price
-                    provider_parts = [p for p in opt.provider.split(" *") if p]
-                    
-                    flight_leg = provider_parts[0].strip()
+            if cab_price > 0:
+                new_arrival = opt.arrival + timedelta(hours=cab_duration_hours)
+                new_duration = opt.duration_hours + cab_duration_hours
+                new_price = opt.price + cab_price
+                
+                # Format: Airline 123 | Origin (ORG) -> Dest (DST) *
+                provider_parts = [p for p in opt.provider.split(" *") if p]
+                base_str = provider_parts[0].strip()
+                
+                if " | " in base_str:
+                    airline_part, route_part = base_str.split(" | ", 1)
                     if nearest_dest:
-                        flight_leg += f" to {nearest_dest['city']}"
-                    
-                    new_provider = f"{flight_leg} + {cab_label}"
-
-                    combo_options.append(TransportOption(
-                        id=f"fl_combo_{opt.id}",
-                        type=TransportType.FLIGHT,
-                        departure=opt.departure,
-                        arrival=new_arrival,
-                        duration_hours=new_duration,
-                        price=round(new_price, 2),
-                        price_breakdown={"Flight": round(opt.price, 2), "Cab": round(cab_price, 2)},
-                        safety_score=opt.safety_score,
-                        comfort_score=opt.comfort_score,
-                        provider=new_provider,
-                    ))
+                        route_part += f" to {nearest_dest['city'].title()}"
+                    new_provider = f"{airline_part} | {route_part} | + {cab_label} *"
                 else:
-                    combo_options.append(opt)
-            except Exception as e:
-                print(f"[Combo Error] Could not process cab leg for flight {opt.id}: {e}")
+                    flight_leg = base_str
+                    if nearest_dest:
+                        flight_leg += f" to {nearest_dest['city'].title()}"
+                    new_provider = f"{flight_leg} | + {cab_label} *"
+
+                combo_options.append(TransportOption(
+                    id=f"fl_combo_{opt.id}",
+                    type=TransportType.FLIGHT,
+                    departure=opt.departure,
+                    arrival=new_arrival,
+                    duration_hours=new_duration,
+                    price=round(new_price, 2),
+                    price_breakdown={"Flight": round(opt.price, 2), "Cab": round(cab_price, 2)},
+                    time_breakdown={"Flight": f"{int(opt.duration_hours)}h {int((opt.duration_hours % 1) * 60)}m", "Cab": f"{int(cab_duration_hours)}h {int((cab_duration_hours % 1) * 60)}m"},
+                    safety_score=opt.safety_score,
+                    comfort_score=opt.comfort_score,
+                    provider=new_provider,
+                ))
+            else:
                 combo_options.append(opt)
+        except Exception as e:
+            print(f"[Combo Error] Could not process cab leg for flight {opt.id}: {e}")
+            combo_options.append(opt)
 
-        return sorted(combo_options, key=lambda x: x.price)
-
-    return sorted(options, key=lambda x: x.price)
+    return sorted(combo_options, key=lambda x: x.price)

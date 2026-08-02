@@ -67,8 +67,38 @@ export default function CityAutocomplete({ label, placeholder, value, onChange }
       c.display.toLowerCase().includes(searchVal)
     ).slice(0, 15); // Show top 15 matches
 
-    setResults(filtered);
-    setIsOpen(filtered.length > 0);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    if (filtered.length > 0) {
+      setResults(filtered);
+      setIsOpen(true);
+      setLoading(false);
+    } else {
+      // If no local results, fallback to Ola API via our backend proxy
+      setResults([]);
+      setLoading(true);
+      
+      timeoutRef.current = setTimeout(async () => {
+        if (latestQueryRef.current !== val) return;
+        
+        try {
+          const res = await fetch(`/api/search-city?q=${encodeURIComponent(val)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (latestQueryRef.current === val && Array.isArray(data)) {
+               setResults(data);
+               setIsOpen(data.length > 0);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch API cities", error);
+        } finally {
+          if (latestQueryRef.current === val) {
+            setLoading(false);
+          }
+        }
+      }, 400); // 400ms debounce
+    }
   };
 
   const handleSelect = (city: string) => {

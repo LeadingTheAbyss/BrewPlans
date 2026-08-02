@@ -309,42 +309,42 @@ export const THEME_STYLES: Record<string, { card: string, text: string, imageUrl
   },
   deserts_dunes: {
     card: 'bg-[#C89368]/90',
-    text: 'text-[#2C241F]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1200&q=80'
   },
   tropical_coasts_beaches: {
     card: 'bg-[#EADDC8]/90',
-    text: 'text-[#5A4135]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80'
   },
   forests_valleys_jungles: {
     card: 'bg-[#D9E2D8]/90',
-    text: 'text-[#1F2E23]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1200&q=80'
   },
   arctic_ice_glaciers: {
     card: 'bg-[#E1EBF0]/90',
-    text: 'text-[#1A2736]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1516496636080-14fb876e029d?auto=format&fit=crop&w=1200&q=80'
   },
   lakes_fjords_rivers: {
     card: 'bg-[#DCE2E4]/90',
-    text: 'text-[#2B404E]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1200&q=80'
   },
   heritage_old_cities: {
     card: 'bg-[#E4DCD3]/90',
-    text: 'text-[#28211E]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=80'
   },
   twilight_metropolis: {
     card: 'bg-[#E5EEF5]/90',
-    text: 'text-[#1C2330]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=1200&q=80'
   },
   starry_skyscrapers: {
     card: 'bg-[#EAE6DF]/90',
-    text: 'text-[#1D1F2D]',
+    text: 'text-zinc-900',
     imageUrl: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80'
   }
 };

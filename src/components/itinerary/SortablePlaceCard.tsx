@@ -141,7 +141,7 @@ export function SortablePlaceCard({
         
         <div className="flex items-center gap-2 mb-1.5">
           {place.entryFee && place.entryFee > 0 ? (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-inherit opacity-70 bg-current/5 px-1.5 py-0.5 rounded border border-current/10 shrink-0">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-inherit bg-current/5 px-1.5 py-0.5 rounded border border-current/10 shrink-0">
               <Ticket size={10} /> ₹{place.entryFee}
             </div>
           ) : null}
@@ -152,7 +152,7 @@ export function SortablePlaceCard({
             <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${catStyle}`}>
               {place.category || 'Location'}
             </span>
-            <span className="flex items-center gap-1 text-[10px] text-inherit opacity-60 font-medium">
+            <span className="flex items-center gap-1 text-[10px] text-inherit font-medium">
               <Clock size={10} /> {(place.visitDurationHours || 1) + (place.travelTimeHours || 0)}h
             </span>
           </div>

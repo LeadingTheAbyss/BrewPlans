@@ -37,6 +37,18 @@ The project is packed with dynamic, real-time, and interactive features:
     - Dedicated `/stats` portal highlighting application usage statistics and intuitive "Send Feedback to Us" communication channels.
 11. **Comprehensive Mobile Optimization:**
     - Flawless touchscreen responsiveness across all trip planners, landing interfaces, and "Quick Trip" modals.
+12. **Community Travel Blogs & "One-Click Plan":**
+    - A dedicated `/blogs` portal where users can read curated, high-quality travel articles.
+    - Features a seamless "Plan This Trip" button that instantly loads the author's exact itinerary stops, budget, and transport mode into the user's active Zustand store.
+13. **Live PNR Status Tracking:**
+    - Dedicated `/pnr` interface to securely check and track Indian Railways passenger name records in real-time.
+14. **User Profiles & Saved Passengers:**
+    - Secure authentication and user dashboard (`/profile`).
+    - Users can save their trip history and permanently store passenger details (name, age, gender) to completely bypass repetitive form filling during future transport planning flows.
+15. **"Trip Wrapped" Summaries:**
+    - A highly visual, shareable "Spotify Wrapped" style cinematic summary of a user's finalized trip (`/wrapped`), highlighting total distance traveled, places visited, and budget spent.
+16. **Quick Trip (Spontaneous 1-Day Planner):**
+    - A hyper-fast, single-page planner designed specifically for spontaneous 1-day city visits or group meetups, bypassing the heavy multi-day wizard entirely.
 
 ---
 
@@ -57,7 +69,8 @@ The project employs a modern, bleeding-edge tech stack separated into a robust b
 - **Concurrency:** Extensive use of Python's `asyncio` (`asyncio.gather`, `asyncio.to_thread`) to parallelize heavy network I/O tasks (like fetching transport and images simultaneously).
 - **Database & Caching:** Prisma ORM for database schemas, PostgreSQL (accessed via `asyncpg`), and Upstash Redis for caching live API responses.
 - **AI & Inference Engines:** Dual-engine architecture leveraging **Groq API** for high-speed cloud inference and Ollama Engine for localized LLM processing, protected by intelligent rate-limiting middleware.
-- **External Data Sources:** Overpass API for geographic data, various live transport APIs (RailRadar, RedBus, Ola Maps), and image scraping services.
+- **External Data Sources:** Overpass API for geographic data, various live transport APIs (RailRadar, RedBus, Ola Maps, Indian Railways PNR), and image scraping services.
+- **Analytics & Telemetry:** Prisma schema features advanced telemetry logging (`TelemetryLog`, `CostAnalysis`, `DailySystemStat`) to actively track unit economics (API cost per user/trip) and system anomalies.
 - **Cloud Deployment & Resilience:** Configured for cloud providers (like Render) with custom cold-start notification messaging and automatic fallback polling.
 
 ---
@@ -66,9 +79,9 @@ The project employs a modern, bleeding-edge tech stack separated into a robust b
 
 During development, several complex issues typically arise that require specific architectural fixes:
 
-### 1. I/O Bottlenecks in the Backend
-**The Problem:** Fetching flights, trains, buses, and live place images sequentially takes too long, resulting in severe API latency.
-**The Fix:** We completely eliminated sequential blocking by refactoring the backend to use Python's `asyncio.gather()`. This creates a Fan-Out/Fan-In architecture where all external API requests (e.g., fetching 20 place images) are dispatched simultaneously in parallel, dramatically cutting down response times without needing heavy message brokers like Celery.
+### 1. I/O Bottlenecks in the Backend & Background Fetching
+**The Problem:** Fetching flights, trains, buses, and live place images sequentially takes too long, resulting in severe API latency. Long-running tasks also risked blocking the user interface.
+**The Fix:** We completely eliminated sequential blocking by refactoring the backend to use Python's `asyncio.gather()`. This creates a Fan-Out/Fan-In architecture where all external API requests (e.g., fetching 20 place images) are dispatched simultaneously in parallel. Furthermore, we introduced a robust **BackgroundFetcher** component coupled with a Zustand **fetchQueueStore** to seamlessly poll and manage long-running async tasks in the background, ensuring the frontend UI remains instantly responsive.
 
 ### 2. GSAP Parallax Stacking Contexts (Z-Index Issues)
 **The Problem:** Complex scroll animations often result in elements washing out or hiding behind others. For example, a parallax sky background with clouds might render *in front of* the main text, making the text invisible.
@@ -125,13 +138,13 @@ During development, several complex issues typically arise that require specific
 - `primaryType`: The category (museum, park, restaurant, historical_landmark)
 - `priceLevel`: Helps categorize budget constraints
 
-### 12. Smart Itinerary Bucket-Scheduling Algorithm
-**The Architecture:** The "Smart Itinerary" feature (`autoSchedule` in `itineraryStore.ts`) operates strictly on the frontend. It is NOT powered by Ollama. 
-**The Logic:** It acts as a **Time-Bucket Scheduling Algorithm**:
-1. **Gathers Unassigned Places:** Looks at the global bag of user-selected places and filters out already scheduled ones.
+### 12. Smart Itinerary & ALNS Route Optimization
+**The Architecture:** The "Smart Itinerary" feature (`autoSchedule` in `itineraryStore.ts`) has evolved from a purely frontend greedy-packer to a sophisticated hybrid system powered by a dedicated Python routing engine.
+**The Logic:** It combines mathematical optimization with realistic time-bucket scheduling:
+1. **ALNS Backend Solver:** The backend leverages **Adaptive Large Neighborhood Search (ALNS)** to solve the Traveling Salesperson Problem (TSP) between the hotel and all selected places, ensuring the most geographically efficient route that minimizes backtracking.
 2. **Calculates Total Time:** Calculates `placeTime` by adding `visitDurationHours` + `travelTimeHours`.
 3. **The 8-Hour Rule (Fatigue Cap):** Treats each trip day as a chronologically ordered bucket with a strict 8-hour limit to prevent physical exhaustion.
-4. **Greedy Packing:** Drops places into Day 1 until adding the next place would push the schedule past 8 hours, at which point it automatically overflows into Day 2.
+4. **Greedy Packing:** Drops the mathematically optimized sequence of places into Day 1 until adding the next place would push the schedule past 8 hours, automatically overflowing into Day 2.
 5. **Force-Packing:** If the user selects too many places and runs out of days entirely, it forces the remaining places into the final day and triggers a UI warning state: `"This day is getting too packed (>8 hours)"`.
 
 ### 13. Component Uniformity & Legal Obfuscation
@@ -182,3 +195,15 @@ During development, several complex issues typically arise that require specific
 ### 22. Cloud Deployment Resilience & Render Load Communication
 **The Problem:** Hosting backend services on serverless or spin-to-zero providers like Render frequently induces cold-start boot latency during initial requests, causing users to mistake loading times for application crashes.
 **The Fix:** We introduced interactive **Render Load Messages** and structured loading animations across all primary routes. When a server cold-start or intensive geodate place-fetching operation occurs, the application actively informs the user about server wake-up phases and data caching progress, paired with robust error retry handlers and direct feedback submission ("Send Feedback to Us") in the app stats and footer portals.
+
+### 23. Blog Hydration & One-Click Trip Cloning
+**The Feature:** Allowing users to read a travel blog on `/blogs` and instantly clone that trip into their own planner.
+**The Architecture:** The Prisma `Article` schema contains a highly structured JSON column `itineraryStops`. When a user clicks "Plan This Trip", the frontend parses this JSON and dynamically injects the places, budget, and destination city directly into the global `tripStore` and `itineraryStore`. It then forcibly navigates the user to the `/plan/setup` phase with all state pre-hydrated, completely bypassing the manual AI recommendation phase.
+
+### 24. Telemetry & API Cost Economics
+**The Problem:** Unchecked usage of Google Places, Groq, and routing APIs can lead to silent cost overruns in production.
+**The Fix:** We built a dedicated `TelemetryLog` and `CostAnalysis` layer in Prisma. Every time a backend route (e.g., `services/google_places_api.py`) makes an external network request, it calculates an estimated `costEstimate` based on current API pricing. This telemetry is saved asynchronously and aggregated nightly into a `DailySystemStat`, allowing admins to track exactly what the `costPerUser` and `costPerTrip` is in real-time, preventing billing surprises.
+
+### 25. "Trip Wrapped" Cinematic Generation
+**The Feature:** Users want to share their final itineraries on social media in a visually appealing format.
+**The Architecture:** The `/wrapped` route acts as a specialized read-only client view. It takes a finalized trip ID, pulls the entire JSON snapshot from the PostgreSQL `TripHistory` table, and runs it through a series of timed Framer Motion animation sequences. It dynamically calculates aggregate statistics (Total KMs traveled, Places explored, Hotels booked) and presents them in a mobile-first, vertical "story" format perfect for Instagram or WhatsApp sharing.

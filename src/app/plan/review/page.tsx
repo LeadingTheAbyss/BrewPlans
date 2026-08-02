@@ -468,9 +468,6 @@ export default function ReviewPage() {
               3. Daily Breakdown
             </h2>
             <div className="flex items-center justify-between">
-              <button onClick={() => router.push('/plan/itinerary')} className="text-xs text-zinc-400 hover:text-white transition-colors">
-                View Full Itinerary →
-              </button>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -495,7 +492,7 @@ export default function ReviewPage() {
               })}
             </div>
             
-            <p className="text-xs text-inherit opacity-80 font-medium flex items-center gap-2 mt-4 bg-current/5 px-3 py-2 rounded-lg backdrop-blur-md border border-current/10 w-fit">
+            <p className="text-xs text-inherit font-medium flex items-center gap-2 mt-4 bg-current/5 px-3 py-2 rounded-lg backdrop-blur-md border border-current/10 w-fit">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
               Each day's route includes places to visit, food stops and travel between locations.
             </p>

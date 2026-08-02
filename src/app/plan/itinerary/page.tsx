@@ -824,7 +824,7 @@ export default function ItineraryPage() {
         <div className={`transition-all duration-300 ease-in-out lg:border-l border-t lg:border-t-0 z-20 shrink-0 shadow-2xl overflow-y-auto overflow-x-hidden flex flex-col ${activeTheme.card} ${activeTheme.text} ${isRightSidebarOpen ? 'w-full lg:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <div className="w-full lg:w-[300px] flex flex-col shrink-0">
             <div className="px-6 py-8 border-b border-current/10 shrink-0">
-            <h3 className="text-sm font-bold tracking-widest uppercase text-inherit opacity-70 mb-6">
+            <h3 className="text-sm font-bold tracking-widest uppercase text-inherit mb-6">
               Trip Overview
             </h3>
             

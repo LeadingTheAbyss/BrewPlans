@@ -36,11 +36,34 @@ from fastapi.exceptions import RequestValidationError
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     import traceback
+    import datetime
     tb = traceback.format_exc()
     print(f"[UNHANDLED ERROR] {exc}\n{tb}", flush=True)
+    try:
+        with open("server_500_errors.txt", "a") as f:
+            f.write(f"\n--- [500 ERROR at {datetime.datetime.now().isoformat()}] ---\n")
+            f.write(f"URL: {request.url}\n")
+            f.write(f"Exception: {exc}\n")
+            f.write(f"Traceback:\n{tb}\n")
+    except Exception as file_ex:
+        print(f"[Logging Error] Could not write to server_500_errors.txt: {file_ex}", flush=True)
+        
     return JSONResponse(status_code=500, content={"error": str(exc), "traceback": tb})
 
 # Collaboration Websocket Manager
+import urllib.request
+import os
+
+@app.get("/api/dev/download-schedules")
+async def download_schedules():
+    url = "https://raw.githubusercontent.com/datameet/railways/master/schedules.json"
+    output_path = r"c:\Users\Kamlesh Singh\Desktop\Proj\ghumi-ghumi\data\schedules.json"
+    try:
+        urllib.request.urlretrieve(url, output_path)
+        return {"status": "success", "file": output_path}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 class ConnectionManager:
     def __init__(self):
         # Maps room_id -> dict of websocket to user info
@@ -793,12 +816,27 @@ async def ola_search(q: str = Query(...), city: str = Query(...)):
         
         api_key = os.environ.get("OLA_MAPS_API_KEY", "")
         
-        cities = _fetch_photon_cities(city)
+        import math
         location_param = ""
-        if cities:
-            city_coords = cities[0]['osrm_coords']
-            lon, lat = city_coords.split(',')
-            location_param = f"&location={lat},{lon}"
+        city_lat = None
+        city_lon = None
+        try:
+            # Synchronously fetch city coordinates from Open-Meteo
+            city_query = city.split(',')[0].strip().lower()
+            aliases = {"ladakh": "Leh", "goa": "Panjim", "sikkim": "Gangtok", "kashmir": "Srinagar", "andaman": "Port Blair", "nicobar": "Port Blair", "lakshadweep": "Kavaratti"}
+            city_query = aliases.get(city_query, city_query)
+            
+            p_url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(city_query)}&count=1&language=en&format=json"
+            p_res = _shared_session.get(p_url, timeout=3)
+            if p_res.status_code == 200:
+                p_data = p_res.json()
+                features = p_data.get("results")
+                if features:
+                    city_lat = float(features[0].get("latitude"))
+                    city_lon = float(features[0].get("longitude"))
+                    location_param = f"&location={city_lat},{city_lon}&strictbounds=true"
+        except Exception as e:
+            print("Error fetching city coords synchronously:", e)
             
         url = f"https://api.olamaps.io/places/v1/autocomplete?input={requests.utils.quote(q)}{location_param}&api_key={api_key}"
         headers = {'X-Request-Id': str(uuid.uuid4())}
@@ -850,6 +888,25 @@ async def ola_search(q: str = Query(...), city: str = Query(...)):
                 # but since we found geometry in tests, we assume it's usually there.
                 continue
                 
+            lat_float = float(lat)
+            lng_float = float(lng)
+            
+            # Filter by distance if city coordinates are available (max 100km radius)
+            if city_lat is not None and city_lon is not None:
+                R = 6371.0 # Radius of earth in km
+                dlat = math.radians(lat_float - city_lat)
+                dlng = math.radians(lng_float - city_lon)
+                a = math.sin(dlat / 2)**2 + math.cos(math.radians(city_lat)) * math.cos(math.radians(lat_float)) * math.sin(dlng / 2)**2
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                distance = R * c
+                if distance > 100:
+                    continue
+            else:
+                main_city = city.split(',')[0].strip().lower()
+                desc_lower = p.get('description', '').lower()
+                if main_city not in desc_lower and main_city not in name.lower():
+                    continue
+                    
             types = p.get('types', [])
             category = "OTHER"
             

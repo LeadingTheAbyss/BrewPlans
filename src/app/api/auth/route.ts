@@ -40,6 +40,13 @@ export async function POST(req: Request) {
           picture,
         }
       });
+    } else if (picture && user.picture !== picture) {
+      // Update the picture if they changed it on Google
+      // (Unless they have a custom uploaded picture, but we'll prioritize Google on new login)
+      user = await prisma.user.update({
+        where: { email },
+        data: { picture }
+      });
     }
 
     // Create a new session

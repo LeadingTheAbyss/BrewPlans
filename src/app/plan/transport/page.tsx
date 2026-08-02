@@ -271,7 +271,7 @@ export default function TransportPage() {
     }
     
     const destination = trip.destination || 'Unknown';
-    const key = `${pax.id}-${pax.city}-${destination}-${type}-v7`;
+    const key = `${pax.id}-${pax.city}-${destination}-${type}-v9`;
     const isActive = activeTabs[pax.id] === type;
 
     // Toggle tab
@@ -461,7 +461,7 @@ export default function TransportPage() {
                           <h3 className="text-base sm:text-lg font-bold text-inherit group-hover:text-primary transition-colors truncate">
                             {trip.passengers.find(p => p.id === activePassengerId)?.name || trip.passengers[0].name}
                           </h3>
-                          <p className="text-[11px] sm:text-sm text-inherit opacity-70 flex items-center gap-1.5 mt-0.5 whitespace-normal">
+                          <p className="text-[11px] sm:text-sm text-inherit opacity-100 font-semibold flex items-center gap-1.5 mt-0.5 whitespace-normal">
                             <span className="font-medium">{trip.passengers.find(p => p.id === activePassengerId)?.city || 'Unknown Origin'}</span>
                             <ArrowRight size={12} className="text-primary/60 shrink-0" />
                             <span className="font-medium">{trip.destination}</span>
@@ -493,7 +493,7 @@ export default function TransportPage() {
                             >
                               <div>
                                 <div className="font-bold text-inherit">{p.name}</div>
-                                <div className="text-xs text-inherit opacity-70">{p.city || 'Unknown Origin'} → {trip.destination}</div>
+                                <div className="text-xs text-inherit opacity-90 font-medium">{p.city || 'Unknown Origin'} → {trip.destination}</div>
                               </div>
                               {p.id === activePassengerId && <CheckCircle2 size={16} className="text-primary" />}
                             </div>
@@ -519,10 +519,10 @@ export default function TransportPage() {
                       <div id="tutorial-transport-options" className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto no-scrollbar items-center gap-2.5 pb-2">
                         {['flight', 'train', 'bus', 'cab'].map((type) => {
                           const destination = trip.destination || 'Unknown';
-                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v7`;
+                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v9`;
                           const isFetched = cachedData[key] !== undefined;
                           const task = fetchQueue.tasks.find(t => t.id === key);
-                          const isLoading = task?.status === 'loading';
+                          const isLoading = task?.status === 'loading' || task?.status === 'idle';
 
                           const rawData = cachedData[key] || {};
                           const rawOptions = rawData.options || (Array.isArray(rawData) ? rawData : []);
@@ -558,10 +558,12 @@ export default function TransportPage() {
                                 {getTransportIcon(type)}
                                 <span className="text-sm whitespace-nowrap font-bold">{type === 'bus' ? 'Buses' : type === 'cab' ? 'Cabs' : type.charAt(0).toUpperCase() + type.slice(1) + 's'}</span>
                               </div>
-                              <span className={`text-[10px] font-bold uppercase tracking-wider whitespace-nowrap truncate w-full text-center ${
-                                isLoading ? 'text-primary animate-pulse' : isDisabled ? 'text-primary/40' : isActive ? 'opacity-90' : 'text-primary/70'
+                              <span className={`flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap truncate w-full text-center ${
+                                isLoading ? 'text-primary' : isDisabled ? 'text-primary/40' : isActive ? 'opacity-100 text-primary' : 'opacity-80 text-inherit'
                               }`}>
-                                {isLoading ? '⟳ Loading...' : (!isFetched || hasError ? 'Tap to search' : (typeOptionsRaw.length === 0 ? 'Not available' : `${typeOptionsRaw.length} options`))}
+                                {isLoading ? (
+                                  <><Loader2 size={10} className="animate-spin shrink-0" /> Loading...</>
+                                ) : (!isFetched || hasError ? 'Tap to search' : (typeOptionsRaw.length === 0 ? 'Not available' : `${typeOptionsRaw.length} options`))}
                               </span>
                             </button>
                           );
@@ -573,10 +575,10 @@ export default function TransportPage() {
                         <AnimatePresence mode="wait">
                           {['flight', 'train', 'bus', 'cab'].map((type) => {
                             const destination = trip.destination || 'Unknown';
-                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v7`;
+                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v9`;
                             const isFetched = cachedData[key] !== undefined;
                             const task = fetchQueue.tasks.find(t => t.id === key);
-                            const isLoading = task?.status === 'loading';
+                            const isLoading = task?.status === 'loading' || task?.status === 'idle';
 
                             const rawData = cachedData[key] || {};
                             const rawOptions = rawData.options || (Array.isArray(rawData) ? rawData : []);
@@ -633,12 +635,12 @@ export default function TransportPage() {
                                         </div>
                                       )}
                                       {typeOptions.length === 0 && isFetched && (
-                                        <div className="flex flex-col items-center justify-center p-8 bg-muted/10 border border-border rounded-xl text-muted-foreground mt-4">
+                                        <div className={`flex flex-col items-center justify-center p-8 bg-muted/10 border border-border rounded-xl mt-4 ${activeTheme.text}`}>
                                            <div className="bg-muted/30 p-3 rounded-full mb-3">
-                                             <AlertCircle size={24} className="opacity-50" />
+                                             <AlertCircle size={24} />
                                            </div>
                                            <h3 className="text-sm font-bold tracking-widest uppercase mb-1">Not Available</h3>
-                                           <p className="text-xs opacity-70 text-center">We couldn't find any available {type === 'bus' ? 'buses' : type === 'cab' ? 'cabs' : type + 's'} for this route right now.</p>
+                                           <p className="text-xs text-center">We couldn't find any available {type === 'bus' ? 'buses' : type === 'cab' ? 'cabs' : type + 's'} for this route right now.</p>
                                         </div>
                                       )}
                                       {typeOptions.map((opt, idx) => {
@@ -815,7 +817,7 @@ export default function TransportPage() {
                                                     <div className="bg-white rounded-lg shadow-sm border border-border flex items-center justify-center overflow-hidden shrink-0 w-[64px] h-[40px] sm:w-[100px] sm:h-[60px]">
                                                       <img 
                                                         src={getAirlineLogo(opt.provider)!} 
-                                                        alt={opt.provider} 
+                                                        alt={opt.type === 'flight' ? (opt.provider || '').split('|')[0].trim() : opt.provider} 
                                                         className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(opt.provider)}`}
                                                         style={{ imageRendering: 'high-quality' as any }}
                                                       />
@@ -837,21 +839,27 @@ export default function TransportPage() {
                                                   
                                                   <div className="flex-1 min-w-0">
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                                                      <span className="font-bold uppercase tracking-wider text-[11px] sm:text-sm leading-tight break-words">
-                                                        {opt.type === 'flight' ? (opt.provider || '').split('*')[0].trim() : (opt.provider || opt.type)}
-                                                      </span>
+                                                      <div className="flex flex-col font-bold uppercase tracking-wider text-[11px] sm:text-sm leading-tight break-words">
+                                                        {opt.type === 'flight' ? (
+                                                          (opt.provider || '').split('*')[0].split('|').map((part: string, i: number) => (
+                                                            <span key={i} className={i >= 1 ? "text-[9px] sm:text-[11px] text-inherit opacity-100 mt-0.5 font-semibold" : ""}>{part.trim()}</span>
+                                                          ))
+                                                        ) : (
+                                                          <span>{opt.provider || opt.type}</span>
+                                                        )}
+                                                      </div>
                                                       {/* Desktop Badge */}
                                                       {opt.type !== 'cross' && isSelected && (
-                                                        <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full border border-border/50 w-fit shrink-0">
+                                                        <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-inherit opacity-100 bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full border border-border/50 w-fit shrink-0">
                                                           <span className="font-bold uppercase truncate max-w-[120px] text-inherit">{pax.city}</span>
-                                                          <ArrowRight size={10} className="text-primary/60 shrink-0"/>
+                                                          <ArrowRight size={10} className="text-primary/80 shrink-0"/>
                                                           <span className="font-bold uppercase truncate max-w-[120px] text-inherit">{trip.destination}</span>
                                                         </div>
                                                       )}
                                                     </div>
                                                     
                                                     {opt.type !== 'cross' && (
-                                                      <div className="hidden sm:flex text-sm text-inherit opacity-70 mt-1 items-center gap-1 flex-wrap">
+                                                      <div className="hidden sm:flex text-sm text-inherit opacity-100 font-medium mt-1 items-center gap-1 flex-wrap">
                                                         <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
                                                         <ArrowRight className="inline mx-1" size={12}/>
                                                         <span className="flex items-center">
@@ -878,7 +886,7 @@ export default function TransportPage() {
                                                   {/* Mobile Time/Duration + Badge */}
                                                   <div className="flex sm:hidden flex-col gap-1.5 min-w-0 flex-1">
                                                     {opt.type !== 'cross' && (
-                                                      <div className="text-[10px] text-inherit opacity-70 flex items-center gap-1 flex-wrap">
+                                                      <div className="text-[10px] text-inherit opacity-100 font-medium flex items-center gap-1 flex-wrap">
                                                         <span>{String(opt.departure).includes('T') ? String(opt.departure).split('T')[1].slice(0,5) : opt.departure}</span>
                                                         <ArrowRight className="inline mx-0.5" size={10}/>
                                                         <span className="flex items-center">
@@ -899,9 +907,9 @@ export default function TransportPage() {
                                                     )}
                                                     
                                                     {opt.type !== 'cross' && isSelected && (
-                                                      <div className="flex items-center gap-1 text-[8px] text-inherit opacity-70 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-sm border border-border/50 w-fit shrink-0">
+                                                      <div className="flex items-center gap-1 text-[8px] text-inherit opacity-100 font-medium bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-sm border border-border/50 w-fit shrink-0">
                                                         <span className="font-bold uppercase truncate max-w-[90px] text-inherit">{pax.city}</span>
-                                                        <ArrowRight size={8} className="text-primary/60 shrink-0"/>
+                                                        <ArrowRight size={8} className="text-primary/80 shrink-0"/>
                                                         <span className="font-bold uppercase truncate max-w-[90px] text-inherit">{trip.destination}</span>
                                                       </div>
                                                     )}
@@ -909,6 +917,13 @@ export default function TransportPage() {
 
                                                   <div className="text-right shrink-0 ml-auto">
                                                     <div className="text-sm sm:text-xl font-bold text-inherit">₹{opt.price.toLocaleString('en-IN')}</div>
+                                                    {opt.price_breakdown && (
+                                                      <div className="flex flex-col items-end text-[11px] sm:text-xs text-inherit opacity-80 mt-1 gap-0.5 font-medium">
+                                                        {Object.entries(opt.price_breakdown).map(([label, price]) => (
+                                                          <span key={label}>{label}: {opt.time_breakdown?.[label]} • ₹{(price as number).toLocaleString('en-IN')}</span>
+                                                        ))}
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
                                               
@@ -1018,7 +1033,7 @@ export default function TransportPage() {
                                   <div className="flex items-center gap-2 min-w-0">
                                     {tr.type === 'flight' && getAirlineLogo(tr.provider) ? (
                                       <div className="bg-white rounded-md border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '36px', height: '24px' }}>
-                                        <img src={getAirlineLogo(tr.provider)!} alt={tr.provider} className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(tr.provider)}`} />
+                                        <img src={getAirlineLogo(tr.provider)!} alt={tr.type === 'flight' ? (tr.provider || '').split('|')[0].trim() : tr.provider} className={`object-contain mix-blend-multiply ${getAirlineLogoStyles(tr.provider)}`} />
                                       </div>
                                     ) : (tr.type === 'cab' || tr.type === 'car') && getCabLogo(tr.provider) ? (
                                       <div className="bg-white rounded-md border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ width: '36px', height: '24px' }}>
@@ -1030,7 +1045,7 @@ export default function TransportPage() {
                                       </div>
                                     )}
                                     <span className="text-xs font-bold text-inherit truncate leading-tight">
-                                      {tr.type === 'flight' ? (tr.provider || '').split('*')[0].trim() : tr.provider || tr.type}
+                                      {tr.type === 'flight' ? (tr.provider || '').split('*')[0].split('|')[0].trim() : tr.provider || tr.type}
                                     </span>
                                   </div>
                                   <span className="text-sm font-black text-inherit shrink-0">₹{tr.price.toLocaleString('en-IN')}</span>
@@ -1061,7 +1076,7 @@ export default function TransportPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="p-3 flex items-center gap-2 text-xs text-inherit opacity-70">
+                              <div className="p-3 flex items-center gap-2 text-xs text-inherit opacity-100 font-medium">
                                 <AlertCircle size={13} className="text-amber-400 shrink-0" />
                                 <span>No transport selected</span>
                               </div>
@@ -1098,7 +1113,7 @@ export default function TransportPage() {
         >
           <button 
             onClick={() => router.push('/plan/setup')}
-            className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+            className={`${activeTheme.text} font-medium transition-colors hover:opacity-70`}
           >
             ← Back to Setup
           </button>

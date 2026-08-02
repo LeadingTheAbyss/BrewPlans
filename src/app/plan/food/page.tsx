@@ -487,25 +487,25 @@ export default function FoodPage() {
                       <h3 className="text-base font-bold text-inherit leading-tight group-hover:text-blue-500 transition-colors">
                         {place.name}
                       </h3>
-                      <span className={`text-sm font-bold shrink-0 ${place.entryFee === 0 ? 'text-emerald-500' : 'text-inherit opacity-70'}`}>
+                      <span className={`text-sm font-bold shrink-0 ${place.entryFee === 0 ? 'text-emerald-500' : 'text-inherit'}`}>
                         {place.entryFee === 0 ? 'Free' : `₹${place.entryFee} - ₹${Math.round(place.entryFee * 1.8)}`}
                       </span>
                     </div>
 
                     {/* Rating */}
                     <div className="flex items-center gap-1 mb-3">
-                      <Star size={12} className="text-yellow-400" fill="currentColor" />
-                      <span className="text-xs font-semibold text-inherit">
+                      <Star size={14} className="text-yellow-400" fill="currentColor" />
+                      <span className="text-sm font-semibold text-inherit">
                         {place.rating ? place.rating.toFixed(1) : 'New'}
                       </span>
-                      <span className="text-inherit opacity-60 text-xs mt-0.5">
+                      <span className="text-inherit text-sm">
                         {place.reviewsCount ? `(${place.reviewsCount.toLocaleString('en-IN')})` : ''}
                       </span>
                     </div>
 
                     {/* Duration */}
-                    <div className="flex items-center gap-1.5 text-inherit opacity-70 text-xs mt-auto mb-3">
-                      <Clock size={12} />
+                    <div className="flex items-center gap-1.5 text-inherit text-sm mt-auto mb-3">
+                      <Clock size={14} />
                       <span>{place.visitDurationHours || getDefaultDuration(place.category)} hrs visit</span>
                     </div>
 

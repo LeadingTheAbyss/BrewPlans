@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTripStore } from '@/store/tripStore';
 import { useBudgetStore } from '@/store/budgetStore';
 import { useItineraryStore } from '@/store/itineraryStore';
@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import ModernDateRangePicker from '@/components/ModernDateRangePicker';
-import { Plus, Trash2, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, AlertCircle, CheckCircle2, ChevronDown, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useCacheStore } from '@/store/cacheStore';
 import { useFetchQueue } from '@/store/fetchQueueStore';
@@ -26,6 +26,73 @@ const TRIP_STYLES = [
   { id: 'adventure', label: 'Adventure' },
   { id: 'luxury', label: 'Luxury' }
 ];
+
+const GenderSelect = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const selectedLabel = options.find(o => o.value === value)?.label || 'Select';
+
+  return (
+    <div className="relative w-full" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full h-10 bg-background border border-input rounded-lg px-2.5 sm:px-3 text-xs sm:text-sm text-foreground font-medium flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer hover:border-primary/50"
+      >
+        <span className={!value ? 'text-muted-foreground/70 font-normal' : 'capitalize font-semibold'}>{selectedLabel}</span>
+        <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-200 shrink-0 ml-1 ${open ? 'rotate-180 text-primary' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-zinc-900 border border-zinc-700/80 rounded-xl shadow-2xl overflow-hidden p-1 space-y-0.5"
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-between cursor-pointer ${
+                  value === opt.value
+                    ? 'bg-primary/20 text-primary font-bold'
+                    : 'text-zinc-200 hover:bg-zinc-800 hover:text-white'
+                }`}
+              >
+                <span>{opt.label}</span>
+                {value === opt.value && <Check size={14} className="text-primary shrink-0 ml-2" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function TripSetupPage() {
   const router = useRouter();
@@ -197,8 +264,9 @@ export default function TripSetupPage() {
                   min="0"
                   value={budget.totalBudget || ''}
                   onChange={(e) => budget.setTotalBudget(Math.max(0, Number(e.target.value)))}
+                  onWheel={(e) => e.currentTarget.blur()}
                   placeholder="100000"
-                  className={`w-full bg-transparent text-xl sm:text-3xl font-light pl-6 sm:pl-8 py-2 focus:outline-none placeholder:opacity-50 border-b-2 transition-colors ${activeTheme.text} border-current focus:border-primary/50 ${currentTheme !== 'default' ? 'placeholder:text-current' : 'placeholder:text-muted-foreground/50'}`}
+                  className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-transparent text-xl sm:text-3xl font-light pl-6 sm:pl-8 py-2 focus:outline-none placeholder:opacity-50 border-b-2 transition-colors ${activeTheme.text} border-current focus:border-primary/50 ${currentTheme !== 'default' ? 'placeholder:text-current' : 'placeholder:text-muted-foreground/50'}`}
                 />
               </div>
             </div>
@@ -222,11 +290,11 @@ export default function TripSetupPage() {
                     <div key={pax.id} className={`p-3 sm:p-5 rounded-xl border relative transition-all group ${currentTheme !== 'default' ? 'bg-white/40' : 'bg-card/50'} border-current/20`}>
                       
                       <div className="flex justify-between items-start mb-3 sm:mb-5">
-                        <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-inherit opacity-70`}>
+                        <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-inherit`}>
                           Passenger {String(index + 1).padStart(2, '0')}
                         </span>
                         {index > 0 && (
-                          <button onClick={() => trip.removePassenger(pax.id)} className="text-red-500/50 hover:text-red-500 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
+                          <button onClick={() => trip.removePassenger(pax.id)} className="text-red-600 hover:text-red-700 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
                             <Trash2 size={12} /> Remove
                           </button>
                         )}
@@ -238,7 +306,7 @@ export default function TripSetupPage() {
                           <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Full Name</label>
                           <input 
                             type="text" placeholder="e.g. John Doe"
-                            className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
+                            className="w-full h-10 bg-background border border-input rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                             value={pax.name} 
                             onChange={(e) => trip.updatePassenger(pax.id, { name: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                           />
@@ -276,7 +344,8 @@ export default function TripSetupPage() {
                           <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Age</label>
                           <input 
                             type="number" placeholder="Years" min="1" max="120"
-                            className="w-full h-10 bg-muted/30 border border-border rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
+                            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full h-10 bg-background border border-input rounded-lg px-3 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
+                            onWheel={(e) => e.currentTarget.blur()}
                             value={pax.age || ''} 
                             onChange={(e) => {
                               const cleanStr = e.target.value.replace(/\D/g, '');
@@ -287,20 +356,12 @@ export default function TripSetupPage() {
                         </div>
 
                         {/* Gender Select */}
-                        <div className="md:col-span-3 relative z-10">
+                        <div className="md:col-span-3 relative z-20">
                           <label className={`block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-1.5 truncate text-inherit opacity-70`}>Gender</label>
-                          <div className="relative">
-                            <select 
-                              className={`w-full h-10 border rounded-lg px-2 sm:px-3 text-xs sm:text-sm font-medium focus:outline-none focus:ring-1 transition-all appearance-none ${currentTheme !== 'default' ? 'bg-white/50' : 'bg-muted/30'} border-current/20 focus:border-primary/50 ${activeTheme.text}`}
-                              value={pax.gender || ''} 
-                              onChange={(e) => trip.updatePassenger(pax.id, { gender: e.target.value as any })}
-                            >
-                              <option value="" disabled>Select</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </div>
+                          <GenderSelect 
+                            value={pax.gender || ''} 
+                            onChange={(val) => trip.updatePassenger(pax.id, { gender: val as any })} 
+                          />
                         </div>
 
                         {/* City Input */}

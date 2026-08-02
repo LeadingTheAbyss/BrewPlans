@@ -137,7 +137,7 @@ export default function HotelsPage() {
         <div className="flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-bold mb-2">Hotel Selection</h1>
-            <p className="text-inherit opacity-70">
+            <p className="text-inherit">
               Where will you stay for {nights} nights in {trip.destination || 'the destination'}?
             </p>
           </div>
@@ -275,7 +275,7 @@ export default function HotelsPage() {
                               <div className="text-2xl font-bold text-inherit tracking-tight mb-1">
                                 ₹{totalCost.toLocaleString('en-IN')}
                               </div>
-                              <div className="text-xs font-medium text-inherit opacity-70">
+                              <div className="text-xs font-medium text-inherit">
                                 ₹{hotel.pricePerNight.toLocaleString('en-IN')} / night
                               </div>
                             </div>
