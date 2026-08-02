@@ -10,7 +10,7 @@ export const INDIAN_CITIES = [
   { name: 'Pune', state: 'Maharashtra' },
   { name: 'Ahmedabad', state: 'Gujarat' },
   
-  // Maharashtra
+  // Maharashtra state
   { name: 'Sangli', state: 'Maharashtra' },
   { name: 'Satara', state: 'Maharashtra' },
   { name: 'Kolhapur', state: 'Maharashtra' },
