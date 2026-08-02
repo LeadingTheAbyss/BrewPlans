@@ -58,10 +58,10 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
   return (
     <section className="py-12 px-4 md:px-8 max-w-7xl mx-auto relative group">
         <div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-[#1F2937] tracking-tight">
+          <h2 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>
             Trending Blogs
           </h2>
-          <p className="text-sm text-[#6B7280] font-medium mt-0.5">The most loved stories from our community</p>
+          <p className={`text-sm font-medium mt-0.5 ${isDark ? 'text-zinc-400' : 'text-[#6B7280]'}`}>The most loved stories from our community</p>
         </div>
 
       <motion.div

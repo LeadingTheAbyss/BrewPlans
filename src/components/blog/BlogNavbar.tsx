@@ -101,7 +101,7 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
           
           <button
             onClick={toggleDark}
-            className={`hidden sm:flex items-center justify-center p-2.5 rounded-2xl shadow-xs transition-all ${
+            className={`flex items-center justify-center p-2.5 rounded-2xl shadow-xs transition-all ${
               isDark 
                 ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700' 
                 : 'bg-white hover:bg-[#FFF3E6] text-[#4B5563] border border-[#FF8A3D]/30'
