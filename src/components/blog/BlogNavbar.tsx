@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Compass, Menu, X, MapPin, Send, Plane, PenTool, User, Cloud, CloudFog } from 'lucide-react';
+import { Compass, Menu, X, MapPin, Send, Plane, PenTool, User, Cloud, CloudFog, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
+import { useBlogTheme } from '@/context/BlogThemeContext';
 
 export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; saveStatus?: string }) {
   const router = useRouter();
@@ -14,6 +15,11 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ displayName?: string; pfp?: string; username?: string } | null>(null);
   const isMediaTab = pathname === '/blog/media';
+  
+  // Destructure with fallbacks for pages without context
+  const blogTheme = useBlogTheme();
+  const isDark = blogTheme?.isDark || false;
+  const toggleDark = blogTheme?.toggleDark || (() => {});
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -34,7 +40,7 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
   };
 
   return (
-    <header className="w-full sticky top-0 z-[100] bg-[#FFF7F0]/95 backdrop-blur-md border-b border-[#FF8A3D]/20 px-4 md:px-8 py-3.5 transition-all shadow-xs">
+    <header className={`w-full sticky top-0 z-[100] backdrop-blur-md border-b px-4 md:px-8 py-3.5 transition-all shadow-xs duration-500 ${isDark ? 'bg-[#0a0a0a]/95 border-zinc-800' : 'bg-[#FFF7F0]/95 border-[#FF8A3D]/20'}`}>
       <div className="w-full flex items-center justify-between gap-4 lg:gap-8">
         
         {/* Brand Logo & Editorial Tag (#1) */}
@@ -46,13 +52,13 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
               className="w-10 h-10 object-contain drop-shadow-[0_4px_8px_rgba(255,138,61,0.25)] group-hover:scale-105 transition-transform shrink-0" 
             />
             <div className="flex flex-col">
-              <span className="font-black text-xl md:text-2xl tracking-tight text-[#1F2937] leading-none flex items-center gap-1.5 whitespace-nowrap">
+              <span className={`font-black text-xl md:text-2xl tracking-tight leading-none flex items-center gap-1.5 whitespace-nowrap ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>
                 BrewPlans
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FF8A3D]/15 text-[#D45B0C] font-bold uppercase tracking-wider hidden sm:inline-block">
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider hidden sm:inline-block ${isDark ? 'bg-zinc-800 text-[#FF8A3D]' : 'bg-[#FF8A3D]/15 text-[#D45B0C]'}`}>
                   Community
                 </span>
               </span>
-              <span className="text-[11px] text-[#6B7280] font-medium tracking-wide hidden md:block whitespace-nowrap">India&apos;s joyful travel community</span>
+              <span className={`text-[11px] font-medium tracking-wide hidden md:block whitespace-nowrap ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>India&apos;s joyful travel community</span>
             </div>
           </Link>
         </div>
@@ -74,7 +80,7 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
             ) : null}
           </div>
         ) : (
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-10 text-xs xl:text-sm font-extrabold text-[#1F2937] whitespace-nowrap overflow-x-auto no-scrollbar py-1">
+          <nav className={`hidden lg:flex items-center gap-6 xl:gap-10 text-xs xl:text-sm font-extrabold whitespace-nowrap overflow-x-auto no-scrollbar py-1 ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>
             <Link 
               href="/blog" 
               className={`transition-all flex items-center gap-1.5 whitespace-nowrap py-1 shrink-0 ${!isMediaTab && pathname === '/blog' ? 'text-[#FF8A3D] border-b-2 border-[#FF8A3D]' : 'hover:text-[#FF8A3D]'}`}
@@ -93,9 +99,21 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
         {/* Top Right Actions pushed to extreme right (#3) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto lg:ml-0">
           
+          <button
+            onClick={toggleDark}
+            className={`hidden sm:flex items-center justify-center p-2.5 rounded-2xl shadow-xs transition-all ${
+              isDark 
+                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700' 
+                : 'bg-white hover:bg-[#FFF3E6] text-[#4B5563] border border-[#FF8A3D]/30'
+            }`}
+            title="Toggle theme"
+          >
+            {isDark ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+
           <Link
             href="/blog/write"
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[#FFF3E6] hover:bg-white text-[#D45B0C] font-extrabold text-xs uppercase tracking-wider border-2 border-[#FF8A3D]/30 shadow-xs hover:scale-103 transition-all whitespace-nowrap shrink-0"
+            className={`hidden sm:flex items-center gap-1.5 px-4 py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider border-2 shadow-xs hover:scale-103 transition-all whitespace-nowrap shrink-0 ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-zinc-700' : 'bg-[#FFF3E6] hover:bg-white text-[#D45B0C] border-[#FF8A3D]/30'}`}
             title="Write your own Indian travel experience"
           >
             <PenTool size={14} className="text-[#FF8A3D] shrink-0" />
@@ -131,7 +149,7 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
 
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2.5 rounded-xl bg-[#FFF3E6] text-[#1F2937] border border-[#FF8A3D]/20 hover:bg-[#FFB347]/10 transition-colors ml-1"
+            className={`lg:hidden p-2.5 rounded-xl border transition-colors ml-1 ${isDark ? 'bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700' : 'bg-[#FFF3E6] text-[#1F2937] border-[#FF8A3D]/20 hover:bg-[#FFB347]/10'}`}
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -141,25 +159,45 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
 
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-4 pt-4 border-t border-[#FF8A3D]/20 flex flex-col gap-3 animate-in slide-in-from-top-2">
+        <div className={`lg:hidden mt-4 pt-4 border-t flex flex-col gap-3 animate-in slide-in-from-top-2 ${isDark ? 'border-zinc-800' : 'border-[#FF8A3D]/20'}`}>
+          <div className="flex justify-between items-center px-4 mb-2">
+            <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>Menu</span>
+            <button
+              onClick={toggleDark}
+              className={`p-2 rounded-lg flex items-center gap-2 text-xs font-bold ${
+                isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-gray-100 text-[#4B5563]'
+              }`}
+            >
+              {isDark ? <Sun size={14} /> : <Moon size={14} />}
+              {isDark ? 'Light' : 'Dark'}
+            </button>
+          </div>
           <Link
             href="/blog"
             onClick={() => setMobileMenuOpen(false)}
-            className={`w-full text-left font-extrabold text-base px-4 py-2.5 rounded-xl flex items-center gap-3 transition-colors ${!isMediaTab && pathname === '/blog' ? 'bg-[#FFF3E6] text-[#FF8A3D]' : 'bg-white/70 hover:bg-[#FFF3E6] text-[#1F2937]'}`}
+            className={`w-full text-left font-extrabold text-base px-4 py-2.5 rounded-xl flex items-center gap-3 transition-colors ${
+              !isMediaTab && pathname === '/blog' 
+                ? (isDark ? 'bg-zinc-800 text-[#FF8A3D]' : 'bg-[#FFF3E6] text-[#FF8A3D]') 
+                : (isDark ? 'bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300' : 'bg-white/70 hover:bg-[#FFF3E6] text-[#1F2937]')
+            }`}
           >
             <span>Blogs</span>
           </Link>
           <Link
             href="/blog/media"
             onClick={() => setMobileMenuOpen(false)}
-            className={`w-full text-left font-extrabold text-base px-4 py-2.5 rounded-xl flex items-center gap-3 transition-colors ${isMediaTab ? 'bg-[#FFF3E6] text-[#FF8A3D]' : 'bg-white/70 hover:bg-[#FFF3E6] text-[#1F2937]'}`}
+            className={`w-full text-left font-extrabold text-base px-4 py-2.5 rounded-xl flex items-center gap-3 transition-colors ${
+              isMediaTab 
+                ? (isDark ? 'bg-zinc-800 text-[#FF8A3D]' : 'bg-[#FFF3E6] text-[#FF8A3D]') 
+                : (isDark ? 'bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300' : 'bg-white/70 hover:bg-[#FFF3E6] text-[#1F2937]')
+            }`}
           >
             <span>Show Pics & Videos</span>
           </Link>
           <Link
             href="/blog/write"
             onClick={() => setMobileMenuOpen(false)}
-            className="w-full text-left font-black text-base text-[#1F2937] px-4 py-3 rounded-xl bg-white border border-[#FF8A3D]/30 flex items-center justify-center gap-2 shadow-xs"
+            className={`w-full text-left font-black text-base px-4 py-3 rounded-xl border flex items-center justify-center gap-2 shadow-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-[#FF8A3D]/30 text-[#1F2937]'}`}
           >
             <PenTool size={16} className="text-[#FF8A3D]" />
             <span>Post About Your Trip</span>

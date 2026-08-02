@@ -18,6 +18,7 @@ interface CustomDropdownProps {
   placeholder?: string;
   className?: string;
   colorTheme?: 'orange' | 'emerald' | 'sky' | 'purple' | 'default';
+  isDark?: boolean;
 }
 
 export const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -28,6 +29,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   placeholder = 'Select option...',
   className = '',
   colorTheme = 'orange',
+  isDark = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,10 +77,10 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       iconText: 'text-purple-600',
     },
     default: {
-      activeItem: 'bg-neutral-100 text-[#1F2937] font-black border-l-4 border-neutral-800',
-      hoverItem: 'hover:bg-neutral-50 hover:text-[#1F2937]',
-      border: 'border-[#FF8A3D]/30 focus:border-[#FF8A3D]',
-      iconText: 'text-[#1F2937]',
+      activeItem: `font-black border-l-4 ${isDark ? 'bg-zinc-700 text-zinc-100 border-zinc-500' : 'bg-neutral-100 text-[#1F2937] border-neutral-800'}`,
+      hoverItem: isDark ? 'hover:bg-zinc-700 hover:text-zinc-100' : 'hover:bg-neutral-50 hover:text-[#1F2937]',
+      border: `focus:border-[#FF8A3D] ${isDark ? 'border-zinc-700' : 'border-[#FF8A3D]/30'}`,
+      iconText: isDark ? 'text-zinc-300' : 'text-[#1F2937]',
     },
   }[colorTheme];
 
@@ -89,23 +91,23 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-12 px-4 rounded-xl bg-white border-2 text-left flex items-center justify-between transition-all duration-200 shadow-xs text-xs sm:text-sm ${themeStyles.border} ${
-          isOpen ? 'ring-2 ring-[#FF8A3D]/20 border-[#FF8A3D]' : 'hover:border-[#FF8A3D]/60'
+        className={`w-full h-12 px-4 rounded-xl border-2 text-left flex items-center justify-between transition-all duration-200 shadow-xs text-xs sm:text-sm ${themeStyles.border} ${isDark ? 'bg-zinc-800 text-zinc-100' : 'bg-white text-[#1F2937]'} ${
+          isOpen ? (isDark ? 'ring-2 ring-zinc-700 border-zinc-600' : 'ring-2 ring-[#FF8A3D]/20 border-[#FF8A3D]') : (isDark ? 'hover:border-zinc-600' : 'hover:border-[#FF8A3D]/60')
         }`}
       >
-        <span className="truncate pr-2 font-bold text-[#1F2937] flex items-center gap-1.5">
+        <span className={`truncate pr-2 font-bold flex items-center gap-1.5 ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>
           {selectedOption ? (
             <>
               {selectedOption.icon && <span>{selectedOption.icon}</span>}
               <span>{selectedOption.label}</span>
             </>
           ) : (
-            <span className="text-[#6B7280] font-medium">{placeholder}</span>
+            <span className={`font-medium ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>{placeholder}</span>
           )}
         </span>
         <ChevronDown
           size={16}
-          className={`text-[#6B7280] transition-transform duration-200 shrink-0 ${
+          className={`transition-transform duration-200 shrink-0 ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'} ${
             isOpen ? 'rotate-180 text-[#FF8A3D]' : ''
           }`}
         />
@@ -118,7 +120,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute left-0 right-0 z-[100] mt-2 bg-white rounded-2xl border-2 border-[#FF8A3D]/25 shadow-2xl py-2 overflow-y-auto max-h-[300px] min-w-[200px]"
+            className={`absolute left-0 right-0 z-[100] mt-2 rounded-2xl border-2 shadow-2xl py-2 overflow-y-auto max-h-[300px] min-w-[200px] ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-[#FF8A3D]/25'}`}
           >
             {normalizedOptions.map((opt) => {
               const isSelected = opt.value === value;
@@ -131,7 +133,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     setIsOpen(false);
                   }}
                   className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center justify-between transition-colors duration-150 ${
-                    isSelected ? themeStyles.activeItem : `text-[#374151] ${themeStyles.hoverItem}`
+                    isSelected ? themeStyles.activeItem : `${isDark ? 'text-zinc-300 hover:bg-zinc-700' : 'text-[#374151] hover:bg-neutral-50'}`
                   }`}
                 >
                   <span className="flex items-center gap-2 truncate">

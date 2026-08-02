@@ -15,6 +15,7 @@ import { ArticleReaderModal } from '@/components/blog/ArticleReaderModal';
 import { CustomDropdown } from '@/components/blog/CustomDropdown';
 import { CinematicLoader } from '@/components/CinematicLoader';
 import { useCacheStore } from '@/store/cacheStore';
+import { BlogThemeContext } from '@/context/BlogThemeContext';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, DollarSign, Calendar, X } from 'lucide-react';
 
@@ -42,6 +43,7 @@ export default function BlogLandingPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const cache = useCacheStore();
 
   // Structured Meta-Data filter states
@@ -206,7 +208,8 @@ export default function BlogLandingPage() {
   }, [articles]);
 
   return (
-    <div className="min-h-screen bg-[#FFF7F0] text-[#1F2937] font-sans selection:bg-[#FF8A3D]/20 overflow-x-hidden relative">
+    <BlogThemeContext.Provider value={{ isDark, toggleDark: () => setIsDark(!isDark) }}>
+    <div className={`min-h-screen font-sans selection:bg-[#FF8A3D]/20 overflow-x-hidden relative transition-colors duration-500 ${isDark ? 'bg-[#0a0a0a] text-zinc-100' : 'bg-[#FFF7F0] text-[#1F2937]'}`}>
       <CinematicLoader 
         isLoading={isLoading} 
         category="places" 
@@ -237,19 +240,19 @@ export default function BlogLandingPage() {
 
       {/* Indian City Search & Structured Filters Console */}
       <section className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-r from-[#FFF3E6] via-[#FFF9E6] to-[#FEF3C7] rounded-[36px] p-6 sm:p-10 border-4 border-[#FF8A3D]/30 shadow-xl mb-8">
+        <div className={`rounded-[36px] p-6 sm:p-10 shadow-xl mb-8 transition-colors ${isDark ? 'bg-zinc-900 border-2 border-zinc-800' : 'bg-gradient-to-r from-[#FFF3E6] via-[#FFF9E6] to-[#FEF3C7] border-4 border-[#FF8A3D]/30'}`}>
           
           {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-[#D45B0C] mb-1.5 bg-white/80 px-3.5 py-1 rounded-full border border-[#FF8A3D]/30 shadow-xs">
+              <div className={`inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest mb-1.5 px-3.5 py-1 rounded-full shadow-xs ${isDark ? 'bg-zinc-800 text-[#D45B0C] border border-zinc-700' : 'bg-white/80 text-[#D45B0C] border border-[#FF8A3D]/30'}`}>
                 <Filter size={14} className="text-[#FF8A3D]" />
                 <span>Smart Indian Expedition Discovery</span>
               </div>
-              <h3 className="text-2xl sm:text-4xl font-black text-[#1F2937] tracking-tight">
+              <h3 className={`text-2xl sm:text-4xl font-black tracking-tight ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>
                 Filter by Destination, Budget & Season
               </h3>
-              <p className="text-xs sm:text-sm text-[#4B5563] font-medium mt-1">
+              <p className={`text-xs sm:text-sm font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-[#4B5563]'}`}>
                 Customize your feed to match your exact budget and trip vibe.
               </p>
             </div>
@@ -266,7 +269,7 @@ export default function BlogLandingPage() {
                 if (selectedQuickCity !== 'All India') setSelectedQuickCity('All India');
               }}
               placeholder="Search Indian destinations or regions (e.g. Goa, Manali, Spiti, Chandni Chowk, Tawang...)"
-              className="w-full h-15 pl-12 pr-12 rounded-2xl bg-white/95 border-2 border-[#FF8A3D]/30 focus:outline-none focus:border-[#FF8A3D] text-[#1F2937] font-extrabold placeholder:text-gray-400 shadow-md text-base sm:text-lg transition-all"
+              className={`w-full h-15 pl-12 pr-12 rounded-2xl focus:outline-none font-extrabold shadow-md text-base sm:text-lg transition-all ${isDark ? 'bg-zinc-800 border-2 border-zinc-700 focus:border-[#FF8A3D] text-zinc-100 placeholder:text-zinc-500' : 'bg-white/95 border-2 border-[#FF8A3D]/30 focus:border-[#FF8A3D] text-[#1F2937] placeholder:text-gray-400'}`}
             />
             {searchCity && (
               <button
@@ -284,7 +287,7 @@ export default function BlogLandingPage() {
             {/* Budget Selector */}
             <CustomDropdown
               label={
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#D45B0C] mb-1 pl-1 flex items-center gap-1">
+                <label className={`block text-[10px] font-extrabold uppercase tracking-widest mb-1 pl-1 flex items-center gap-1 ${isDark ? 'text-[#FF8A3D]' : 'text-[#D45B0C]'}`}>
                   <DollarSign size={12} /> Budget Tier
                 </label>
               }
@@ -292,12 +295,13 @@ export default function BlogLandingPage() {
               onChange={setBudgetFilter}
               options={BUDGET_FILTER_OPTIONS}
               colorTheme="orange"
+              isDark={isDark}
             />
 
             {/* Season Selector */}
             <CustomDropdown
               label={
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 mb-1 pl-1 flex items-center gap-1">
+                <label className={`block text-[10px] font-extrabold uppercase tracking-widest mb-1 pl-1 flex items-center gap-1 ${isDark ? 'text-emerald-500' : 'text-emerald-700'}`}>
                   <Calendar size={12} /> Best Time to Visit
                 </label>
               }
@@ -305,13 +309,14 @@ export default function BlogLandingPage() {
               onChange={setSeasonFilter}
               options={SEASON_FILTER_OPTIONS}
               colorTheme="emerald"
+              isDark={isDark}
             />
           </div>
 
           {/* Quick City Filter Chips & Reset Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#FF8A3D]/20">
+          <div className={`flex flex-wrap items-center justify-between gap-4 pt-4 border-t ${isDark ? 'border-zinc-800' : 'border-[#FF8A3D]/20'}`}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-[#6B7280] mr-1">Regions:</span>
+              <span className={`text-xs font-black uppercase tracking-wider mr-1 ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>Regions:</span>
               {QUICK_CITIES.map(city => (
                 <button
                   key={city}
@@ -321,8 +326,8 @@ export default function BlogLandingPage() {
                   }}
                   className={`px-4 py-1.5 rounded-full text-xs font-black transition-all ${
                     selectedQuickCity === city && !searchCity
-                      ? 'bg-[#1F2937] text-white shadow-md scale-105'
-                      : 'bg-white text-[#4B5563] hover:bg-[#FF8A3D]/10 border border-[#FF8A3D]/25'
+                      ? (isDark ? 'bg-zinc-100 text-zinc-900 shadow-md scale-105' : 'bg-[#1F2937] text-white shadow-md scale-105')
+                      : (isDark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700' : 'bg-white text-[#4B5563] hover:bg-[#FF8A3D]/10 border border-[#FF8A3D]/25')
                   }`}
                 >
                   {city}
@@ -367,5 +372,6 @@ export default function BlogLandingPage() {
       />
 
     </div>
+    </BlogThemeContext.Provider>
   );
 }

@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { THEME_STYLES, getThemeForCity, getImageUrlForCity } from '@/lib/destinationThemes';
 import { useTripStore } from '@/store/tripStore';
 
-export function useDestinationTheme() {
-  const destination = useTripStore((s) => s.destination);
+export function useDestinationTheme(cityOverride?: string) {
+  const storeDestination = useTripStore((s) => s.destination);
+  const destination = cityOverride !== undefined ? cityOverride : storeDestination;
   const currentTheme = getThemeForCity(destination);
   const baseTheme = THEME_STYLES[currentTheme] || THEME_STYLES.default;
   

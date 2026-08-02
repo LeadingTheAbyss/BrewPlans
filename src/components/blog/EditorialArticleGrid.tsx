@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Bookmark, Heart, ArrowUpRight, Check, Eye, MessageSquare, Flame } from 'lucide-react';
 import { ImageCarousel } from '@/components/blog/ImageCarousel';
 import Link from 'next/link';
+import { useBlogTheme } from '@/context/BlogThemeContext';
 
 interface EditorialArticleGridProps {
   articles: Article[];
@@ -23,6 +24,8 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortMode>('default');
   const [visibleCount, setVisibleCount] = useState(6);
+  const blogTheme = useBlogTheme();
+  const isDark = blogTheme?.isDark || false;
 
   const toggleLike = (e: React.MouseEvent, id: string, initialLikes: number = 0) => {
     e.stopPropagation();
@@ -72,12 +75,12 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
       </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        {title && <h2 className="text-3xl font-black text-[#1F2937] tracking-tight">{title}</h2>}
+        {title && <h2 className={`text-3xl font-black tracking-tight ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>{title}</h2>}
       </div>
 
       {/* Sorting Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-4 rounded-2xl bg-[#FFF3E6]/60 border border-[#FF8A3D]/20 shadow-xs">
-        <div className="text-sm font-extrabold text-[#1F2937] flex items-center gap-2">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 p-4 rounded-2xl shadow-xs transition-colors ${isDark ? 'bg-zinc-900/80 border border-zinc-800' : 'bg-[#FFF3E6]/60 border border-[#FF8A3D]/20'}`}>
+        <div className={`text-sm font-extrabold flex items-center gap-2 ${isDark ? 'text-zinc-300' : 'text-[#1F2937]'}`}>
           <span>Explore stories by:</span>
           {sortBy === 'controversial' && <span className="text-[11px] px-2 py-0.5 rounded bg-rose-200 text-rose-800 font-bold animate-pulse">Hot Debates</span>}
         </div>
@@ -86,8 +89,8 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
             onClick={() => setSortBy('default')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1 ${
               sortBy === 'default'
-                ? 'bg-[#1F2937] text-white shadow-md scale-105'
-                : 'bg-white text-[#4B5563] hover:bg-[#FFF3E6] border border-[#FF8A3D]/20'
+                ? (isDark ? 'bg-zinc-100 text-zinc-900 shadow-md scale-105' : 'bg-[#1F2937] text-white shadow-md scale-105')
+                : (isDark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700' : 'bg-white text-[#4B5563] hover:bg-[#FFF3E6] border border-[#FF8A3D]/20')
             }`}
           >
             <span>🔥 Trending</span>
@@ -136,10 +139,10 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
       </div>
 
       {sortedArticles.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-[32px] border border-[#FF8A3D]/20 shadow-sm my-8 p-6">
+        <div className={`text-center py-20 rounded-[32px] shadow-sm my-8 p-6 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-[#FF8A3D]/20'}`}>
           <p className="text-4xl mb-3">🧭</p>
-          <h3 className="text-xl font-bold text-[#1F2937]">No stories or videos found yet.</h3>
-          <p className="text-sm text-[#6B7280] mt-1 mb-6">Be the first explorer to share a travel story or video!</p>
+          <h3 className={`text-xl font-bold ${isDark ? 'text-zinc-200' : 'text-[#1F2937]'}`}>No stories or videos found yet.</h3>
+          <p className={`text-sm mt-1 mb-6 ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>Be the first explorer to share a travel story or video!</p>
           <a
             href="/blog/write"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#1F2937] hover:bg-[#FF8A3D] text-white font-black text-xs uppercase tracking-wider shadow-md transition-all"
@@ -169,7 +172,7 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                 transition={{ duration: 0.4, delay: Math.min(idx * 0.08, 0.4) }}
                 whileHover={{ y: -7 }}
                 onClick={() => onSelectArticle(article)}
-                className={`${spanClass} group cursor-pointer flex flex-col bg-white rounded-[32px] overflow-hidden border-2 border-[#FF8A3D]/15 hover:border-[#FF8A3D]/70 shadow-[0_15px_40px_-15px_rgba(31,41,55,0.12)] hover:shadow-[0_25px_50px_-12px_rgba(255,138,61,0.25)] transition-all duration-300 relative`}
+                className={`${spanClass} group cursor-pointer flex flex-col rounded-[32px] overflow-hidden border-2 shadow-[0_15px_40px_-15px_rgba(31,41,55,0.12)] transition-all duration-300 relative ${isDark ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-600 hover:shadow-zinc-900/50' : 'bg-white border-[#FF8A3D]/15 hover:border-[#FF8A3D]/70 hover:shadow-[0_25px_50px_-12px_rgba(255,138,61,0.25)]'}`}
               >
                 {/* Gradient Accent Border on top */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-[#FF8A3D] via-[#FFB347] to-[#FFD166] opacity-80 group-hover:opacity-100 transition-opacity"></div>
@@ -257,7 +260,7 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                 </div>
 
                 {/* Card Body */}
-                <div className="p-6 sm:p-7 flex flex-col flex-1 justify-between bg-gradient-to-b from-white to-[#FFF7F0]/30">
+                <div className={`p-6 sm:p-7 flex flex-col flex-1 justify-between ${isDark ? 'bg-gradient-to-b from-zinc-900 to-zinc-950' : 'bg-gradient-to-b from-white to-[#FFF7F0]/30'}`}>
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-extrabold uppercase tracking-widest text-[#D45B0C]">
@@ -270,11 +273,11 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                       )}
                     </div>
 
-                    <h3 className="font-extrabold text-xl sm:text-2xl text-[#1F2937] tracking-tight leading-snug mb-3 group-hover:text-[#D45B0C] transition-colors line-clamp-2">
+                    <h3 className={`font-extrabold text-xl sm:text-2xl tracking-tight leading-snug mb-3 transition-colors line-clamp-2 ${isDark ? 'text-zinc-100 group-hover:text-[#FF8A3D]' : 'text-[#1F2937] group-hover:text-[#D45B0C]'}`}>
                       {article.title}
                     </h3>
 
-                    <p className="text-xs sm:text-sm text-[#4B5563] leading-relaxed font-normal mb-4 line-clamp-3">
+                    <p className={`text-xs sm:text-sm leading-relaxed font-normal mb-4 line-clamp-3 ${isDark ? 'text-zinc-400' : 'text-[#4B5563]'}`}>
                       {article.excerpt}
                     </p>
 
@@ -306,7 +309,7 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                   </div>
 
                   {/* Author Footer & Engagement Stats */}
-                  <div className="pt-4 border-t border-[#FF8A3D]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className={`pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isDark ? 'border-zinc-800' : 'border-[#FF8A3D]/15'}`}>
                     
                     <div className="flex items-center gap-2.5">
                       <img
@@ -315,13 +318,13 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
                         className="w-10 h-10 rounded-full object-cover ring-2 ring-[#FF8A3D]/20 shadow-xs"
                       />
                       <div className="text-left">
-                        <h4 className="font-extrabold text-xs text-[#1F2937] leading-none flex items-center gap-1">
+                        <h4 className={`font-extrabold text-xs leading-none flex items-center gap-1 ${isDark ? 'text-zinc-200' : 'text-[#1F2937]'}`}>
                           <span>{article.author.name}</span>
                           {article.collaborators && article.collaborators.length > 0 && (
                             <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-black">+1 Collab</span>
                           )}
                         </h4>
-                        <p className="text-[11px] text-[#6B7280] font-semibold mt-1">{article.author.role}</p>
+                        <p className={`text-[11px] font-semibold mt-1 ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>{article.author.role}</p>
                       </div>
                     </div>
 
@@ -362,7 +365,7 @@ export function EditorialArticleGrid({ articles, onSelectArticle, selectedCatego
         <div className="flex justify-center mt-12 mb-8">
           <button
             onClick={() => setVisibleCount(prev => prev + 6)}
-            className="px-8 py-3.5 rounded-full bg-white border-2 border-[#1F2937] text-[#1F2937] font-black uppercase tracking-widest text-xs hover:bg-[#1F2937] hover:text-white transition-all shadow-md hover:shadow-lg"
+            className={`px-8 py-3.5 rounded-full border-2 font-black uppercase tracking-widest text-xs transition-all shadow-md hover:shadow-lg ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white' : 'bg-white border-[#1F2937] text-[#1F2937] hover:bg-[#1F2937] hover:text-white'}`}
           >
             Show More
           </button>

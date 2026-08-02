@@ -5,6 +5,7 @@ import { Article } from '@/data/blogData';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Clock, ArrowUpRight, Bookmark, Share2, Heart, Eye, MessageSquare } from 'lucide-react';
 import { ImageCarousel } from '@/components/blog/ImageCarousel';
+import { useBlogTheme } from '@/context/BlogThemeContext';
 
 interface FeaturedArticleCardProps {
   articles: Article[];
@@ -13,6 +14,8 @@ interface FeaturedArticleCardProps {
 
 export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArticleCardProps) {
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const blogTheme = useBlogTheme();
+  const isDark = blogTheme?.isDark || false;
   
   React.useEffect(() => {
     if (activeIndex >= articles.length) setActiveIndex(0);
@@ -65,10 +68,10 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
         whileHover={{ y: -6 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
         onClick={() => onSelectArticle(article)}
-        className="group cursor-pointer rounded-[36px] bg-gradient-to-r from-[#FFF3E6] via-white to-[#FFF7F0] p-4 sm:p-6 md:p-8 border-2 border-[#FF8A3D]/20 shadow-[0_20px_60px_-15px_rgba(255,138,61,0.18)] hover:shadow-[0_30px_70px_-10px_rgba(255,138,61,0.3)] transition-all relative overflow-hidden"
+        className={`group cursor-pointer rounded-[36px] p-4 sm:p-6 md:p-8 border-2 shadow-[0_20px_60px_-15px_rgba(255,138,61,0.18)] hover:shadow-[0_30px_70px_-10px_rgba(255,138,61,0.3)] transition-all relative overflow-hidden ${isDark ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 border-zinc-700' : 'bg-gradient-to-r from-[#FFF3E6] via-white to-[#FFF7F0] border-[#FF8A3D]/20'}`}
       >
         {/* Subtle decorative internal gradient border */}
-        <div className="absolute inset-0 rounded-[36px] border border-white/80 pointer-events-none z-20"></div>
+        <div className={`absolute inset-0 rounded-[36px] border pointer-events-none z-20 ${isDark ? 'border-zinc-700/50' : 'border-white/80'}`}></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
@@ -137,17 +140,17 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
               <div className="hidden lg:flex items-center gap-3 text-xs font-extrabold uppercase tracking-widest text-[#D45B0C] mb-4">
                 <span>{article.date}</span>
                 <span>•</span>
-                <span className="flex items-center gap-1.5 text-[#1F2937]">
+                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-[#1F2937]'}`}>
                   <Clock size={13} className="text-[#FF8A3D]" />
                   {article.readingTime}
                 </span>
               </div>
 
-              <h3 className="font-extrabold text-2xl sm:text-3xl lg:text-4xl text-[#1F2937] tracking-tight leading-tight mb-5 group-hover:text-[#D45B0C] transition-colors">
+              <h3 className={`font-extrabold text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight mb-5 transition-colors ${isDark ? 'text-zinc-100 group-hover:text-[#FF8A3D]' : 'text-[#1F2937] group-hover:text-[#D45B0C]'}`}>
                 {article.title}
               </h3>
 
-              <p className="text-sm sm:text-base text-[#4B5563] leading-relaxed font-normal mb-6">
+              <p className={`text-sm sm:text-base leading-relaxed font-normal mb-6 ${isDark ? 'text-zinc-400' : 'text-[#4B5563]'}`}>
                 {article.excerpt}
               </p>
 
@@ -171,7 +174,7 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
             </div>
 
             {/* Author profile & CTA Arrow */}
-            <div className="pt-6 border-t border-[#FF8A3D]/20 flex items-center justify-between">
+            <div className={`pt-6 border-t flex items-center justify-between ${isDark ? 'border-zinc-700' : 'border-[#FF8A3D]/20'}`}>
               
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-3">
@@ -181,7 +184,7 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
                     className="w-12 h-12 rounded-full object-cover ring-2 ring-[#FF8A3D]/30 shadow"
                   />
                   <div>
-                    <h4 className="font-bold text-sm text-[#1F2937] leading-none flex items-center gap-1.5">
+                    <h4 className={`font-bold text-sm leading-none flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-[#1F2937]'}`}>
                       <span>{article.author.name}</span>
                       {article.collaborators && article.collaborators.length > 0 && (
                         <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-black">
@@ -189,7 +192,7 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
                         </span>
                       )}
                     </h4>
-                    <p className="text-xs text-[#6B7280] font-medium mt-1">{article.author.role}</p>
+                    <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-500' : 'text-[#6B7280]'}`}>{article.author.role}</p>
                   </div>
                 </div>
               </div>
@@ -209,13 +212,13 @@ export function FeaturedArticleCard({ articles, onSelectArticle }: FeaturedArtic
         <>
           <button 
             onClick={handlePrev}
-            className="absolute left-0 md:-left-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-100 md:opacity-0 group-hover:opacity-100"
+            className={`absolute left-0 md:-left-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full border-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-100 md:opacity-0 group-hover:opacity-100 ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-200' : 'bg-white border-[#FF8A3D]/20 text-[#1F2937]'}`}
           >
             <ChevronLeft size={24} />
           </button>
           <button 
             onClick={handleNext}
-            className="absolute right-0 md:-right-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#FF8A3D]/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-[#1F2937] hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-100 md:opacity-0 group-hover:opacity-100"
+            className={`absolute right-0 md:-right-4 top-1/2 mt-6 -translate-y-1/2 w-12 h-12 rounded-full border-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center hover:bg-[#FF8A3D] hover:text-white hover:border-[#FF8A3D] hover:scale-110 transition-all z-30 opacity-100 md:opacity-0 group-hover:opacity-100 ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-200' : 'bg-white border-[#FF8A3D]/20 text-[#1F2937]'}`}
           >
             <ChevronRight size={24} />
           </button>
