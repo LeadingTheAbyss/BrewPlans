@@ -7,15 +7,14 @@ import { MediaFeed } from '@/components/blog/MediaFeed';
 import { CinematicLoader } from '@/components/CinematicLoader';
 import { useCacheStore } from '@/store/cacheStore';
 import { BlogFooter } from '@/components/blog/BlogFooter';
-import { useBlogTheme } from '@/context/BlogThemeContext';
+import { BlogThemeContext } from '@/context/BlogThemeContext';
 
 export default function BlogMediaPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const cache = useCacheStore();
-  const blogTheme = useBlogTheme();
-  const isDark = blogTheme?.isDark || false;
 
   useEffect(() => {
     setIsMounted(true);
@@ -51,7 +50,8 @@ export default function BlogMediaPage() {
   const isLoading = isMounted && articles.length === 0 && isFetching;
 
   return (
-    <div className={`min-h-screen font-sans overflow-x-hidden relative ${isDark ? 'bg-[#0a0a0a] text-zinc-100 selection:bg-[#FF8A3D]/30' : 'bg-[#FFF7F0] text-[#1F2937] selection:bg-[#FF8A3D]/20'}`}>
+    <BlogThemeContext.Provider value={{ isDark, toggleDark: () => setIsDark(!isDark) }}>
+    <div className={`min-h-screen font-sans overflow-x-hidden relative transition-colors duration-500 ${isDark ? 'bg-[#0a0a0a] text-zinc-100 selection:bg-[#FF8A3D]/30' : 'bg-[#FFF7F0] text-[#1F2937] selection:bg-[#FF8A3D]/20'}`}>
       <CinematicLoader 
         isLoading={isLoading} 
         category="places" 
@@ -68,5 +68,6 @@ export default function BlogMediaPage() {
       {/* Travel Journal Footer */}
       <BlogFooter />
     </div>
+    </BlogThemeContext.Provider>
   );
 }
