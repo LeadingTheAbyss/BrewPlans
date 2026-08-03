@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '@/data/blogData';
 import { Play, Heart, MessageCircle } from 'lucide-react';
 import { MediaModal } from '@/components/blog/MediaModal';
+import { useBlogTheme } from '@/context/BlogThemeContext';
 
 interface MediaFeedProps {
   articles: Article[];
@@ -9,6 +10,8 @@ interface MediaFeedProps {
 
 export function MediaFeed({ articles }: MediaFeedProps) {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const blogTheme = useBlogTheme();
+  const isDark = blogTheme?.isDark || false;
 
   // Only get articles that have an image or video, prioritizing those with images for the feed
   const mediaItems = articles.filter(a => a.imageUrl || a.videoUrl);
@@ -16,8 +19,8 @@ export function MediaFeed({ articles }: MediaFeedProps) {
   if (mediaItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center min-h-[60vh]">
-        <h2 className="text-2xl font-black text-[#1F2937] mb-2">No media found</h2>
-        <p className="text-[#6B7280]">Be the first to share pictures and videos from your trips!</p>
+        <h2 className={`text-2xl font-black mb-2 ${isDark ? 'text-zinc-200' : 'text-[#1F2937]'}`}>No media found</h2>
+        <p className={isDark ? 'text-zinc-500' : 'text-[#6B7280]'}>Be the first to share pictures and videos from your trips!</p>
       </div>
     );
   }
