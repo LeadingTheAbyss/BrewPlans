@@ -61,13 +61,18 @@ export function ContrailCanvas() {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const computedStyle = getComputedStyle(document.documentElement);
-      
-      const px1 = parseFloat(computedStyle.getPropertyValue('--e1-x')) || 50;
-      const py1 = parseFloat(computedStyle.getPropertyValue('--e1-y')) || 50;
-      
-      const px2 = parseFloat(computedStyle.getPropertyValue('--e2-x')) || 50;
-      const py2 = parseFloat(computedStyle.getPropertyValue('--e2-y')) || 50;
+      // These vars are written every frame via el.style.setProperty() by the plane's
+      // render loop, so reading them straight off the inline style (which is what's
+      // actually authoritative here) is equivalent to — but much cheaper than —
+      // getComputedStyle(), which resolves the full cascade just to hand back the
+      // same inline value.
+      const inlineStyle = document.documentElement.style;
+
+      const px1 = parseFloat(inlineStyle.getPropertyValue('--e1-x')) || 50;
+      const py1 = parseFloat(inlineStyle.getPropertyValue('--e1-y')) || 50;
+
+      const px2 = parseFloat(inlineStyle.getPropertyValue('--e2-x')) || 50;
+      const py2 = parseFloat(inlineStyle.getPropertyValue('--e2-y')) || 50;
       
       const screenE1X = (px1 / 100) * canvas.width;
       const screenE1Y = (py1 / 100) * canvas.height;

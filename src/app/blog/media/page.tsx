@@ -56,7 +56,7 @@ export default function BlogMediaPage() {
         isLoading={isLoading} 
         category="places" 
         customLabel="Curating Your Perfect Visual Feed" 
-        minDisplayMs={6500} 
+        minDisplayMs={11000}
       />
       
       {/* Top Travel Journal Navbar */}

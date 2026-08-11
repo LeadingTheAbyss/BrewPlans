@@ -150,7 +150,7 @@ export default function ModernDateRangePicker({ label, startDate, endDate, onCha
                 className="bg-transparent appearance-none outline-none cursor-pointer hover:text-primary transition-colors font-semibold text-center"
               >
                 {monthNames.map((m, i) => (
-                  <option key={m} value={i} className="text-black">{m}</option>
+                  <option key={m} value={i}>{m}</option>
                 ))}
               </select>
               <select
@@ -159,7 +159,7 @@ export default function ModernDateRangePicker({ label, startDate, endDate, onCha
                 className="bg-transparent appearance-none outline-none cursor-pointer hover:text-primary transition-colors font-semibold text-center"
               >
                 {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
-                  <option key={year} value={year} className="text-black">{year}</option>
+                  <option key={year} value={year}>{year}</option>
                 ))}
               </select>
             </div>

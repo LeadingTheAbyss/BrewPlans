@@ -67,7 +67,7 @@ const GenderSelect = ({ value, onChange }: { value: string; onChange: (val: stri
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-zinc-900 border border-zinc-700/80 rounded-xl shadow-2xl overflow-hidden p-1 space-y-0.5"
+            className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/80 rounded-xl shadow-2xl overflow-hidden p-1 space-y-0.5"
           >
             {options.map((opt) => (
               <button
@@ -80,7 +80,7 @@ const GenderSelect = ({ value, onChange }: { value: string; onChange: (val: stri
                 className={`w-full text-left px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-between cursor-pointer ${
                   value === opt.value
                     ? 'bg-primary/20 text-primary font-bold'
-                    : 'text-zinc-200 hover:bg-zinc-800 hover:text-white'
+                    : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 <span>{opt.label}</span>

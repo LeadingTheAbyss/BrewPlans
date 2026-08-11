@@ -301,6 +301,15 @@ export function getImageUrlForCity(cityName: string, fallbackThemeImageUrl: stri
   return `/api/theme-wiki-image?q=${encodeURIComponent(query)}`;
 }
 
+// Every non-default theme used to be a fixed light pastel color with no dark:
+// variant at all, so toggling dark mode had zero effect on any card/panel using
+// it for a real destination (only the 'default' fallback theme ever responded).
+// All themes now fall back to the same neutral dark surface 'default' already
+// used, so dark mode is always readable — light mode keeps its per-destination
+// pastel personality unchanged.
+const DARK_FALLBACK = 'dark:bg-zinc-900/90';
+const DARK_TEXT_FALLBACK = 'dark:text-zinc-100';
+
 export const THEME_STYLES: Record<string, { card: string, text: string, imageUrl: string, bg?: string, glowColor?: string }> = {
   default: {
     card: 'bg-zinc-50/90 dark:bg-zinc-900/90',
@@ -308,43 +317,43 @@ export const THEME_STYLES: Record<string, { card: string, text: string, imageUrl
     imageUrl: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=80'
   },
   deserts_dunes: {
-    card: 'bg-[#C89368]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#C89368]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1200&q=80'
   },
   tropical_coasts_beaches: {
-    card: 'bg-[#EADDC8]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#EADDC8]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80'
   },
   forests_valleys_jungles: {
-    card: 'bg-[#D9E2D8]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#D9E2D8]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1200&q=80'
   },
   arctic_ice_glaciers: {
-    card: 'bg-[#E1EBF0]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#E1EBF0]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1516496636080-14fb876e029d?auto=format&fit=crop&w=1200&q=80'
   },
   lakes_fjords_rivers: {
-    card: 'bg-[#DCE2E4]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#DCE2E4]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1200&q=80'
   },
   heritage_old_cities: {
-    card: 'bg-[#E4DCD3]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#E4DCD3]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=80'
   },
   twilight_metropolis: {
-    card: 'bg-[#E5EEF5]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#E5EEF5]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=1200&q=80'
   },
   starry_skyscrapers: {
-    card: 'bg-[#EAE6DF]/90',
-    text: 'text-zinc-900',
+    card: `bg-[#EAE6DF]/90 ${DARK_FALLBACK}`,
+    text: `text-zinc-900 ${DARK_TEXT_FALLBACK}`,
     imageUrl: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80'
   }
 };

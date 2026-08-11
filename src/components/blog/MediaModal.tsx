@@ -78,7 +78,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
     
     const profileSaved = localStorage.getItem('brewplans_user_profile');
     let author = 'You';
-    let avatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+    let avatar = 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100';
     if (profileSaved) {
       const parsed = JSON.parse(profileSaved);
       if (parsed.displayName) author = parsed.displayName;
@@ -154,7 +154,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full shrink-0">
               <img 
-                src={article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'} 
+                src={article.author?.avatar || 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100'} 
                 alt={article.author?.name}
                 className="w-full h-full rounded-full object-cover"
               />
@@ -217,7 +217,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full shrink-0">
                 <img 
-                  src={article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'} 
+                  src={article.author?.avatar || 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100'} 
                   alt={article.author?.name}
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -242,7 +242,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
             {/* Caption */}
             <div className="flex gap-3">
               <img 
-                src={article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'} 
+                src={article.author?.avatar || 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100'} 
                 alt="author"
                 className="w-8 h-8 rounded-full object-cover shrink-0"
               />
@@ -263,7 +263,7 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
                 {comments.map((comment, i) => (
                   <div key={i} className="flex gap-3">
                     <img 
-                      src={comment.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'} 
+                      src={comment.avatar || 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100'} 
                       alt="user"
                       className="w-8 h-8 rounded-full object-cover shrink-0"
                     />

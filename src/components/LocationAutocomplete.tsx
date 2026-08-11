@@ -163,7 +163,7 @@ export default function LocationAutocomplete({ memberId, value, lat, city, onUpd
         <button 
           onClick={handleLocateMe} 
           disabled={locating}
-          className={`absolute right-0 hover:text-[#4a90e2] transition-colors ${locating ? 'text-[#4a90e2]' : 'text-zinc-600'}`}
+          className={`absolute right-0 hover:text-[#4a90e2] transition-colors disabled:cursor-not-allowed ${locating ? 'text-[#4a90e2]' : 'text-zinc-600'}`}
           title="Use current location"
         >
           <LocateFixed size={14} />

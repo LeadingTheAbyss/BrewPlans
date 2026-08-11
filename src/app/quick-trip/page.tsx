@@ -856,7 +856,7 @@ export default function QuickTripPage() {
           <button
             onClick={() => setShowShareMenu(!showShareMenu)}
             disabled={!hasEnoughData || isGeneratingPdf || isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all"
           >
             {isGeneratingPdf || isSaving ? (
               <Loader2 size={14} className="animate-spin" />
@@ -868,7 +868,7 @@ export default function QuickTripPage() {
 
           {showShareMenu && (
             <>
-              <div className="fixed inset-0 z-[9999]" onClick={() => setShowShareMenu(false)} />
+              <div className="fixed inset-0 z-[9999] cursor-pointer" onClick={() => setShowShareMenu(false)} />
               <div className={`absolute right-0 mt-2 w-56 border rounded-xl shadow-2xl z-[10000] overflow-hidden text-sm ${isLightMode ? 'bg-white border-zinc-200' : 'bg-[#111] border-[#222]'}`}>
                 <button
                   onClick={() => { setShowShareMenu(false); handleUniversalShare(); }}
@@ -1253,7 +1253,7 @@ export default function QuickTripPage() {
                         onClick={handleSaveTrip}
                         disabled={isSaving || isSaved}
                         className={`px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg w-full sm:w-auto text-white ${
-                          isSaved ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20 disabled:opacity-50'
+                          isSaved ? 'bg-emerald-500 shadow-emerald-500/20 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed'
                         }`}
                       >
                         {isSaving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 

@@ -672,7 +672,7 @@ export default function DedicatedArticlePage() {
               <button
                 type="submit"
                 disabled={!newComment.trim()}
-                className="px-8 py-3.5 rounded-2xl bg-[#1F2937] hover:bg-[#FF8A3D] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shrink-0 flex items-center gap-2 hover:scale-102"
+                className="px-8 py-3.5 rounded-2xl bg-[#1F2937] hover:bg-[#FF8A3D] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shrink-0 flex items-center gap-2 hover:scale-102"
               >
                 <span>Post Note</span>
                 <Send size={14} />

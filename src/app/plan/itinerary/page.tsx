@@ -458,33 +458,33 @@ export default function ItineraryPage() {
       >
         
         {/* PANE 1: Left Vault (Unassigned) */}
-        <div id="tutorial-itinerary-vault" className={`transition-all duration-300 ease-in-out flex flex-col bg-[#0a0a0a]/90 backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-[#1a1a1a] z-20 shrink-0 shadow-2xl h-[70vh] lg:h-auto overflow-hidden ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
-          <div className="px-5 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d] shrink-0 w-full lg:w-[320px]">
+        <div id="tutorial-itinerary-vault" className={`transition-all duration-300 ease-in-out flex flex-col backdrop-blur-3xl lg:border-r border-b lg:border-b-0 border-current/10 z-20 shrink-0 shadow-2xl h-[70vh] lg:h-auto overflow-hidden ${activeTheme.card} ${activeTheme.text} ${isLeftSidebarOpen ? 'w-full lg:w-[320px] opacity-100' : 'w-0 opacity-0'}`}>
+          <div className="px-5 py-6 border-b border-current/10 bg-current/5 shrink-0 w-full lg:w-[320px]">
             <div className="mb-4">
-              <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-zinc-100">
+              <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-current">
                 <MapPin size={18} className="text-emerald-500" />
                 Saved Places
               </h2>
             </div>
-            
+
             <div className="relative mb-4">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input 
-                type="text" 
-                placeholder="Search places..." 
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-current/50" />
+              <input
+                type="text"
+                placeholder="Search places..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#111] border border-[#222] rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-[#444] transition-colors"
+                className="w-full bg-current/5 border border-current/10 rounded-lg pl-9 pr-3 py-2 text-sm text-current placeholder:text-current/40 focus:outline-none focus:border-current/30 transition-colors"
               />
             </div>
-            
+
             {/* Filter Chips */}
             <div className="flex gap-2 overflow-x-auto hide-scrollbar-on-mobile mb-4 pb-1">
               {['All', 'Attractions', 'Food', 'Hotels'].map(f => (
                 <button
                   key={f}
                   onClick={() => setVaultFilter(f)}
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap border ${vaultFilter === f ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-[#111] text-zinc-500 border-[#333] hover:border-[#444] hover:text-zinc-300'}`}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap border ${vaultFilter === f ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-current/5 text-current/60 border-current/10 hover:border-current/30 hover:text-current'}`}
                 >
                   {f}
                 </button>
@@ -505,7 +505,7 @@ export default function ItineraryPage() {
                 <button 
                   onClick={selectAllFiltered}
                   disabled={vaultPlaces.length === 0}
-                  className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-50 disabled:hover:text-zinc-500"
+                  className="text-[10px] font-bold uppercase tracking-widest text-current/60 hover:text-current transition-colors disabled:opacity-50 disabled:hover:text-current/60 disabled:cursor-not-allowed"
                 >
                   Select All
                 </button>
@@ -536,17 +536,17 @@ export default function ItineraryPage() {
             })}
             
             {itinerary.selectedPlaces.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-600 px-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-[#111] border border-[#222] flex items-center justify-center mb-3 shadow-inner">
+              <div className="h-full flex flex-col items-center justify-center text-current/70 px-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-current/5 border border-current/10 flex items-center justify-center mb-3 shadow-inner">
                   <CheckCircle size={20} className="text-emerald-500/50" />
                 </div>
                 <p className="text-xs font-bold tracking-wider uppercase mb-1">Vault Empty</p>
-                <p className="text-[10px] text-zinc-500">Save places from the map first.</p>
+                <p className="text-[10px] text-current/50">Save places from the map first.</p>
               </div>
             )}
-            
+
             {itinerary.selectedPlaces.length > 0 && vaultPlaces.length === 0 && (
-              <div className="py-10 text-center text-sm text-zinc-600 font-medium">
+              <div className="py-10 text-center text-sm text-current/60 font-medium">
                 No places match your filter/search.
               </div>
             )}
@@ -558,7 +558,7 @@ export default function ItineraryPage() {
           {/* Toggle Left Sidebar */}
           <button 
             onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-            className={`absolute left-2 top-1/2 -translate-y-1/2 z-50 border hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg ${activeTheme.card} ${activeTheme.text}`}
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-50 border hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-lg hover:opacity-70 ${activeTheme.card} ${activeTheme.text}`}
           >
             {isLeftSidebarOpen ? '<' : '>'}
           </button>
@@ -566,7 +566,7 @@ export default function ItineraryPage() {
           {/* Toggle Right Sidebar */}
           <button 
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 z-50 border hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-lg ${activeTheme.card} ${activeTheme.text}`}
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-50 border hover:border-emerald-500 rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-lg hover:opacity-70 ${activeTheme.card} ${activeTheme.text}`}
           >
             {isRightSidebarOpen ? '>' : '<'}
           </button>
@@ -590,9 +590,9 @@ export default function ItineraryPage() {
                     onClick={() => setShowCollaborators(!showCollaborators)}
                   >
                     {activeUsers.slice(0, 4).map((u, i) => (
-                      <div 
+                      <div
                         key={u.id || i}
-                        className={`w-9 h-9 rounded-full border-[3px] border-[#0a0a0a] flex items-center justify-center text-[12px] font-bold text-white uppercase shadow-lg relative z-${40 - i * 10} avatar-animate overflow-hidden ${!u.isMe ? 'avatar-pulse-ring' : ''}`}
+                        className={`w-9 h-9 rounded-full border-[3px] border-white/90 flex items-center justify-center text-[12px] font-bold text-white uppercase shadow-lg relative z-${40 - i * 10} avatar-animate overflow-hidden ${!u.isMe ? 'avatar-pulse-ring' : ''}`}
                         style={{ backgroundColor: u.color || '#3b82f6', animationDelay: `${i * 0.1}s` }}
                         title={u.name}
                       >
@@ -609,7 +609,7 @@ export default function ItineraryPage() {
                       </div>
                     ))}
                     {activeUsers.length > 4 && (
-                      <div className="w-9 h-9 rounded-full border-[3px] border-[#0a0a0a] bg-[#222] flex items-center justify-center text-[11px] font-bold text-zinc-300 shadow-lg relative z-0 avatar-animate">
+                      <div className="w-9 h-9 rounded-full border-[3px] border-white/90 bg-[#222] flex items-center justify-center text-[11px] font-bold text-zinc-300 shadow-lg relative z-0 avatar-animate">
                         +{activeUsers.length - 4}
                       </div>
                     )}
@@ -671,7 +671,7 @@ export default function ItineraryPage() {
                 )}
               </button>
 
-              <div className="hidden sm:block h-6 w-px bg-[#222]"></div>
+              <div className="hidden sm:block h-6 w-px bg-current/10"></div>
 
               {/* Minimap */}
               <div id="tutorial-itinerary-minimap" className="flex gap-2 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar-on-mobile">
@@ -679,7 +679,7 @@ export default function ItineraryPage() {
                   <div 
                     key={d.dayNumber}
                     className={`w-12 h-8 shrink-0 rounded border flex flex-col justify-end overflow-hidden
-                      ${d.totalTimeHours > 8 ? 'bg-red-950/30 border-red-900/50' : 'bg-[#111] border-[#222]'}
+                      ${d.totalTimeHours > 8 ? 'bg-red-950/30 border-red-900/50' : 'bg-current/10 border-current/10'}
                     `}
                     title={`Day ${d.dayNumber}: ${d.totalTimeHours}h scheduled`}
                   >
@@ -712,31 +712,31 @@ export default function ItineraryPage() {
                 } catch (e) {}
 
                 return (
-                  <div key={day.dayNumber} className="w-[300px] lg:w-[340px] flex flex-col h-full bg-[#0c0c0c] rounded-2xl border border-[#1a1a1a] shadow-xl overflow-hidden shrink-0 transition-colors hover:border-[#222]">
-                    
+                  <div key={day.dayNumber} className={`w-[300px] lg:w-[340px] flex flex-col h-full rounded-2xl border border-current/10 shadow-xl overflow-hidden shrink-0 transition-colors hover:border-current/30 ${activeTheme.card} ${activeTheme.text}`}>
+
                     {/* Day Column Header */}
-                    <div className="p-4 border-b border-[#1a1a1a] bg-[#111] flex flex-col gap-3 shrink-0">
+                    <div className="p-4 border-b border-current/10 bg-current/5 flex flex-col gap-3 shrink-0">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner
-                            ${isOverloaded ? 'bg-red-950/50 border-red-500/30 text-red-400' : 'bg-zinc-900 border-zinc-700/50 text-emerald-400'}
+                            ${isOverloaded ? 'bg-red-950/50 border-red-500/30 text-red-400' : 'bg-current/10 border-current/20 text-emerald-500'}
                           `}>
                             <span className="text-xl font-black">{day.dayNumber}</span>
                           </div>
                           <div>
-                            <span className="block text-[13px] font-semibold text-zinc-200">{formattedDate}</span>
+                            <span className="block text-[13px] font-semibold text-current">{formattedDate}</span>
                             <span className={`text-[10px] font-medium tracking-wider mt-0.5 block
-                              ${isOverloaded ? 'text-red-400' : 'text-zinc-500'}
+                              ${isOverloaded ? 'text-red-400' : 'text-current/60'}
                             `}>
                               {day.totalTimeHours} / 8 HOURS
                             </span>
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Interactive Budget Bar */}
-                      <div className="w-full h-1.5 bg-[#222] rounded-full overflow-hidden">
-                        <div 
+                      <div className="w-full h-1.5 bg-current/10 rounded-full overflow-hidden">
+                        <div
                           className={`h-full transition-all duration-500 ${isOverloaded ? 'bg-red-500' : (day.totalTimeHours > 6 ? 'bg-amber-500' : 'bg-emerald-500')}`}
                           style={{ width: `${Math.min(100, (day.totalTimeHours / 8) * 100)}%` }}
                         />
@@ -777,7 +777,7 @@ export default function ItineraryPage() {
                                 }}
                               />
                               {!isLast && (
-                                <div className="flex items-center justify-center my-1.5 py-1 text-zinc-500 font-bold text-[10px] uppercase tracking-widest bg-[#1a1a1a]/50 rounded-md border border-[#222]">
+                                <div className="flex items-center justify-center my-1.5 py-1 text-current/60 font-bold text-[10px] uppercase tracking-widest bg-current/5 rounded-md border border-current/10">
                                   {distanceStr}
                                 </div>
                               )}
@@ -786,19 +786,19 @@ export default function ItineraryPage() {
                         })}
                         
                         {dayPlaces.length === 0 && (
-                          <div className="h-32 rounded-xl flex flex-col items-center justify-center text-zinc-500 opacity-80 bg-[#111]/50 border border-dashed border-[#333] px-6 text-center transition-all hover:border-[#444] hover:bg-[#111]">
+                          <div className="h-32 rounded-xl flex flex-col items-center justify-center text-current/70 opacity-90 bg-current/5 border border-dashed border-current/20 px-6 text-center transition-all hover:border-current/40 hover:bg-current/10">
                             {day.dayNumber === 1 ? (
                               <>
                                 <span className="text-sm font-bold text-emerald-500 mb-2">Transit & Settle</span>
                                 <span className="text-[10px] uppercase tracking-wider leading-relaxed">
-                                  You arrive on <span className="text-zinc-300 font-bold">{formattedDate}</span>. No activities scheduled so you can comfortably reach your hotel and rest.
+                                  You arrive on <span className="text-current font-bold">{formattedDate}</span>. No activities scheduled so you can comfortably reach your hotel and rest.
                                 </span>
                               </>
                             ) : day.dayNumber === itinerary.days.length ? (
                               <>
                                 <span className="text-sm font-bold text-blue-500 mb-2">Departure Day</span>
                                 <span className="text-[10px] uppercase tracking-wider leading-relaxed">
-                                  Heading home on <span className="text-zinc-300 font-bold">{formattedDate}</span>. Safe travels!
+                                  Heading home on <span className="text-current font-bold">{formattedDate}</span>. Safe travels!
                                 </span>
                               </>
                             ) : (
@@ -830,48 +830,48 @@ export default function ItineraryPage() {
             
             <div className="space-y-4">
               {/* Main Progress Ring / Bar */}
-              <div className="bg-gradient-to-br from-[#151515] to-[#0c0c0c] border border-[#222] rounded-2xl p-5 shadow-lg relative overflow-hidden group">
+              <div className="bg-current/5 border border-current/10 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[50px] -mr-10 -mt-10 pointer-events-none"></div>
-                
+
                 <div className="flex justify-between text-xs font-medium mb-3 relative z-10">
-                  <span className="text-zinc-400">Routing Progress</span>
-                  <span className="text-blue-400 font-bold">{progressPercent}%</span>
+                  <span className="text-current/60">Routing Progress</span>
+                  <span className="text-blue-500 font-bold">{progressPercent}%</span>
                 </div>
-                <div className="h-2 w-full bg-[#1a1a1a] rounded-full overflow-hidden mb-4 relative z-10">
+                <div className="h-2 w-full bg-current/10 rounded-full overflow-hidden mb-4 relative z-10">
                   <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }}></div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 relative z-10">
                   <div>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Routed</p>
-                    <p className="text-2xl font-black text-zinc-100">{scheduledPlacesCount} <span className="text-sm font-medium text-zinc-600">/ {totalPlacesCount}</span></p>
+                    <p className="text-[10px] text-current/50 font-bold uppercase tracking-widest mb-1">Routed</p>
+                    <p className="text-2xl font-black text-current">{scheduledPlacesCount} <span className="text-sm font-medium text-current/40">/ {totalPlacesCount}</span></p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Total Time</p>
-                    <p className="text-2xl font-black text-zinc-100">{totalScheduledHours}<span className="text-sm font-medium text-zinc-600">h</span></p>
+                    <p className="text-[10px] text-current/50 font-bold uppercase tracking-widest mb-1">Total Time</p>
+                    <p className="text-2xl font-black text-current">{totalScheduledHours}<span className="text-sm font-medium text-current/40">h</span></p>
                   </div>
                 </div>
               </div>
 
               {/* Helpful User Metrics Card */}
-              <div className="bg-[#111] border border-[#222] rounded-2xl p-5 space-y-4 shadow-lg">
+              <div className="bg-current/5 border border-current/10 rounded-2xl p-5 space-y-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Pacing</p>
+                    <p className="text-[10px] font-bold text-current/50 uppercase tracking-widest">Pacing</p>
                     <p className={`text-sm font-bold ${pacingColor}`}>{pacingLevel}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Avg Time</p>
-                    <p className="text-sm font-bold text-zinc-300">{avgHoursPerDay.toFixed(1)}h / day</p>
+                    <p className="text-[10px] font-bold text-current/50 uppercase tracking-widest">Avg Time</p>
+                    <p className="text-sm font-bold text-current/80">{avgHoursPerDay.toFixed(1)}h / day</p>
                   </div>
                 </div>
 
-                <div className="h-[1px] w-full bg-[#222]" />
+                <div className="h-[1px] w-full bg-current/10" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Estimated Cost So Far</p>
-                    <p className="text-sm font-bold text-emerald-400">₹{totalTripCost.toLocaleString('en-IN')}</p>
+                    <p className="text-[10px] font-bold text-current/50 uppercase tracking-widest">Estimated Cost So Far</p>
+                    <p className="text-sm font-bold text-emerald-500">₹{totalTripCost.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               </div>
@@ -884,7 +884,7 @@ export default function ItineraryPage() {
               id="tutorial-itinerary-automagic"
               onClick={() => itinerary.batchAssign(vaultItemIds)}
               disabled={vaultPlaces.length === 0 || itinerary.isOptimizing}
-              className="w-full bg-[#111] border border-[#333] hover:border-emerald-500 hover:bg-[#1a1a1a] disabled:opacity-50 disabled:hover:border-[#333] text-zinc-300 hover:text-emerald-400 text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group"
+              className="w-full bg-current/5 border border-current/20 hover:border-emerald-500 hover:bg-current/10 disabled:opacity-50 disabled:hover:border-current/20 disabled:cursor-not-allowed text-current/80 hover:text-emerald-500 text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group"
             >
               {itinerary.isOptimizing && (
                 <Loader2 size={16} className="text-emerald-400 animate-spin" />

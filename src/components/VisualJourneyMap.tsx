@@ -9,7 +9,7 @@ import { useTripStore } from '@/store/tripStore';
 
 const MapWithNoSSR = dynamic(() => import('./VisualJourneyMapInner'), { 
   ssr: false,
-  loading: () => <div className="w-full h-full bg-[#111] flex items-center justify-center text-zinc-500 font-medium">Loading Map...</div>
+  loading: () => <div className="w-full h-full bg-zinc-100 dark:bg-[#111] flex items-center justify-center text-zinc-500 font-medium">Loading Map...</div>
 });
 
 interface VisualJourneyMapProps {
@@ -301,12 +301,12 @@ export default function VisualJourneyMap({
   }, [fullJourney]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a] text-white">
+    <div className="flex flex-col h-full bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-[#222]">
+      <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-[#222]">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Day {dayNumber} Visual Journey</h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             {(() => {
               const d = new Date(date);
               if (isNaN(d.getTime())) return date;
@@ -314,16 +314,16 @@ export default function VisualJourneyMap({
             })()}
           </p>
         </div>
-        <button 
+        <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
         >
           <X size={20} />
         </button>
       </div>
 
       {/* Stats Bar */}
-      <div className="flex items-center gap-6 px-6 py-4 border-b border-[#222] bg-[#111] text-xs font-medium text-zinc-300">
+      <div className="flex items-center gap-6 px-6 py-4 border-b border-zinc-200 dark:border-[#222] bg-zinc-50 dark:bg-[#111] text-xs font-medium text-zinc-700 dark:text-zinc-300">
         <div className="flex items-center gap-2">
           <Map size={14} className="text-zinc-500" />
           <span>{places.length} Stops</span>
@@ -346,7 +346,7 @@ export default function VisualJourneyMap({
 
       {/* Map Area */}
       {!hideMap && (
-        <div className="h-[35%] w-full relative shrink-0 border-b border-[#222]">
+        <div className="h-[35%] w-full relative shrink-0 border-b border-zinc-200 dark:border-[#222]">
           <MapWithNoSSR places={fullJourney} />
         </div>
       )}
@@ -370,28 +370,28 @@ export default function VisualJourneyMap({
           <div key={`${item.place.id}-${item.index}`} className="relative group">
             {/* Connection Line */}
             {!item.isLast && (
-              <div className="absolute top-6 left-[62px] bottom-[-24px] w-px bg-zinc-800 group-hover:bg-zinc-600 transition-colors z-0"></div>
+              <div className="absolute top-6 left-[62px] bottom-[-24px] w-px bg-zinc-300 dark:bg-zinc-800 group-hover:bg-zinc-400 dark:group-hover:bg-zinc-600 transition-colors z-0"></div>
             )}
-            
+
             {/* Place Row */}
             <div className="flex items-start gap-4 relative z-10">
-              <div className="w-16 pt-1 text-xs text-zinc-400 text-right shrink-0">{item.startTime}</div>
-              
+              <div className="w-16 pt-1 text-xs text-zinc-500 dark:text-zinc-400 text-right shrink-0">{item.startTime}</div>
+
               {item.place.isHotel ? (
-                <div className="w-6 h-6 rounded-full bg-zinc-800 text-white flex items-center justify-center text-[10px] font-bold border-[3px] border-[#0a0a0a] shrink-0 z-10 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-zinc-700 dark:bg-zinc-800 text-white flex items-center justify-center text-[10px] font-bold border-[3px] border-white dark:border-[#0a0a0a] shrink-0 z-10 mt-0.5">
                   H
                 </div>
               ) : (
-                <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold border-[3px] border-[#0a0a0a] shrink-0 z-10 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold border-[3px] border-white dark:border-[#0a0a0a] shrink-0 z-10 mt-0.5">
                   {/* Account for hotel at start to keep numbering correct for places */}
-                  {item.index} 
+                  {item.index}
                 </div>
               )}
-              
+
               <div className="flex-1 pb-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-medium text-zinc-200">{item.place.name}</h4>
+                    <h4 className="font-medium text-zinc-800 dark:text-zinc-200">{item.place.name}</h4>
                     <p className="text-xs text-zinc-500 capitalize">{item.place.category || 'Explore'}</p>
                   </div>
                   {item.visitDurationStr && (
@@ -405,15 +405,15 @@ export default function VisualJourneyMap({
             {!item.isLast && (
               <div className="flex items-center justify-between relative z-10 ml-[84px] pb-6 text-xs text-zinc-500">
                 <div className="flex items-center gap-4">
-                  <div className="bg-[#0a0a0a] py-1">
-                    {item.commuteType === 'bike' ? <Bike size={14} className="text-blue-400" /> : <Car size={14} className="text-green-400" />}
+                  <div className="bg-white dark:bg-[#0a0a0a] py-1">
+                    {item.commuteType === 'bike' ? <Bike size={14} className="text-blue-500 dark:text-blue-400" /> : <Car size={14} className="text-green-600 dark:text-green-400" />}
                   </div>
                   <div className="flex flex-col">
                     <span>{`${formatDuration(item.travelMins)} (${item.travelDistanceStr} km)`}</span>
                     <span className="text-[10px]">Recommended: {item.commuteType === 'bike' ? 'Bike Ride' : 'Cab'}</span>
                   </div>
                 </div>
-                <div className="font-medium text-zinc-300 bg-zinc-900 px-2 py-1 rounded">
+                <div className="font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded">
                   ₹{item.commuteCost}
                 </div>
               </div>
@@ -427,12 +427,12 @@ export default function VisualJourneyMap({
 
       {/* Bottom Action */}
       {!isPdfMode && (
-        <div className="p-4 border-t border-[#222] bg-[#111] shrink-0">
-          <a 
+        <div className="p-4 border-t border-zinc-200 dark:border-[#222] bg-zinc-50 dark:bg-[#111] shrink-0">
+          <a
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-sm font-medium"
           >
             <Map size={16} />
             Open in Google Maps

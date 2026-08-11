@@ -86,9 +86,9 @@ export function InteractiveItineraryMap({ stops, destinationCity }: InteractiveI
               key={stop.day} 
               id={`itinerary-day-${stop.day}`}
               onClick={() => setActiveDay(stop.day)}
-              className={`p-6 sm:p-8 rounded-[28px] border-2 transition-all duration-300 shadow-md ${
-                activeDay === stop.day 
-                  ? 'bg-white border-[#FF8A3D] shadow-[0_15px_35px_rgba(255,138,61,0.15)] ring-2 ring-[#FF8A3D]/30' 
+              className={`p-6 sm:p-8 rounded-[28px] border-2 transition-all duration-300 shadow-md cursor-pointer ${
+                activeDay === stop.day
+                  ? 'bg-white border-[#FF8A3D] shadow-[0_15px_35px_rgba(255,138,61,0.15)] ring-2 ring-[#FF8A3D]/30'
                   : 'bg-white/90 border-neutral-200 hover:border-[#FF8A3D]/60'
               }`}
             >

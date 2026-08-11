@@ -20,10 +20,10 @@ interface DayCardProps {
 
 // Haversine formula
 function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; 
+  const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI/180);
-  const dLon = (lon2 - lon1) * (Math.PI/180); 
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const dLon = (lon2 - lon1) * (Math.PI/180);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
@@ -38,12 +38,12 @@ function calculateCost(distanceKm: number, timeMins: number, paxCount: number) {
   }
 }
 
-export default function DayCard({ 
-  dayNumber, date, places, hotel, paxCount = 1, totalCost, 
+export default function DayCard({
+  dayNumber, date, places, hotel, paxCount = 1, totalCost,
   exactTravelMins, exactDistanceKm, exactCommuteCost,
-  isSelected, onSelect 
+  isSelected, onSelect
 }: DayCardProps) {
-  
+
   // Format the date like "14 July"
   const formatDayDate = (dateStr: string) => {
     try {
@@ -59,7 +59,7 @@ export default function DayCard({
   let estTravelMins = 0;
   let estDistanceKm = 0;
   let estCommuteCost = 0;
-  
+
   const fullJourney = [];
   if (hotel?.lat && hotel?.lng) fullJourney.push(hotel);
   fullJourney.push(...places.filter(p => p.lat && p.lng));
@@ -71,7 +71,7 @@ export default function DayCard({
     const dist = getDistanceInKm(current.lat, current.lng, next.lat, next.lng);
     let mins = Math.round(dist * 2);
     if (mins < 5) mins = 5;
-    
+
     estDistanceKm += dist;
     estTravelMins += mins;
     estCommuteCost += calculateCost(dist, mins, paxCount);
@@ -93,31 +93,31 @@ export default function DayCard({
   const finalTotalCost = totalCost + displayCommuteCost;
 
   return (
-    <div className={`bg-[#111111] border ${isSelected ? 'border-green-500/50' : 'border-[#222222] hover:border-[#333]'} rounded-2xl p-5 flex flex-col h-full transition-all`}>
-      
+    <div className={`bg-white dark:bg-[#111111] border ${isSelected ? 'border-green-500/50' : 'border-zinc-200 dark:border-[#222222] hover:border-zinc-300 dark:hover:border-[#333]'} rounded-2xl p-5 flex flex-col h-full transition-all`}>
+
       {/* Header */}
       <div className="mb-4">
-        <h4 className="font-bold text-zinc-100">Day {dayNumber}</h4>
-        <div className="inline-block px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-bold text-zinc-400 mt-2">
+        <h4 className="font-bold text-zinc-900 dark:text-zinc-100">Day {dayNumber}</h4>
+        <div className="inline-block px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mt-2">
           {formatDayDate(date)}
         </div>
       </div>
 
       {/* Stats */}
       <div className="space-y-2.5 mb-6">
-        <div className="flex items-center gap-2 text-xs text-zinc-300">
+        <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
           <MapPin size={14} className="text-zinc-500 shrink-0" />
           <span>{places.length} Stops</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-300">
+        <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
           <Car size={14} className="text-zinc-500 shrink-0" />
           <span>{displayDistanceKm.toFixed(1)} km</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-300">
+        <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
           <Clock size={14} className="text-zinc-500 shrink-0" />
           <span>{formatDuration(displayMins)}</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-300">
+        <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
           <span className="text-zinc-500 shrink-0 font-medium">₹</span>
           <span>{finalTotalCost.toLocaleString('en-IN')} Est. Expense</span>
         </div>
@@ -125,12 +125,12 @@ export default function DayCard({
 
       {/* Action Button at the bottom */}
       <div className="mt-auto pt-4">
-        <button 
+        <button
           onClick={onSelect}
           className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
-            isSelected 
-              ? 'bg-green-500/10 border-green-500/20 text-green-400' 
-              : 'border-[#333] text-zinc-300 hover:text-green-400 hover:border-green-500/30'
+            isSelected
+              ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400'
+              : 'border-zinc-300 dark:border-[#333] text-zinc-700 dark:text-zinc-300 hover:text-green-600 dark:hover:text-green-400 hover:border-green-500/30'
           }`}
         >
           <Map size={16} />

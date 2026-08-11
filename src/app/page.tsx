@@ -104,7 +104,7 @@ export default function LandingPage() {
       views: any[];
       renderer: THREE.WebGLRenderer;
       scene: THREE.Scene;
-      light: THREE.PointLight;
+      light: THREE.DirectionalLight;
       softLight: THREE.AmbientLight;
       modelGroup: THREE.Group;
       w: number = window.innerWidth;
@@ -122,11 +122,12 @@ export default function LandingPage() {
       e2Offset: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
       constructor(model: THREE.Group) {
-        // On mobile, only one view needed — wireframe view is disabled
         const isMobile = window.innerWidth < 768;
-        this.views = isMobile
-          ? [{ bottom: 0, height: 1 }]
-          : [{ bottom: 0, height: 1 }, { bottom: 0, height: 0 }];
+        // Single view for every device. There used to be a second { height: 0 } view
+        // here for a wireframe inset — a zero-height scissor rect means it never
+        // rendered a single visible pixel, so it was a fully wasted render() call
+        // (extra viewport/scissor state + a full render pass) every frame.
+        this.views = [{ bottom: 0, height: 1 }];
 
         this.renderer = new THREE.WebGLRenderer({
           antialias: !isMobile, // Antialias is expensive on mobile GPUs
@@ -151,7 +152,12 @@ export default function LandingPage() {
           camera.lookAt(new THREE.Vector3(0, 5, 0));
         }
 
-        this.light = new THREE.PointLight(0xffffff, 0.75, 0, 0); // added 0,0 for warnings in newer threejs
+        // DirectionalLight instead of PointLight: the point light had distance=0/decay=0
+        // (no falloff at all), so it was already effectively acting like a distant light —
+        // but the GPU still had to compute a per-fragment light vector for it. A directional
+        // light uses one constant direction for the whole scene, which is cheaper to shade
+        // and looks the same at this light-to-model distance.
+        this.light = new THREE.DirectionalLight(0xffffff, 0.75);
         this.light.position.set(70, -20, 150);
         this.scene.add(this.light);
 
@@ -167,17 +173,6 @@ export default function LandingPage() {
         model.layers.set(0);
         this.modelGroup.add(model);
 
-        // EdgesGeometry (wireframe) is expensive — skip on mobile
-        if (!isMobile) {
-          const edges = new THREE.EdgesGeometry((model.children[0] as THREE.Mesh).geometry);
-          const line = new THREE.LineSegments(edges);
-          (line.material as THREE.LineBasicMaterial).depthTest = false;
-          (line.material as THREE.LineBasicMaterial).opacity = 0.5;
-          (line.material as THREE.LineBasicMaterial).transparent = true;
-          line.position.set(0.5, 0.2, -1);
-          line.layers.set(1);
-          this.modelGroup.add(line);
-        }
         this.scene.add(this.modelGroup);
         
         // Compute precise tail and nose local coordinates based on the model's bounding box
@@ -1017,7 +1012,7 @@ export default function LandingPage() {
               {/* Card 1: Recommend Mode */}
               <div 
                 onClick={() => handleNavigation('/recommend')}
-                className="bg-white/10 backdrop-blur-md border border-white/20 p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-white/20 transition-all md:hover:scale-105 group flex flex-col justify-between h-full"
+                className="bg-black/40 backdrop-blur-md border border-white/20 shadow-2xl p-4 md:p-10 min-h-[110px] md:min-h-[240px] rounded-[1.25rem] md:rounded-3xl cursor-pointer hover:bg-black/60 transition-all md:hover:scale-105 group flex flex-col justify-between h-full"
               >
                 <div>
                   <div className="text-base md:text-2xl font-bold text-white !mb-1 md:!mb-4 leading-tight tracking-tight">Discovery Engine</div>

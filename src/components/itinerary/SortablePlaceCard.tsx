@@ -78,7 +78,7 @@ export function SortablePlaceCard({
       className={`relative group border rounded-xl flex items-stretch transition-[border-color,background-color,box-shadow,opacity] duration-300 touch-none ${activeTheme.card} ${activeTheme.text}
         ${isOverlay ? 'shadow-[0_0_30px_rgba(34,197,94,0.15)] border-green-500/50 scale-[1.02] z-50' : (dayBorder || 'border-[#222222] hover:border-[#333] hover:shadow-lg')}
         ${isSelected ? 'border-emerald-500/50' : ''}
-        ${!isAssigned ? 'cursor-grab active:cursor-grabbing' : ''}
+        ${!isAssigned ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
         ${compact ? 'p-3' : 'p-4'}
       `}
     >

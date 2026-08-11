@@ -361,7 +361,7 @@ export default function ReviewPage() {
                   <button
                     onClick={() => setShowShareMenu(!showShareMenu)}
                     disabled={itinerary.selectedPlaces.length === 0}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-sm"
                   >
                   <Share2 size={16} />
                   Share Plan
@@ -393,7 +393,7 @@ export default function ReviewPage() {
                       <button 
                         onClick={handleDownloadPdf}
                         disabled={isGeneratingPdf}
-                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-zinc-200 text-left font-medium w-full disabled:opacity-50"
+                        className="flex items-center gap-3 px-3 py-3 hover:bg-white/10 transition-colors rounded-lg text-sm text-zinc-200 text-left font-medium w-full disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Download size={16} className="text-blue-500 shrink-0" />
                         <div className="flex flex-col items-start gap-1">
@@ -506,12 +506,12 @@ export default function ReviewPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="h-full min-h-[600px]"
               >
-                <div className="flex flex-col items-center justify-center h-[400px] bg-[#111] border border-[#222] rounded-3xl p-8 text-center mt-12">
+                <div className="flex flex-col items-center justify-center h-[400px] bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#222] rounded-3xl p-8 text-center mt-12">
                   <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Upcoming Feature</h3>
-                  <p className="text-zinc-400 max-w-md mx-auto">
+                  <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">Upcoming Feature</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
                     Work on the advanced expense tracking ledger is currently in progress! We will add it later to the website.
                   </p>
                 </div>
@@ -531,7 +531,7 @@ export default function ReviewPage() {
             <button 
               onClick={handleSaveTrip}
               disabled={isSaving}
-              className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20 disabled:opacity-50"
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving...' : <>Confirm Trip and Continue <ArrowRight size={18} /></>}
             </button>
@@ -544,17 +544,17 @@ export default function ReviewPage() {
 
       {/* Slide-in Journey Panel */}
       <div 
-        className={`fixed top-14 right-0 bottom-0 bg-[#0a0a0a] border-l border-[#222] z-40 transform transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl flex ${
+        className={`fixed top-14 right-0 bottom-0 bg-white dark:bg-[#0a0a0a] border-l border-zinc-200 dark:border-[#222] z-40 transform transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl flex ${
           selectedDayForJourney !== null ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ width: typeof window !== 'undefined' && window.innerWidth < 1024 ? '100%' : `${panelWidth}px` }}
       >
         {/* Resize Handle */}
-        <div 
+        <div
           onMouseDown={handleMouseDown}
           className="absolute top-0 bottom-0 left-[-4px] w-[8px] cursor-col-resize z-50 flex items-center justify-center group"
         >
-          <div className="w-[2px] h-12 bg-zinc-700 rounded-full group-hover:bg-blue-500 transition-colors"></div>
+          <div className="w-[2px] h-12 bg-zinc-300 dark:bg-zinc-700 rounded-full group-hover:bg-blue-500 transition-colors"></div>
         </div>
 
         <div className="flex-1 w-full h-full overflow-hidden">

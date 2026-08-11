@@ -76,13 +76,32 @@ async def rank_transport(source: str, dest: str, date: datetime, passengers: Lis
 
 from services.google_places_api import search_google_places
 
+# Google's text search matches on relevance, not strict category, so a business
+# named e.g. "Visit Ladakh Tour Agency" matches "tourist attractions in Ladakh" on
+# keywords alone. These primaryType values are businesses/services, not places a
+# traveler can actually visit, so we drop them before they ever reach the frontend.
+_NON_ATTRACTION_TYPES = {
+    "tour_agency",
+    "travel_agency",
+    "corporate_office",
+    "real_estate_agency",
+    "insurance_agency",
+    "lawyer",
+    "accounting",
+    "moving_company",
+    "storage",
+}
+
 async def rank_places(city: str, trip: TripState, weather: Weather, check_only: bool = False) -> Optional[List[Place]]:
     query = f"Top tourist attractions in {city}"
     # Fetch exactly 30 places
     raw_places = await search_google_places(query, max_results=30, check_only=check_only)
-    
+
     if raw_places is None:
         return None # Cache miss
+
+    if raw_places:
+        raw_places = [p for p in raw_places if p.get("primaryType") not in _NON_ATTRACTION_TYPES]
 
     places = []
     if raw_places:

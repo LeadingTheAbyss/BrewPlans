@@ -127,6 +127,13 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind's preflight strips the native button appearance (and the pointer
+     cursor that came with it) without adding it back, so every plain <button>
+     otherwise defaults to a plain arrow cursor on hover. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /* ==============================================================

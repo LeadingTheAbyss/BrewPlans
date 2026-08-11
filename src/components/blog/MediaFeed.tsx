@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { Article } from '@/data/blogData';
-import { Play, Heart, MessageCircle } from 'lucide-react';
 import { MediaModal } from '@/components/blog/MediaModal';
+import { MediaGridItem } from '@/components/blog/MediaGridItem';
 import { useBlogTheme } from '@/context/BlogThemeContext';
 
 interface MediaFeedProps {
   articles: Article[];
 }
+
+// Tiles above this index are preloaded eagerly (roughly the first two rows on
+// desktop) so they're already visible and playing the instant the cinematic
+// loader clears. Everything after that lazy-loads as the user scrolls to it.
+const PRELOAD_COUNT = 8;
 
 export function MediaFeed({ articles }: MediaFeedProps) {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -29,56 +34,12 @@ export function MediaFeed({ articles }: MediaFeedProps) {
     <div className="max-w-4xl mx-auto px-0 sm:px-4 md:px-8 py-1 sm:py-10 min-h-screen">
       <div className="grid grid-cols-3 lg:grid-cols-4 gap-0.5 sm:gap-2">
         {mediaItems.map((article, idx) => (
-          <div 
-            key={article.id || idx} 
-            className="relative group aspect-square overflow-hidden cursor-pointer bg-neutral-900"
-            onClick={() => setSelectedArticle(article)}
-          >
-            {article.mediaType === 'video' || article.videoUrl ? (
-              <div className="relative w-full h-full bg-black flex items-center justify-center group/video">
-                {article.videoUrl?.match(/\.(mp4|webm|ogg)$/i) ? (
-                  <video 
-                    src={article.videoUrl} 
-                    className="w-full h-full object-cover opacity-70 group-hover/video:opacity-100 transition-opacity"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                  />
-                ) : (
-                  <>
-                    <Play className="absolute text-white w-10 h-10 z-20 opacity-80" fill="currentColor" />
-                    <img 
-                      src={article.imageUrl || `https://images.unsplash.com/photo-1506929562872-bb421503ef21?auto=format&fit=crop&w=600&q=80`} 
-                      alt={article.title} 
-                      className="w-full h-full object-cover opacity-70"
-                    />
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="relative w-full h-full">
-                <img 
-                  src={article.imageUrl} 
-                  alt={article.title} 
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            )}
-            
-            {/* Hover overlay (Instagram style) */}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 flex items-center justify-center gap-6">
-              <div className="flex items-center gap-2 text-white font-bold">
-                <Heart size={20} fill="currentColor" />
-                <span>{article.likes || 0}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white font-bold">
-                <MessageCircle size={20} fill="currentColor" />
-                <span>{article.comments?.length || 0}</span>
-              </div>
-            </div>
-          </div>
+          <MediaGridItem
+            key={article.id || idx}
+            article={article}
+            preload={idx < PRELOAD_COUNT}
+            onSelect={setSelectedArticle}
+          />
         ))}
       </div>
 

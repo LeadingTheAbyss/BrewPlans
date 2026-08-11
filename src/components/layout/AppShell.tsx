@@ -15,6 +15,7 @@ import { FeedbackModal } from '@/components/FeedbackModal';
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isBlogRoute = pathname.startsWith('/blog');
+  const forceLightHeader = isBlogRoute;
   const budget = useBudgetStore();
   const { user, fetchUser, isLoading } = useAuthStore();
   const [isNotificationDismissed, setIsNotificationDismissed] = useState(false);
@@ -65,14 +66,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`flex flex-col ${pathname === '/' || isBlogRoute ? 'min-h-screen' : 'h-screen overflow-hidden'} ${isBlogRoute ? '!bg-[#FFF7F0] !text-[#1F2937] selection:!bg-[#FF8A3D]/20' : 'bg-white dark:bg-[#050505] text-neutral-900 dark:text-[#EDEDED] selection:bg-black/10 dark:selection:bg-white/30'} font-sans transition-colors duration-300`} style={{ fontFamily: "'Outfit', sans-serif" }}>
-      
+
       {/* Horizontal Progression Track */}
       {!pathname.startsWith('/profile') && !pathname.startsWith('/u') && pathname !== '/' && !isBlogRoute && (
-        <header className="h-14 border-b border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90 backdrop-blur-md flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300">
+        <header className={`h-14 border-b backdrop-blur-md flex items-center justify-between px-4 md:px-8 shrink-0 z-[100] sticky top-0 transition-colors duration-300 ${forceLightHeader ? 'border-[#FF8A3D]/20 bg-white/90' : 'border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-[#050505]/90'}`}>
           <div className="flex items-center gap-10">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 md:gap-3 shrink-0">
               <img src="/icon.png" alt="BrewPlans Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-              <h1 className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-black dark:text-white hidden sm:block">BrewPlans</h1>
+              <h1 className={`text-xs md:text-sm font-bold uppercase tracking-[0.2em] hidden sm:block ${forceLightHeader ? 'text-[#1F2937]' : 'text-black dark:text-white'}`}>BrewPlans</h1>
             </Link>
             
             {pathname !== '/stats' && pathname !== '/recommend' && (
@@ -111,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {mounted && isBudgetDropdownOpen && createPortal(
                   <>
                     {/* Backdrop to close when clicking outside */}
-                    <div className="fixed inset-0 z-[999]" onClick={() => setIsBudgetDropdownOpen(false)}></div>
+                    <div className="fixed inset-0 z-[999] cursor-pointer" onClick={() => setIsBudgetDropdownOpen(false)}></div>
                     <div className="fixed right-8 top-16 w-72 bg-white dark:bg-[#111111] text-black dark:text-[#EDEDED] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden z-[1000] animate-in fade-in slide-in-from-top-2">
                       <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#0a0a0a]">
                         <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest">Budget Breakdown</span>
@@ -149,23 +150,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             )}
-            <button 
+            <button
               onClick={() => setIsDark(!isDark)}
-              className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
+              className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center shrink-0 ${forceLightHeader ? 'border-neutral-300 hover:border-neutral-500 bg-neutral-100 text-neutral-600' : 'border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300'}`}
               title="Toggle Theme"
             >
               {isDark ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-            
-            <button 
+
+            <button
               onClick={() => setIsFeedbackOpen(true)}
-              className="h-7 px-2 sm:px-3 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center gap-1.5 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0"
+              className={`h-7 px-2 sm:px-3 rounded-full border transition-colors flex items-center justify-center gap-1.5 shrink-0 ${forceLightHeader ? 'border-neutral-300 hover:border-neutral-500 bg-neutral-100 text-neutral-600' : 'border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300'}`}
               title="Send us Feedback"
             >
               <MessageSquare size={13} />
               <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
             </button>
-            <Link href="/u/1" className="w-7 h-7 rounded-full border border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 transition-colors flex items-center justify-center overflow-hidden bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 shrink-0">
+            <Link href="/u/1" className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center overflow-hidden shrink-0 ${forceLightHeader ? 'border-neutral-300 hover:border-neutral-500 bg-neutral-100 text-neutral-600' : 'border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300'}`}>
               {isLoading ? (
                 <div className="w-full h-full bg-black/10 dark:bg-white/10 animate-pulse"></div>
               ) : user ? (

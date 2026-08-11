@@ -738,7 +738,7 @@ export default function WriteBlogPage() {
                     title="All information is automatically filled based on the contents of the blog"
                     onClick={handleSmartFill} 
                     disabled={isSmartFilling}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-black shadow-sm hover:opacity-90 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-black shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     <Sparkles size={15} /> 
                     <span>{isSmartFilling ? 'Filling...' : 'Smart Fill'}</span>
@@ -1208,7 +1208,7 @@ export default function WriteBlogPage() {
             <button
               type="submit"
               disabled={publishing || !!collabSentNotice}
-              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#FF8A3D] via-[#FFB347] to-[#FFD166] hover:scale-103 active:scale-98 text-[#1F2937] font-black text-sm uppercase tracking-wider shadow-xl transition-all flex items-center gap-2"
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#FF8A3D] via-[#FFB347] to-[#FFD166] hover:scale-103 active:scale-98 text-[#1F2937] font-black text-sm uppercase tracking-wider shadow-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {publishing ? <span>Publishing Post...</span> : <span>Publish Post &amp; Map →</span>}
             </button>

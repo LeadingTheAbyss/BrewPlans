@@ -10,8 +10,8 @@ export async function GET(req: NextRequest) {
   
   const fallbackType = searchParams.get('fallback') || 'place';
   const fallbackRedirect = fallbackType === 'food'
-    ? 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80'
-    : 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=1200&q=80';
+    ? 'https://commons.wikimedia.org/wiki/Special:FilePath/Chicken_tikka_masala.jpg?width=1200'
+    : 'https://commons.wikimedia.org/wiki/Special:FilePath/Taj_Mahal_in_March_2004.jpg?width=1200';
     
   const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
@@ -20,9 +20,9 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, { headers: { 'User-Agent': UA } });
     const data = await res.json();
     
-    let targetImgUrl = fallbackType === 'food' 
-      ? 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80' // High quality food spread
-      : 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Mumbai_03-2016_31_skyline_from_Bandra_Fort.jpg/800px-Mumbai_03-2016_31_skyline_from_Bandra_Fort.jpg';
+    let targetImgUrl = fallbackType === 'food'
+      ? 'https://commons.wikimedia.org/wiki/Special:FilePath/Chicken_tikka_masala.jpg?width=1200'
+      : 'https://commons.wikimedia.org/wiki/Special:FilePath/Taj_Mahal_in_March_2004.jpg?width=1200';
 
     const pages = data?.query?.pages;
     if (pages) {

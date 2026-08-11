@@ -34,12 +34,12 @@ export default function MemberTravelCard({ passengers = [], transport, isPrimary
 
   const getTransportIcon = (type?: string) => {
     switch (type) {
-      case 'flight': return <Plane size={14} className="text-zinc-400" />;
-      case 'train': return <Train size={14} className="text-zinc-400" />;
-      case 'bus': return <Bus size={14} className="text-zinc-400" />;
+      case 'flight': return <Plane size={14} className="text-zinc-500 dark:text-zinc-400" />;
+      case 'train': return <Train size={14} className="text-zinc-500 dark:text-zinc-400" />;
+      case 'bus': return <Bus size={14} className="text-zinc-500 dark:text-zinc-400" />;
       case 'cab':
-      case 'car': return <Car size={14} className="text-zinc-400" />;
-      default: return <Plane size={14} className="text-zinc-400" />;
+      case 'car': return <Car size={14} className="text-zinc-500 dark:text-zinc-400" />;
+      default: return <Plane size={14} className="text-zinc-500 dark:text-zinc-400" />;
     }
   };
 
@@ -111,33 +111,33 @@ export default function MemberTravelCard({ passengers = [], transport, isPrimary
   };
 
   return (
-    <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 flex flex-col h-full hover:border-[#333] transition-colors">
-      
+    <div className="bg-white dark:bg-[#111111] border border-zinc-200 dark:border-[#222222] rounded-2xl p-5 flex flex-col h-full hover:border-zinc-300 dark:hover:border-[#333] transition-colors">
+
       {/* Header: Avatar(s) + Name(s) */}
       <div className="flex flex-col mb-6 gap-3">
         <div className="flex items-center -space-x-3">
           {passengers.map((pax, i) => (
-            <div key={pax.id} className="w-10 h-10 rounded-full overflow-hidden shrink-0 border-2 border-[#111] relative z-10" style={{ zIndex: 10 - i }}>
+            <div key={pax.id} className="w-10 h-10 rounded-full overflow-hidden shrink-0 border-2 border-white dark:border-[#111] relative z-10" style={{ zIndex: 10 - i }}>
                <UserAvatar user={{ name: pax.name } as any} className="w-full h-full text-sm" />
             </div>
           ))}
         </div>
-        <span className="font-semibold text-zinc-100 leading-tight text-sm line-clamp-2">{getGroupedNames()}</span>
+        <span className="font-semibold text-zinc-900 dark:text-zinc-100 leading-tight text-sm line-clamp-2">{getGroupedNames()}</span>
       </div>
 
       {/* Route (Vertical Layout) */}
       <div className="flex flex-col mb-6 relative">
         {/* Origin */}
-        <div className="flex items-center gap-2 text-xs text-zinc-300 min-w-0 z-10">
+        <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300 min-w-0 z-10">
           <MapPin size={14} className="text-[#e83e8c] shrink-0" />
           <span className="truncate">{transport?.source ? `${cleanName(transport.source)} (${getCode(transport.source)})` : 'Origin'}</span>
         </div>
-        
+
         {/* Dotted Line */}
-        <div className="absolute left-[6.5px] top-[14px] bottom-[14px] w-[1px] border-l-[1.5px] border-dashed border-zinc-700"></div>
-        
+        <div className="absolute left-[6.5px] top-[14px] bottom-[14px] w-[1px] border-l-[1.5px] border-dashed border-zinc-300 dark:border-zinc-700"></div>
+
         {/* Destination */}
-        <div className="flex items-center gap-2 text-xs text-zinc-300 min-w-0 z-10 mt-4">
+        <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300 min-w-0 z-10 mt-4">
           <MapPin size={14} className="text-green-500 shrink-0" />
           <span className="truncate">{transport?.destination ? `${cleanName(transport.destination)} (${getCode(transport.destination)})` : 'Destination'}</span>
         </div>
@@ -145,12 +145,12 @@ export default function MemberTravelCard({ passengers = [], transport, isPrimary
 
       {/* Transport Details */}
       <div className="mt-auto space-y-4">
-        <div className="flex items-start gap-2 border-t border-[#222] pt-4 min-w-0">
+        <div className="flex items-start gap-2 border-t border-zinc-200 dark:border-[#222] pt-4 min-w-0">
           <div className="shrink-0 mt-0.5">
             {getTransportIcon(transport?.type)}
           </div>
           <div className="-mt-0.5 min-w-0 flex-1">
-            <div className={`text-sm font-medium truncate ${getTransportName() === 'Not Available' ? 'text-red-400' : 'text-zinc-200'}`}>
+            <div className={`text-sm font-medium truncate ${getTransportName() === 'Not Available' ? 'text-red-500 dark:text-red-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
               {getTransportName()}
             </div>
             {getTransportName() !== 'Not Available' && (
@@ -160,7 +160,7 @@ export default function MemberTravelCard({ passengers = [], transport, isPrimary
         </div>
 
         {getTransportName() !== 'Not Available' && transport?.departure && (
-          <div className="flex items-center gap-2 text-xs text-zinc-400 min-w-0">
+          <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 min-w-0">
             <Calendar size={12} className="shrink-0" />
             <span className="truncate">{formatDateTime(transport?.departure)}</span>
           </div>
