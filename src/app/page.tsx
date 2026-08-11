@@ -741,7 +741,7 @@ export default function LandingPage() {
 
     const loader = new OBJLoader();
     loader.load(
-      '/api/plane-obj', 
+      '/plane.obj',
       function (obj) { 
         if (mounted) onModelLoaded(obj); 
       },
