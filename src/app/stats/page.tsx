@@ -40,6 +40,7 @@ interface StatsData {
     name: string;
     email: string;
     picture: string | null;
+    authProvider: string;
     apiCalls: number;
     apiCallsFlights: number;
     apiCallsTrains: number;
@@ -103,10 +104,10 @@ export default function AdminStatsPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
-  const [dashboardRole, setDashboardRole] = useState<'ALL' | 'USER' | 'ADMIN'>('ALL');
+  const [dashboardRole, setDashboardRole] = useState<'ALL' | 'USER' | 'ADMIN' | 'GUEST'>('ALL');
   const [timeframe, setTimeframe] = useState<'ALL' | 'MONTHLY' | 'WEEKLY' | 'DAILY'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'USER'>('ALL');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'USER' | 'GUEST'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [feedbackTab, setFeedbackTab] = useState<'PENDING' | 'RESOLVED'>('PENDING');
 
@@ -206,7 +207,8 @@ export default function AdminStatsPage() {
     }
     
     if (roleFilter === 'ADMIN') result = result.filter(u => isAdminEmail(u.email));
-    if (roleFilter === 'USER') result = result.filter(u => !isAdminEmail(u.email));
+    if (roleFilter === 'USER') result = result.filter(u => !isAdminEmail(u.email) && u.authProvider !== 'quick');
+    if (roleFilter === 'GUEST') result = result.filter(u => u.authProvider === 'quick');
     
     if (statusFilter === 'ACTIVE') result = result.filter(u => u.apiCalls > 0);
     if (statusFilter === 'INACTIVE') result = result.filter(u => u.apiCalls === 0);
@@ -291,15 +293,15 @@ export default function AdminStatsPage() {
                 </div>
 
                 <div className="flex bg-black/40 border border-white/10 rounded-full p-1 relative w-fit">
-                  <div 
+                  <div
                     className="absolute inset-y-1 bg-white/10 border border-white/20 rounded-full transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
                     style={{
-                      left: dashboardRole === 'ALL' ? '4px' : dashboardRole === 'USER' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 2px)',
-                      width: 'calc(33.33% - 6px)'
+                      left: `calc(${(['ALL', 'USER', 'ADMIN', 'GUEST'] as const).indexOf(dashboardRole) * 25}% + 4px)`,
+                      width: 'calc(25% - 6px)'
                     }}
                   />
-                  {(['ALL', 'USER', 'ADMIN'] as const).map(role => (
-                    <button 
+                  {(['ALL', 'USER', 'ADMIN', 'GUEST'] as const).map(role => (
+                    <button
                       key={role}
                       onClick={() => setDashboardRole(role)}
                       className={`relative z-10 px-4 py-1 text-xs font-bold uppercase tracking-widest transition-colors w-24 text-center ${dashboardRole === role ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
@@ -496,6 +498,7 @@ export default function AdminStatsPage() {
                     <option value="ALL">All Roles</option>
                     <option value="ADMIN">Admins Only</option>
                     <option value="USER">Users Only</option>
+                    <option value="GUEST">Guests Only</option>
                   </select>
                   <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="bg-black/50 border border-white/10 rounded-lg py-1.5 px-3 text-xs text-white/80 focus:outline-none">
                     <option value="ALL">All Status</option>
@@ -562,6 +565,8 @@ export default function AdminStatsPage() {
                             <td className="py-4 px-6">
                               {isAdminEmail(u.email) ? (
                                 <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold uppercase tracking-widest text-blue-400">Admin</span>
+                              ) : u.authProvider === 'quick' ? (
+                                <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[9px] font-bold uppercase tracking-widest text-amber-400">Guest</span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-widest text-white/40">User</span>
                               )}

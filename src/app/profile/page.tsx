@@ -88,11 +88,7 @@ export default function ProfilePage() {
 
   // Theme toggle — AppShell hides its own header (and theme button) on /profile routes,
   // so this page needs its own switch. Mirrors AppShell's toggle mechanism for consistency.
-  const [isDark, setIsDark] = useState(true);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-  }, []);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     if (isDark) {

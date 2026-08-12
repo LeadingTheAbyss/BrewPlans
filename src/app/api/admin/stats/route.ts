@@ -27,25 +27,27 @@ export async function GET(req: Request) {
 
     // Admin verified. Parse role param.
     const { searchParams } = new URL(req.url);
-    const roleParam = searchParams.get('role') || 'ALL'; // ALL, USER, ADMIN
-    
+    const roleParam = searchParams.get('role') || 'ALL'; // ALL, USER, ADMIN, GUEST
+
     const adminEmails = getAdminEmails();
-    
-    let userEmailFilter: any = undefined;
+
+    let userWhereFilter: any = undefined;
     if (roleParam === 'ADMIN') {
-      userEmailFilter = { in: adminEmails };
+      userWhereFilter = { email: { in: adminEmails } };
     } else if (roleParam === 'USER') {
-      userEmailFilter = { notIn: adminEmails };
+      userWhereFilter = { email: { notIn: adminEmails }, authProvider: { not: 'quick' } };
+    } else if (roleParam === 'GUEST') {
+      userWhereFilter = { authProvider: 'quick' };
     }
 
     // Fetch stats.
     const totalUsers = await prisma.user.count({
-      where: userEmailFilter ? { email: userEmailFilter } : undefined
+      where: userWhereFilter
     });
-    
+
     // API Calls All Time (True sum of user API calls plus sub-metrics)
     const apiMetricsAggr = await prisma.user.aggregate({
-      where: userEmailFilter ? { email: userEmailFilter } : undefined,
+      where: userWhereFilter,
       _sum: {
         apiCalls: true,
         apiCallsFlights: true,
@@ -80,7 +82,7 @@ export async function GET(req: Request) {
     let apiCallsYesterday = 0;
     let activeUsersToday = 0;
 
-    const dailyStatsWhere = userEmailFilter ? { user: { email: userEmailFilter } } : {};
+    const dailyStatsWhere = userWhereFilter ? { user: userWhereFilter } : {};
 
     if (prisma.dailyUserStat) {
       const dailyStatsAggr = await prisma.dailyUserStat.groupBy({
@@ -101,9 +103,9 @@ export async function GET(req: Request) {
     }
 
     const newSignupsToday = await prisma.user.count({
-      where: { 
+      where: {
         createdAt: { gte: startOfToday },
-        ...(userEmailFilter ? { email: userEmailFilter } : {})
+        ...(userWhereFilter || {})
       }
     });
 
@@ -113,7 +115,7 @@ export async function GET(req: Request) {
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     const allTrips = await prisma.tripHistory.findMany({
-      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined,
+      where: userWhereFilter ? { user: userWhereFilter } : undefined,
       select: { snapshot: true, createdAt: true, userId: true }
     });
 
@@ -140,11 +142,11 @@ export async function GET(req: Request) {
 
     // We also need Recommendations usage from DailyUserStat and Users
     const allUsers = await prisma.user.findMany({
-      where: userEmailFilter ? { email: userEmailFilter } : undefined,
+      where: userWhereFilter,
       select: { id: true, apiCallsRecommendations: true }
     });
     const allDailyStats = prisma.dailyUserStat ? await prisma.dailyUserStat.findMany({
-      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined,
+      where: userWhereFilter ? { user: userWhereFilter } : undefined,
     }) : [];
 
     // All time recommendations
@@ -209,6 +211,7 @@ export async function GET(req: Request) {
 
     // Fetch all users for the data table
     const users = await prisma.user.findMany({
+      where: userWhereFilter,
       orderBy: {
         createdAt: 'desc'
       },
@@ -217,6 +220,7 @@ export async function GET(req: Request) {
         name: true,
         email: true,
         picture: true,
+        authProvider: true,
         apiCalls: true,
         apiCallsFlights: true,
         apiCallsTrains: true,
@@ -258,7 +262,7 @@ export async function GET(req: Request) {
     // FUNNEL ANALYTICS
     const funnelAggr = await prisma.tripAttempt.groupBy({
       by: ['stepReached'],
-      where: userEmailFilter ? { user: { email: userEmailFilter } } : undefined,
+      where: userWhereFilter ? { user: userWhereFilter } : undefined,
       _count: true
     });
     const funnelStats = {
@@ -269,8 +273,8 @@ export async function GET(req: Request) {
 
     // RETENTION ANALYTICS (D1/D7/D30)
     // We'll calculate this by finding the gap between createdAt and lastApiCallDate
-    const usersList = await prisma.user.findMany({ 
-      where: userEmailFilter ? { email: userEmailFilter } : undefined,
+    const usersList = await prisma.user.findMany({
+      where: userWhereFilter,
       select: { createdAt: true, lastApiCallDate: true }
     });
     
