@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import crypto from 'crypto';
+import { generateUniqueUsername } from '@/lib/username';
 
 function decodeJwt(token: string) {
   try {
@@ -33,20 +34,32 @@ export async function POST(req: Request) {
     // Find or create user
     let user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
+      const username = await generateUniqueUsername(name);
       user = await prisma.user.create({
         data: {
           email,
           name,
           picture,
+          username,
         }
       });
-    } else if (picture && user.picture !== picture) {
+    } else {
+      const updateData: { picture?: string; username?: string } = {};
       // Update the picture if they changed it on Google
       // (Unless they have a custom uploaded picture, but we'll prioritize Google on new login)
-      user = await prisma.user.update({
-        where: { email },
-        data: { picture }
-      });
+      if (picture && user.picture !== picture) {
+        updateData.picture = picture;
+      }
+      // Backfill a username for accounts created before usernames existed
+      if (!user.username) {
+        updateData.username = await generateUniqueUsername(user.name || name);
+      }
+      if (Object.keys(updateData).length > 0) {
+        user = await prisma.user.update({
+          where: { email },
+          data: updateData
+        });
+      }
     }
 
     // Create a new session

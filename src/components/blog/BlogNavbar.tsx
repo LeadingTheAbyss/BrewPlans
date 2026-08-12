@@ -122,7 +122,7 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
 
           {/* Profile avatar link button */}
           <Link
-            href={`/u/${encodeURIComponent(userProfile?.username || '1')}`}
+            href={user?.username ? `/u/${encodeURIComponent(user.username)}` : '/profile'}
             className="flex items-center gap-2 p-1.5 pr-3.5 rounded-2xl bg-[#1F2937] hover:bg-black text-white font-extrabold text-xs tracking-wide shadow-md hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 border border-white/10"
             title="View Your Profile, PFP, Bio & Socials"
           >

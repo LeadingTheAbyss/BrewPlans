@@ -94,35 +94,52 @@ export default function LoginPage() {
   // --- Turnstile (Cloudflare bot check, shared by Quick Start + username login) ---
   const renderTurnstile = () => {
     if (!turnstileRef.current || !window.turnstile || turnstileWidgetId.current) return;
-    turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
-      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-      theme: 'light',
-      callback: (token: string) => {
-        setTurnstileToken(token);
-        // If a click happened before the token was ready, run it now
-        if (pendingActionRef.current) {
+
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    if (!siteKey) {
+      // NEXT_PUBLIC_ vars are inlined at build time — if this is undefined here,
+      // the deployment this is running on was built without the env var set
+      // (e.g. added to a local .env but never added to Vercel's project env vars).
+      console.error('NEXT_PUBLIC_TURNSTILE_SITE_KEY is missing from this build — Turnstile cannot render.');
+      setErrorMsg('Human verification is not configured for this deployment. Please contact support.');
+      return;
+    }
+
+    try {
+      turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: siteKey,
+        theme: 'light',
+        callback: (token: string) => {
+          setTurnstileToken(token);
+          // If a click happened before the token was ready, run it now
+          if (pendingActionRef.current) {
+            if (pendingTimeoutRef.current) {
+              clearTimeout(pendingTimeoutRef.current);
+              pendingTimeoutRef.current = null;
+            }
+            const action = pendingActionRef.current;
+            pendingActionRef.current = null;
+            action();
+          }
+        },
+        'error-callback': (errorCode: unknown) => {
+          // Without this, a click that's still waiting on a token would be stuck
+          // forever with the button disabled and no feedback — this is what was
+          // causing the infinite "loading" state.
+          console.error('Turnstile error-callback fired:', errorCode);
           if (pendingTimeoutRef.current) {
             clearTimeout(pendingTimeoutRef.current);
             pendingTimeoutRef.current = null;
           }
-          const action = pendingActionRef.current;
           pendingActionRef.current = null;
-          action();
-        }
-      },
-      'error-callback': () => {
-        // Without this, a click that's still waiting on a token would be stuck
-        // forever with the button disabled and no feedback — this is what was
-        // causing the infinite "loading" state.
-        if (pendingTimeoutRef.current) {
-          clearTimeout(pendingTimeoutRef.current);
-          pendingTimeoutRef.current = null;
-        }
-        pendingActionRef.current = null;
-        setIsLoading(false);
-        setErrorMsg('Human verification failed to load. Please refresh the page and try again.');
-      },
-    });
+          setIsLoading(false);
+          setErrorMsg('Human verification failed to load. Please refresh the page and try again.');
+        },
+      });
+    } catch (renderError) {
+      console.error('Turnstile render() threw:', renderError);
+      setErrorMsg('Human verification failed to load. Please refresh the page and try again.');
+    }
   };
 
   const resetTurnstile = () => {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { isAdminEmail } from '@/lib/admin';
+import { generateUniqueUsername } from '@/lib/username';
 
 export async function GET() {
   try {
@@ -21,13 +22,19 @@ export async function GET() {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
+    let sessionUser = session.user;
+    if (!sessionUser.username) {
+      // Backfills accounts (e.g. older Google logins) created before usernames existed
+      const username = await generateUniqueUsername(sessionUser.name);
+      sessionUser = await prisma.user.update({ where: { id: sessionUser.id }, data: { username } });
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const trips = await prisma.tripHistory.findMany({
       where: {
-        userId: session.user.id,
+        userId: sessionUser.id,
         createdAt: {
           gte: today,
         }
@@ -46,8 +53,8 @@ export async function GET() {
       }
     });
 
-    const isAdmin = isAdminEmail(session.user.email);
-    return NextResponse.json({ user: { ...session.user, isAdmin, tripsToday: planTripsToday, quickTripsToday } });
+    const isAdmin = isAdminEmail(sessionUser.email);
+    return NextResponse.json({ user: { ...sessionUser, isAdmin, tripsToday: planTripsToday, quickTripsToday } });
   } catch (error) {
     console.error('Me endpoint error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

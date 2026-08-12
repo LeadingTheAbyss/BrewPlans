@@ -166,7 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <MessageSquare size={13} />
               <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
             </button>
-            <Link href="/u/1" className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center overflow-hidden shrink-0 ${forceLightHeader ? 'border-neutral-300 hover:border-neutral-500 bg-neutral-100 text-neutral-600' : 'border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300'}`}>
+            <Link href={user?.username ? `/u/${encodeURIComponent(user.username)}` : '/profile'} className={`w-7 h-7 rounded-full border transition-colors flex items-center justify-center overflow-hidden shrink-0 ${forceLightHeader ? 'border-neutral-300 hover:border-neutral-500 bg-neutral-100 text-neutral-600' : 'border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300'}`}>
               {isLoading ? (
                 <div className="w-full h-full bg-black/10 dark:bg-white/10 animate-pulse"></div>
               ) : user ? (

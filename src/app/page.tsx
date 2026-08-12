@@ -892,7 +892,7 @@ export default function LandingPage() {
                 <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest">Send Us Feedback</span>
               </button>
               <button 
-                onClick={() => router.push('/u/1')}
+                onClick={() => router.push(user.username ? `/u/${encodeURIComponent(user.username)}` : '/profile')}
                 className="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white transition-all overflow-hidden flex items-center justify-center shrink-0"
                 title="Profile"
               >

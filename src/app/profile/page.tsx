@@ -32,14 +32,6 @@ interface UserCustomProfile {
   };
 }
 
-const PFP_PRESETS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-];
-
 function InstagramIcon({ className = "text-pink-400", size = 14 }: { className?: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -111,8 +103,8 @@ export default function ProfilePage() {
 
   // Profile custom state
   const [customProfile, setCustomProfile] = useState<UserCustomProfile>({
-    displayName: user?.name || 'Explorer #1',
-    username: '1',
+    displayName: user?.name || 'Explorer',
+    username: user?.username || '',
     pfp: user?.picture || '',
     about: 'Lifelong explorer discovering Indian cities, high-altitude passes, and hidden culinary gems.',
     city: 'India',
@@ -145,17 +137,17 @@ export default function ProfilePage() {
         } catch(e) {}
       try {
         const saved = localStorage.getItem('brewplans_user_profile');
-        let myUsername = '1';
+        const myUsername = user?.username || '';
         let myProfileData: UserCustomProfile | null = null;
         if (saved) {
           myProfileData = JSON.parse(saved);
-          if (myProfileData?.username) myUsername = myProfileData.username;
         }
 
-        const isOwn = !targetUserParam || targetUserParam === myUsername || (myUsername === '1' && (targetUserParam === '1' || targetUserParam === 'indian_traveler'));
+        const isOwn = !targetUserParam || (!!myUsername && targetUserParam === myUsername);
 
         if (isOwn) {
           if (myProfileData) {
+            myProfileData.username = myUsername;
             if (user?.picture) {
               myProfileData.pfp = user.picture;
             }
@@ -163,8 +155,8 @@ export default function ProfilePage() {
             setEditForm(myProfileData);
           } else {
             const init = {
-              displayName: user?.name || 'Explorer #1',
-              username: '1',
+              displayName: user?.name || 'Explorer',
+              username: myUsername,
               pfp: user?.picture || '',
               about: 'Exploring incredible Indian destinations and weekend itineraries.',
               city: 'India',
@@ -186,22 +178,6 @@ export default function ProfilePage() {
 
         // Otherwise viewing another user's profile
         if (targetUserParam) {
-          if (/^\d+$/.test(targetUserParam)) {
-            const indexNum = parseInt(targetUserParam, 10);
-            const indexedProfile = {
-              displayName: `Explorer #${indexNum}`,
-              username: targetUserParam,
-              pfp: PFP_PRESETS[indexNum % PFP_PRESETS.length],
-              about: `Verified Indian Explorer #${indexNum} discovering incredible destinations across India.`,
-              city: 'India',
-              socials: {}
-            };
-            setCustomProfile(indexedProfile);
-            setEditForm(indexedProfile);
-            setUserStories([]);
-            return;
-          }
-
           const all = [...fetchedBlogs, FEATURED_ARTICLE, ...ARTICLES];
 
           let foundProfile = null;
@@ -405,57 +381,20 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanUsername = (editForm.username || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
-    if (!cleanUsername) {
-      alert('Please enter a valid username.');
-      return;
-    }
 
-    if (cleanUsername !== customProfile.username) {
-      const existingAuthors = ARTICLES.map(a => a.author.username.toLowerCase());
-
-      let mockUsers: any[] = [];
-      try {
-        mockUsers = JSON.parse(localStorage.getItem('brewplans_mock_users') || '[]');
-      } catch(e) {}
-      const existingMock = mockUsers.map((u: any) => (u.username || '').toLowerCase());
-
-      // Check API blogs for usernames
-      let apiAuthors: string[] = [];
-      try {
-        const res = await fetch('/api/blogs');
-        const blogs = await res.json();
-        apiAuthors = (Array.isArray(blogs) ? blogs : []).map((b: any) => (b.author?.username || '').toLowerCase());
-      } catch (err) {}
-
-      if ((existingAuthors.includes(cleanUsername) || existingMock.includes(cleanUsername) || apiAuthors.includes(cleanUsername)) && cleanUsername !== 'indian_traveler') {
-        alert(`Username @${cleanUsername} is already taken by another registered traveler. Please choose a unique username.`);
-        return;
-      }
-    }
-
-    const updatedProfile = { ...editForm, username: cleanUsername };
+    // Username is tied to the account (set at signup, or from the Google
+    // account name) — it's not editable from this form.
+    const updatedProfile = { ...editForm, username: customProfile.username };
     setCustomProfile(updatedProfile);
     setEditForm(updatedProfile);
     if (typeof window !== 'undefined') {
       localStorage.setItem('brewplans_user_profile', JSON.stringify(updatedProfile));
-
-      try {
-        const mockUsers = JSON.parse(localStorage.getItem('brewplans_mock_users') || '[]');
-        const existingIdx = mockUsers.findIndex((u: any) => u.username === customProfile.username);
-        if (existingIdx >= 0) {
-          mockUsers[existingIdx] = updatedProfile;
-        } else {
-          mockUsers.push(updatedProfile);
-        }
-        localStorage.setItem('brewplans_mock_users', JSON.stringify(mockUsers));
-      } catch (e) {}
     }
 
     // Persist to DB using updateProfile
     if (user && updateProfile) {
       updateProfile({
-        name: updatedProfile.displayName || cleanUsername,
+        name: updatedProfile.displayName || user.name,
         picture: updatedProfile.pfp || undefined
       });
     }
@@ -512,16 +451,7 @@ export default function ProfilePage() {
     );
   }
 
-  let loggedInUser = '1';
-  if (typeof window !== 'undefined') {
-    try {
-      const saved = localStorage.getItem('brewplans_user_profile');
-      if (saved) {
-        loggedInUser = JSON.parse(saved).username || '1';
-      }
-    } catch(e) {}
-  }
-  const isOwnProfile = !targetUserParam || targetUserParam === loggedInUser || (loggedInUser === '1' && (targetUserParam === '1' || targetUserParam === 'indian_traveler'));
+  const isOwnProfile = !targetUserParam || (!!user?.username && targetUserParam === user.username);
 
   return (
     <AppShell>
@@ -965,25 +895,15 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 mb-1">Display Name *</label>
-                <input
-                  type="text"
-                  value={editForm.displayName}
-                  onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/20 text-neutral-900 dark:text-white font-bold text-sm focus:border-[#FF8A3D] focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 mb-1">Username *</label>
-                <input
-                  type="text"
-                  value={editForm.username}
-                  onChange={(e) => setEditForm({ ...editForm, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/20 text-[#D45B0C] dark:text-[#FFB347] font-bold text-sm focus:border-[#FF8A3D] focus:outline-none"
-                />
-              </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 mb-1">Display Name *</label>
+              <input
+                type="text"
+                value={editForm.displayName}
+                onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
+                className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/20 text-neutral-900 dark:text-white font-bold text-sm focus:border-[#FF8A3D] focus:outline-none"
+              />
+              <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-2 font-medium">Your handle is @{customProfile.username} — set from your account and can&apos;t be changed here.</p>
             </div>
 
             {/* Avatar / Profile Picture */}
