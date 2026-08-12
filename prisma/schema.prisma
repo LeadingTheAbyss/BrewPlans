@@ -82,6 +82,9 @@ model User {
   email           String        @unique
   name            String
   picture         String?
+  username        String?       @unique
+  passwordHash    String?
+  authProvider    String        @default("google")
   apiCalls        Int           @default(0)
   apiCallsFlights Int           @default(0)
   apiCallsTrains  Int           @default(0)

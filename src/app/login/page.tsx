@@ -2,16 +2,45 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plane, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Zap, ChevronDown, KeyRound } from 'lucide-react';
 import Script from 'next/script';
 import Link from 'next/link';
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: Record<string, unknown>) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId?: string) => void;
+    };
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+  const pendingActionRef = useRef<null | (() => void)>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
+  const [showQuickSignup, setShowQuickSignup] = useState(false);
+  const [signupUsername, setSignupUsername] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+
+  const [showUsernameLogin, setShowUsernameLogin] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  const redirectTo = () => {
+    const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+    router.push(redirect);
+  };
+
+  // --- Google Sign-In ---
   const handleCredentialResponse = async (response: any) => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -23,9 +52,7 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
-        // Use user-provided redirect URL if available, otherwise default to /
-        const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
-        router.push(redirect);
+        redirectTo();
       } else {
         const errorText = await res.text();
         console.error('Login failed:', res.status, errorText);
@@ -40,7 +67,6 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    // Only initialize if the script is loaded and the container exists
     const initGoogle = () => {
       if (typeof window !== 'undefined' && (window as any).google && googleButtonRef.current) {
         (window as any).google.accounts.id.initialize({
@@ -49,20 +75,116 @@ export default function LoginPage() {
         });
         (window as any).google.accounts.id.renderButton(
           googleButtonRef.current,
-          { theme: 'outline', size: 'large', width: 300, text: 'continue_with' } // Classic light button
+          { theme: 'outline', size: 'large', width: 300, text: 'continue_with' }
         );
       }
     };
 
-    // If already loaded, initialize immediately
     if (typeof window !== 'undefined' && (window as any).google) {
       initGoogle();
     } else {
-      // Otherwise wait for it
       window.addEventListener('google-loaded', initGoogle);
       return () => window.removeEventListener('google-loaded', initGoogle);
     }
   }, []);
+
+  // --- Turnstile (Cloudflare bot check, shared by Quick Start + username login) ---
+  const renderTurnstile = () => {
+    if (!turnstileRef.current || !window.turnstile || turnstileWidgetId.current) return;
+    turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      theme: 'light',
+      callback: (token: string) => {
+        setTurnstileToken(token);
+        // If a click happened before the token was ready, run it now
+        if (pendingActionRef.current) {
+          const action = pendingActionRef.current;
+          pendingActionRef.current = null;
+          action();
+        }
+      },
+      'error-callback': () => {
+        setErrorMsg('Human verification failed to load. Please refresh the page.');
+      },
+    });
+  };
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    if (window.turnstile && turnstileWidgetId.current) {
+      window.turnstile.reset(turnstileWidgetId.current);
+    }
+  };
+
+  // Runs `action` once a Turnstile token is available — immediately if we
+  // already have one, otherwise as soon as the widget's callback resolves.
+  const withVerification = (action: () => void) => {
+    setErrorMsg(null);
+    if (turnstileToken) {
+      action();
+    } else {
+      pendingActionRef.current = action;
+      setIsLoading(true);
+    }
+  };
+
+  // --- Quick Sign Up (user picks their own username & password) ---
+  const doQuickSignup = async () => {
+    if (!signupUsername.trim() || !signupPassword) {
+      setErrorMsg('Please choose a username and password.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/quick-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: signupUsername.trim(), password: signupPassword, turnstileToken }),
+      });
+      const data = await res.json();
+      resetTurnstile();
+
+      if (res.ok) {
+        redirectTo();
+      } else {
+        setErrorMsg(data.error || 'Could not create your account. Please try again.');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      resetTurnstile();
+      setErrorMsg(`Error: ${String(error)}`);
+      setIsLoading(false);
+    }
+  };
+
+  // --- Quick Login (returning quick-signup users) ---
+  const doQuickLogin = async () => {
+    if (!loginUsername.trim() || !loginPassword) {
+      setErrorMsg('Please enter your username and password.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/quick-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername.trim(), password: loginPassword, turnstileToken }),
+      });
+      resetTurnstile();
+
+      if (res.ok) {
+        redirectTo();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Login failed. Please check your username and password.');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      resetTurnstile();
+      setErrorMsg(`Error: ${String(error)}`);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative text-slate-800 overflow-hidden landing-body" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#D0CBC7' }}>
@@ -81,6 +203,11 @@ export default function LoginPage() {
           onLoad={() => {
             window.dispatchEvent(new Event('google-loaded'));
           }}
+        />
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          strategy="lazyOnload"
+          onLoad={renderTurnstile}
         />
 
         {/* Back Button */}
@@ -101,12 +228,12 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-3">Welcome Back</h1>
-          <p className="text-slate-500 text-sm mb-10 px-4 leading-relaxed font-medium">
+          <p className="text-slate-500 text-sm mb-8 px-4 leading-relaxed font-medium">
             To ensure the continued availability and optimal performance of our services, we kindly require users to log in. This measure helps us manage our limited system resources effectively and prevents potential misuse. We sincerely appreciate your understanding and cooperation.
           </p>
 
           {/* Google Auth Button Container */}
-          <div className="w-full flex justify-center h-[44px] mb-8 relative">
+          <div className="w-full flex justify-center h-[44px] mb-4 relative">
             <div ref={googleButtonRef} className={isLoading ? 'hidden' : ''}></div>
             {isLoading && (
               <div className="flex items-center justify-center w-full h-full text-indigo-600 bg-white/50 backdrop-blur-sm rounded-full">
@@ -114,16 +241,102 @@ export default function LoginPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span className="font-medium text-sm">Signing you in...</span>
+                <span className="font-medium text-sm">Please wait...</span>
               </div>
             )}
           </div>
+
+          <div className="w-full flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">or</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          {/* Quick Start */}
+          <button
+            onClick={() => setShowQuickSignup(v => !v)}
+            className="w-full flex items-center justify-center gap-2 bg-[#FF8A3D] hover:bg-[#FFB347] text-[#1F2937] font-bold text-sm py-3.5 rounded-full transition-colors mb-4"
+          >
+            <Zap size={16} />
+            Guest Mode (No Email Address Required)
+            <ChevronDown size={14} className={`transition-transform ${showQuickSignup ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showQuickSignup && (
+            <div className="w-full mb-6 text-left bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <p className="flex items-center gap-1.5 text-slate-500 text-xs font-medium leading-relaxed">
+                Pick your own username and password.
+              </p>
+              <input
+                type="text"
+                placeholder="Choose a username"
+                value={signupUsername}
+                onChange={e => setSignupUsername(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+              />
+              <input
+                type="password"
+                placeholder="Choose a password"
+                value={signupPassword}
+                onChange={e => setSignupPassword(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') withVerification(doQuickSignup); }}
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+              />
+              <button
+                onClick={() => withVerification(doQuickSignup)}
+                disabled={isLoading}
+                className="w-full bg-slate-900 hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm py-3 rounded-full transition-colors"
+              >
+                Create Account
+              </button>
+            </div>
+          )}
+
+          {/* Returning quick-signup users */}
+          <button
+            onClick={() => setShowUsernameLogin(v => !v)}
+            className="w-full flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 text-xs font-bold transition-colors mb-4"
+          >
+            <KeyRound size={12} />
+            Already have a Quick Start account?
+            <ChevronDown size={14} className={`transition-transform ${showUsernameLogin ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showUsernameLogin && (
+            <div className="w-full space-y-3 mb-6 text-left animate-in fade-in slide-in-from-top-2 duration-200">
+              <input
+                type="text"
+                placeholder="Username"
+                value={loginUsername}
+                onChange={e => setLoginUsername(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') withVerification(doQuickLogin); }}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+              />
+              <button
+                onClick={() => withVerification(doQuickLogin)}
+                disabled={isLoading}
+                className="w-full bg-slate-900 hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm py-3 rounded-full transition-colors"
+              >
+                Log In
+              </button>
+            </div>
+          )}
 
           {errorMsg && (
             <div className="w-full bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg mb-6 text-left break-words">
               {errorMsg}
             </div>
           )}
+
+          {/* Invisible/managed Cloudflare Turnstile widget — usually renders nothing visible */}
+          <div ref={turnstileRef} className="flex justify-center mb-2" />
 
           <p className="text-center text-slate-400 text-xs leading-relaxed">
             By signing in, you agree to our <br />
