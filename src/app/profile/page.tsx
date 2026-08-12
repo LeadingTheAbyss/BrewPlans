@@ -107,7 +107,7 @@ export default function ProfilePage() {
     displayName: user?.name || 'Explorer',
     username: user?.username || '',
     pfp: user?.picture || '',
-    about: 'Lifelong explorer discovering Indian cities, high-altitude passes, and hidden culinary gems.',
+    about: '',
     city: 'India',
     socials: {},
   });
@@ -155,7 +155,7 @@ export default function ProfilePage() {
               displayName: user?.name || 'Explorer',
               username: myUsername,
               pfp: user?.picture || '',
-              about: 'Exploring incredible Indian destinations and weekend itineraries.',
+              about: '',
               city: 'India',
               socials: {}
             };
@@ -924,7 +924,7 @@ export default function ProfilePage() {
                     />
                     <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-2 font-medium">Use a direct link or upload an image.</p>
                   </div>
-                  <div className="relative overflow-hidden inline-block bg-[#FF8A3D] hover:bg-[#D45B0C] text-[#1F2937] hover:text-white rounded-xl px-4 h-11 text-xs font-black uppercase tracking-widest shrink-0 cursor-pointer flex items-center justify-center transition-colors">
+                  <div className="relative overflow-hidden flex items-center justify-center bg-[#FF8A3D] hover:bg-[#D45B0C] text-[#1F2937] hover:text-white rounded-xl px-4 h-11 text-xs font-black uppercase tracking-widest shrink-0 cursor-pointer transition-colors">
                     Upload
                     <input type="file" accept="image/*" className="absolute left-0 top-0 opacity-0 cursor-pointer h-full w-full" onChange={handlePfpUpload} />
                   </div>
