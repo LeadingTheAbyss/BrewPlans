@@ -43,16 +43,33 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        // Synthetic, never-emailed placeholder — quick accounts don't collect a real email.
-        email: `${normalizedUsername}@quick.brewplans.local`,
-        name: normalizedUsername,
-        username: normalizedUsername,
-        passwordHash,
-        authProvider: 'quick',
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          // Synthetic, never-emailed placeholder — quick accounts don't collect a real email.
+          email: `${normalizedUsername}@quick.brewplans.local`,
+          name: normalizedUsername,
+          username: normalizedUsername,
+          passwordHash,
+          authProvider: 'quick',
+        }
+      });
+    } catch (createError: unknown) {
+      // Two requests can both pass the findUnique check above before either
+      // commits — the DB's unique constraint on `username` is what actually
+      // guarantees no duplicates; this just turns that race into a friendly
+      // message instead of a raw 500.
+      if (
+        createError &&
+        typeof createError === 'object' &&
+        'code' in createError &&
+        (createError as { code: string }).code === 'P2002'
+      ) {
+        return NextResponse.json({ error: 'That username is already taken. Please choose another.' }, { status: 409 });
       }
-    });
+      throw createError;
+    }
 
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days

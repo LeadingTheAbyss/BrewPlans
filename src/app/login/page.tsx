@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Zap, ChevronDown, KeyRound } from 'lucide-react';
+import { ArrowLeft, Zap, ChevronDown, KeyRound, Eye, EyeOff } from 'lucide-react';
 import Script from 'next/script';
 import Link from 'next/link';
 
@@ -22,6 +22,7 @@ export default function LoginPage() {
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetId = useRef<string | null>(null);
   const pendingActionRef = useRef<null | (() => void)>(null);
+  const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -30,10 +31,12 @@ export default function LoginPage() {
   const [showQuickSignup, setShowQuickSignup] = useState(false);
   const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   const [showUsernameLogin, setShowUsernameLogin] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const redirectTo = () => {
     const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
@@ -98,13 +101,26 @@ export default function LoginPage() {
         setTurnstileToken(token);
         // If a click happened before the token was ready, run it now
         if (pendingActionRef.current) {
+          if (pendingTimeoutRef.current) {
+            clearTimeout(pendingTimeoutRef.current);
+            pendingTimeoutRef.current = null;
+          }
           const action = pendingActionRef.current;
           pendingActionRef.current = null;
           action();
         }
       },
       'error-callback': () => {
-        setErrorMsg('Human verification failed to load. Please refresh the page.');
+        // Without this, a click that's still waiting on a token would be stuck
+        // forever with the button disabled and no feedback — this is what was
+        // causing the infinite "loading" state.
+        if (pendingTimeoutRef.current) {
+          clearTimeout(pendingTimeoutRef.current);
+          pendingTimeoutRef.current = null;
+        }
+        pendingActionRef.current = null;
+        setIsLoading(false);
+        setErrorMsg('Human verification failed to load. Please refresh the page and try again.');
       },
     });
   };
@@ -118,14 +134,26 @@ export default function LoginPage() {
 
   // Runs `action` once a Turnstile token is available — immediately if we
   // already have one, otherwise as soon as the widget's callback resolves.
+  // Falls back to a visible error instead of hanging forever if no token
+  // shows up within a reasonable time (blocked script, ad-blocker, etc).
   const withVerification = (action: () => void) => {
     setErrorMsg(null);
     if (turnstileToken) {
       action();
-    } else {
-      pendingActionRef.current = action;
-      setIsLoading(true);
+      return;
     }
+
+    pendingActionRef.current = action;
+    setIsLoading(true);
+
+    if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
+    pendingTimeoutRef.current = setTimeout(() => {
+      if (pendingActionRef.current) {
+        pendingActionRef.current = null;
+        setIsLoading(false);
+        setErrorMsg('Verification timed out. Please refresh the page and try again.');
+      }
+    }, 10000);
   };
 
   // --- Quick Sign Up (user picks their own username & password) ---
@@ -206,7 +234,7 @@ export default function LoginPage() {
         />
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
           onLoad={renderTurnstile}
         />
 
@@ -265,7 +293,7 @@ export default function LoginPage() {
           {showQuickSignup && (
             <div className="w-full mb-6 text-left bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
               <p className="flex items-center gap-1.5 text-slate-500 text-xs font-medium leading-relaxed">
-                Pick your own username and password.
+                Pick your username and password.
               </p>
               <input
                 type="text"
@@ -274,14 +302,24 @@ export default function LoginPage() {
                 onChange={e => setSignupUsername(e.target.value)}
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
               />
-              <input
-                type="password"
-                placeholder="Choose a password"
-                value={signupPassword}
-                onChange={e => setSignupPassword(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') withVerification(doQuickSignup); }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type={showSignupPassword ? 'text' : 'password'}
+                  placeholder="Choose a password"
+                  value={signupPassword}
+                  onChange={e => setSignupPassword(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') withVerification(doQuickSignup); }}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSignupPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               <button
                 onClick={() => withVerification(doQuickSignup)}
                 disabled={isLoading}
@@ -311,14 +349,24 @@ export default function LoginPage() {
                 onChange={e => setLoginUsername(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
               />
-              <input
-                type="password"
-                placeholder="Password"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') withVerification(doQuickLogin); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') withVerification(doQuickLogin); }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               <button
                 onClick={() => withVerification(doQuickLogin)}
                 disabled={isLoading}
