@@ -196,17 +196,21 @@ async def _find_time_expanded_routes(sa_candidates: List[Dict], sb_candidates: L
               AND freq LIKE '%' || $3 || '%'
         ''', sa_iatas, sb_iatas, target_day_str)
         
-        # Depth 2: 1-Stop Flights
+        # Depth 2: 1-Stop Flights. Leg1 must run on the search date (filtered here);
+        # leg2 is intentionally NOT filtered by the same weekday — its own days of
+        # operation are resolved per-candidate in Python below, since a real hub
+        # connection can depart the day (or two) after leg1 lands (e.g. leg1 runs
+        # Tue/Thu/Sat, leg2 runs Mon/Wed/Fri/Sun — no shared weekday, but a valid
+        # overnight connection still exists).
         one_stop_rows = await conn.fetch('''
-            SELECT 
+            SELECT
                 f1.flight_no AS leg1_flight, f1.origin AS leg1_origin, f1.dest AS hub, f1.dep_time AS leg1_dep, f1.arr_time AS leg1_arr, f1.airline AS leg1_airline,
-                f2.flight_no AS leg2_flight, f2.dest AS leg2_dest, f2.dep_time AS leg2_dep, f2.arr_time AS leg2_arr, f2.airline AS leg2_airline
+                f2.flight_no AS leg2_flight, f2.dest AS leg2_dest, f2.dep_time AS leg2_dep, f2.arr_time AS leg2_arr, f2.airline AS leg2_airline, f2.freq AS leg2_freq
             FROM "Flight" f1
             INNER JOIN "Flight" f2 ON f1.dest = f2.origin
-            WHERE f1.origin = ANY($1::text[]) 
+            WHERE f1.origin = ANY($1::text[])
               AND f2.dest = ANY($2::text[])
               AND f1.freq LIKE '%' || $3 || '%'
-              AND f2.freq LIKE '%' || $3 || '%'
         ''', sa_iatas, sb_iatas, target_day_str)
         await conn.close()
     except Exception as e:
@@ -237,11 +241,11 @@ async def _find_time_expanded_routes(sa_candidates: List[Dict], sb_candidates: L
             
             sa_cand = sa_map[r["origin"]]
             sb_cand = sb_map[r["dest"]]
-            
+
             drive_a = get_drive_time(sa_cand["distance_km"])
             drive_b = get_drive_time(sb_cand["distance_km"])
             total_duration = drive_a + duration_hours + drive_b
-            
+
             opt = TransportOption(
                 id=f"direct_{r['flight_no']}",
                 type=TransportType.FLIGHT,
@@ -253,71 +257,99 @@ async def _find_time_expanded_routes(sa_candidates: List[Dict], sb_candidates: L
                 comfort_score=8,
                 provider=f"{r['airline']} {r['flight_no']} | {sa_cand['city'].title()} ({r['origin']}) → {sb_cand['city'].title()} ({r['dest']}) *"
             )
-            all_raw_options.append((opt, sa_cand if not sa_cand.get("is_direct") else None, sb_cand if not sb_cand.get("is_direct") else None, total_duration))
+            all_raw_options.append((opt, sa_cand if not sa_cand.get("is_direct") else None, sb_cand if not sb_cand.get("is_direct") else None, total_duration, False))
         except Exception:
             continue
 
-    # Process 1-Stop Flights
+    # Process 1-Stop Flights.
+    # Layover tiers: a "convenient" same/next-day connection (30 min - 8h) is
+    # preferred, but a longer/overnight one (up to MAX_LAYOVER_HOURS) is still a
+    # real, bookable itinerary — so we keep it as a lower-priority fallback tier
+    # instead of discarding it outright. That fallback is what actually kicks in
+    # when a route's only hub connection has non-overlapping weekly schedules
+    # (e.g. leg1 runs Tue/Thu/Sat, leg2 runs Mon/Wed/Fri/Sun).
+    MIN_CONNECTION_MINUTES = 30
+    CONVENIENT_LAYOVER_MAX_HOURS = 8.0
+    MAX_LAYOVER_HOURS = 36.0
+    MAX_LAYOVER_SEARCH_DAYS = 7  # weekly schedules repeat within 7 days
+
     for r in one_stop_rows:
         try:
             l1_dep = parse_time(r["leg1_dep"], date)
             l1_arr = parse_time(r["leg1_arr"], date)
             if l1_arr < l1_dep:
                 l1_arr += timedelta(days=1)
-                
-            l2_dep = parse_time(r["leg2_dep"], date)
-            # If leg2 departure is technically the next day after leg1 arrival, we should shift the date parsing
-            if l2_dep < l1_arr:
-                l2_dep += timedelta(days=1)
-                
-            l2_arr = parse_time(r["leg2_arr"], date)
-            # adjust l2_arr to be same day as l2_dep if possible
-            if l2_arr.time() < l2_dep.time():
-                # l2 crossed midnight
-                l2_arr += timedelta(days=2 if l2_dep.date() > l1_dep.date() else 1)
-            else:
-                l2_arr += timedelta(days=1 if l2_dep.date() > l1_dep.date() else 0)
-                
+
+            leg2_days = _parse_days_of_operation(r["leg2_freq"])
+
+            # Find the earliest day on/after leg1's arrival on which leg2 actually
+            # operates, with at least a minimum connection buffer. Leg2's days of
+            # operation are independent of leg1's — this is what lets a real
+            # overnight/next-day hub connection surface instead of being silently
+            # dropped by a same-weekday-only match.
+            l2_dep = None
+            for day_offset in range(0, MAX_LAYOVER_SEARCH_DAYS + 1):
+                candidate_date = l1_arr.date() + timedelta(days=day_offset)
+                if candidate_date.weekday() not in leg2_days:
+                    continue
+                candidate_dep = parse_time(r["leg2_dep"], candidate_date.strftime("%Y-%m-%d"))
+                if candidate_dep >= l1_arr + timedelta(minutes=MIN_CONNECTION_MINUTES):
+                    l2_dep = candidate_dep
+                    break
+            if l2_dep is None:
+                continue
+
+            l2_arr = parse_time(r["leg2_arr"], l2_dep.strftime("%Y-%m-%d"))
+            if l2_arr <= l2_dep:
+                l2_arr += timedelta(days=1)
+
             layover_hours = (l2_dep - l1_arr).total_seconds() / 3600.0
-            
-            if 2.0 <= layover_hours <= 8.0:
-                l1_dur = (l1_arr - l1_dep).total_seconds() / 3600.0
-                l2_dur = (l2_arr - l2_dep).total_seconds() / 3600.0
-                
-                l1_price = 3000 + (l1_dur * 1500)
-                l2_price = 3000 + (l2_dur * 1500)
-                total_price = l1_price + l2_price
-                
-                sa_cand = sa_map[r["leg1_origin"]]
-                sb_cand = sb_map[r["leg2_dest"]]
-                
-                drive_a = get_drive_time(sa_cand["distance_km"])
-                drive_b = get_drive_time(sb_cand["distance_km"])
-                
-                total_flight_time = l1_dur + layover_hours + l2_dur
-                total_duration = drive_a + total_flight_time + drive_b
-                
-                hub = r["hub"]
-                hub_city = IATA_TO_CITY.get(hub, hub)
-                provider_str = f"{r['leg1_airline']} {r['leg1_flight']} & {r['leg2_airline']} {r['leg2_flight']} | {sa_cand['city'].title()} ({r['leg1_origin']}) → {hub_city} ({hub}) → {sb_cand['city'].title()} ({r['leg2_dest']}) *"
-                
-                opt = TransportOption(
-                    id=f"hub_{r['leg1_flight']}_{r['leg2_flight']}",
-                    type=TransportType.FLIGHT,
-                    departure=l1_dep,
-                    arrival=l2_arr,
-                    duration_hours=round(total_flight_time, 1),
-                    price=round(total_price, 2),
-                    safety_score=8,
-                    comfort_score=7,
-                    provider=provider_str
-                )
-                all_raw_options.append((opt, sa_cand if not sa_cand.get("is_direct") else None, sb_cand if not sb_cand.get("is_direct") else None, total_duration))
-        except Exception as e:
+            if layover_hours > MAX_LAYOVER_HOURS:
+                continue
+            is_overnight_layover = layover_hours > CONVENIENT_LAYOVER_MAX_HOURS
+
+            l1_dur = (l1_arr - l1_dep).total_seconds() / 3600.0
+            l2_dur = (l2_arr - l2_dep).total_seconds() / 3600.0
+
+            l1_price = 3000 + (l1_dur * 1500)
+            l2_price = 3000 + (l2_dur * 1500)
+            total_price = l1_price + l2_price
+
+            sa_cand = sa_map[r["leg1_origin"]]
+            sb_cand = sb_map[r["leg2_dest"]]
+
+            drive_a = get_drive_time(sa_cand["distance_km"])
+            drive_b = get_drive_time(sb_cand["distance_km"])
+
+            total_flight_time = l1_dur + layover_hours + l2_dur
+            total_duration = drive_a + total_flight_time + drive_b
+
+            hub = r["hub"]
+            hub_city = IATA_TO_CITY.get(hub, hub)
+            layover_note = f" (Overnight layover in {hub_city}, ~{round(layover_hours)}h)" if is_overnight_layover else ""
+            provider_str = f"{r['leg1_airline']} {r['leg1_flight']} & {r['leg2_airline']} {r['leg2_flight']} | {sa_cand['city'].title()} ({r['leg1_origin']}) → {hub_city} ({hub}) → {sb_cand['city'].title()} ({r['leg2_dest']}){layover_note} *"
+
+            opt = TransportOption(
+                id=f"hub_{r['leg1_flight']}_{r['leg2_flight']}_{l2_dep.strftime('%Y%m%d')}",
+                type=TransportType.FLIGHT,
+                departure=l1_dep,
+                arrival=l2_arr,
+                duration_hours=round(total_flight_time, 1),
+                price=round(total_price, 2),
+                safety_score=8,
+                comfort_score=7 if not is_overnight_layover else 5,
+                provider=provider_str
+            )
+            all_raw_options.append((opt, sa_cand if not sa_cand.get("is_direct") else None, sb_cand if not sb_cand.get("is_direct") else None, total_duration, is_overnight_layover))
+        except Exception:
             continue
 
-    all_raw_options.sort(key=lambda x: x[3])
-    
+    # Convenient options (direct + short-layover hub connections) always rank
+    # ahead of overnight-layover ones, but overnight options are still included
+    # rather than dropped — this is the fallback tier that actually shows up
+    # when a route has few or no convenient options.
+    all_raw_options.sort(key=lambda x: (x[4], x[3]))
+
     # Ensure uniqueness based on provider + departure
     seen = set()
     unique_options = []
@@ -326,7 +358,7 @@ async def _find_time_expanded_routes(sa_candidates: List[Dict], sb_candidates: L
         if key not in seen:
             seen.add(key)
             unique_options.append((o[0], o[1], o[2]))
-            
+
     return unique_options[:10]
 
 async def search_live_flights(origin_city: str, dest_city: str, date: str, check_only: bool = False) -> Optional[List[TransportOption]]:
