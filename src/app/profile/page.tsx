@@ -458,11 +458,11 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-0 mb-10 sm:mb-14 border-b border-neutral-200 dark:border-white/10 pb-6 sm:pb-8">
           <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-8 w-full sm:w-auto">
             <button
-              onClick={() => router.push(targetUserParam ? '/blog' : '/')}
+              onClick={() => router.back()}
               className="text-neutral-400 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white transition-colors flex items-center gap-2 font-bold text-[10px] sm:text-xs uppercase tracking-widest group shrink-0"
             >
               <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              <span>{targetUserParam ? 'Back to Journal' : 'Back to Dashboard'}</span>
+              <span>Back</span>
             </button>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter text-neutral-900 dark:text-white shrink-0">
               {targetUserParam ? "Traveler Profile" : "My Profile"}
