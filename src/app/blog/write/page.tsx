@@ -16,6 +16,7 @@ import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { CATEGORIES, ItineraryStop, Article, ARTICLES, FEATURED_ARTICLE } from '@/data/blogData';
 import { isAdminEmail } from '@/lib/admin';
 import { useAuthStore } from '@/store/authStore';
+import { readUserProfile } from '@/lib/profileStorage';
 
 const BUDGET_FILTER_OPTIONS = [
   { label: 'All Budgets', value: 'All' },
@@ -123,14 +124,14 @@ export default function WriteBlogPage() {
     if (typeof window !== 'undefined') {
       const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
-        const savedProfile = localStorage.getItem('brewplans_user_profile');
+        const savedProfile = readUserProfile(user?.id);
         const savedUser = localStorage.getItem('brewplans_user');
-        let currentUsername = 'indian_traveler';
-        let currentDisplayName = 'Indian Explorer';
+        let currentUsername = user?.username || 'indian_traveler';
+        let currentDisplayName = user?.name || 'Indian Explorer';
         let currentIsAdmin = false;
 
         if (savedProfile) {
-          const parsed = JSON.parse(savedProfile);
+          const parsed = savedProfile;
           if (parsed.username) currentUsername = parsed.username;
           if (parsed.displayName) currentDisplayName = parsed.displayName;
           if (parsed.pfp) setCustomAvatar(parsed.pfp);
@@ -218,7 +219,7 @@ export default function WriteBlogPage() {
         }
       }
     }
-  }, [editId, user?.email]);
+  }, [editId, user?.id, user?.email]);
 
   // Auto-save Draft
   useEffect(() => {

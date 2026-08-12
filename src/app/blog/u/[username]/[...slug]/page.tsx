@@ -12,6 +12,7 @@ import { ImageCarousel } from '@/components/blog/ImageCarousel';
 import { calculateProgressiveMetrics } from '@/lib/blogMetrics';
 import { isAdminEmail } from '@/lib/admin';
 import { useAuthStore } from '@/store/authStore';
+import { readUserProfile } from '@/lib/profileStorage';
 import { Clock, Eye, MessageSquare, Heart, Share2, Bookmark, MapPin, Plane, Send, ThumbsUp, ArrowLeft, User, Users, DollarSign, Calendar, Home, Navigation, Zap, Pencil, Trash2, Check, Link as LinkIcon, Upload } from 'lucide-react';
 import Link from 'next/link';
 
@@ -47,11 +48,10 @@ export default function DedicatedArticlePage() {
       if (typeof window !== 'undefined') {
         try {
           const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
-          const profileSaved = localStorage.getItem('brewplans_user_profile');
-          const parsedProfile = profileSaved ? JSON.parse(profileSaved) : {};
+          const parsedProfile = readUserProfile(user?.id) || {};
 
           // Get username from profile OR authStore
-          const myUsername = parsedProfile.username || user?.name || '';
+          const myUsername = parsedProfile.username || user?.username || '';
           
           // Use email from authStore (server-verified) as source of truth
           const myEmail = user?.email || parsedProfile.email || '';

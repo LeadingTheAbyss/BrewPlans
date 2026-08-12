@@ -16,6 +16,8 @@ import { CustomDropdown } from '@/components/blog/CustomDropdown';
 import { CinematicLoader } from '@/components/CinematicLoader';
 import { useCacheStore } from '@/store/cacheStore';
 import { BlogThemeContext } from '@/context/BlogThemeContext';
+import { useAuthStore } from '@/store/authStore';
+import { readUserProfile } from '@/lib/profileStorage';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, DollarSign, Calendar, X } from 'lucide-react';
 
@@ -33,6 +35,7 @@ const QUICK_CITIES = [
 
 export default function BlogLandingPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('All Stories');
   const [searchCity, setSearchCity] = useState<string>('');
   const [selectedQuickCity, setSelectedQuickCity] = useState<string>('All India');
@@ -58,7 +61,6 @@ export default function BlogLandingPage() {
         setArticles(cached);
       }
 
-      const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
         fetch('/api/blogs')
           .then(async res => {
@@ -95,35 +97,27 @@ export default function BlogLandingPage() {
           .finally(() => {
             setIsFetching(false);
           });
-
-        const profileSaved = localStorage.getItem('brewplans_user_profile');
-        const userSaved = localStorage.getItem('brewplans_user');
-        let myUsername = '';
-        let currentIsAdmin = false;
-
-        let myEmail = '';
-        
-        let parsedProfile = profileSaved ? JSON.parse(profileSaved) : {};
-        let parsedUser = userSaved ? JSON.parse(userSaved) : {};
-
-        myUsername = parsedProfile.username || parsedUser.username || '';
-        myEmail = parsedProfile.email || parsedUser.email || '';
-        
-        if (parsedProfile.isAdmin || parsedUser.isAdmin || isAdminEmail(myEmail)) {
-          currentIsAdmin = true;
-        }
-
-        if (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase())) {
-          currentIsAdmin = true;
-        }
-
-        setIsAdmin(currentIsAdmin);
       } catch (e) {
         if (!cache.getCache('blogs')) setArticles([]);
         setIsFetching(false);
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
+    const parsedProfile: any = readUserProfile(user?.id) || {};
+    const myUsername = parsedProfile.username || user?.username || '';
+    const myEmail = parsedProfile.email || user?.email || '';
+
+    const currentIsAdmin = Boolean(
+      parsedProfile.isAdmin ||
+      isAdminEmail(myEmail) ||
+      (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase()))
+    );
+    setIsAdmin(currentIsAdmin);
+  }, [user]);
 
   const isLoading = isMounted && articles.length === 0 && isFetching;
 

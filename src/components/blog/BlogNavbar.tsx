@@ -7,6 +7,7 @@ import { Compass, Menu, X, MapPin, Send, Plane, PenTool, User, Cloud, CloudFog, 
 import { useAuthStore } from '@/store/authStore';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useBlogTheme } from '@/context/BlogThemeContext';
+import { readUserProfile } from '@/lib/profileStorage';
 
 export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; saveStatus?: string }) {
   const router = useRouter();
@@ -22,13 +23,8 @@ export function BlogNavbar({ wordCount, saveStatus }: { wordCount?: number; save
   const toggleDark = blogTheme?.toggleDark || (() => {});
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('brewplans_user_profile');
-        if (saved) setUserProfile(JSON.parse(saved));
-      } catch (e) {}
-    }
-  }, []);
+    setUserProfile(readUserProfile(user?.id));
+  }, [user?.id]);
 
   const scrollToNewsletter = () => {
     const el = document.getElementById('newsletter-section');

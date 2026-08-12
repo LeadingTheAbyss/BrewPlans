@@ -12,6 +12,7 @@ import { InteractiveItineraryMap } from './InteractiveItineraryMap';
 import { BlogVisualMap } from './BlogVisualMap';
 import { RichArticleRenderer } from './RichArticleRenderer';
 import { useAuthStore } from '@/store/authStore';
+import { readUserProfile } from '@/lib/profileStorage';
 
 interface ArticleReaderModalProps {
   article: Article | null;
@@ -39,11 +40,10 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
     if (typeof window !== 'undefined') {
       const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
-        const profileSaved = localStorage.getItem('brewplans_user_profile');
-        const parsedProfile = profileSaved ? JSON.parse(profileSaved) : {};
+        const parsedProfile = readUserProfile(user?.id) || {};
 
         // Username from profile (used for author matching)
-        const myUsername = parsedProfile.username || user?.name || '';
+        const myUsername = parsedProfile.username || user?.username || '';
 
         // Email from authStore = server-verified source of truth
         const myEmail = user?.email || parsedProfile.email || '';

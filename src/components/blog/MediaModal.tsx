@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Article, Comment } from '@/data/blogData';
 import { Heart, MessageCircle, X, Play, MoreHorizontal } from 'lucide-react';
 import { ImageCarousel } from '@/components/blog/ImageCarousel';
+import { useAuthStore } from '@/store/authStore';
+import { readUserProfile } from '@/lib/profileStorage';
 
 interface MediaModalProps {
   article: Article;
@@ -9,6 +11,7 @@ interface MediaModalProps {
 }
 
 export function MediaModal({ article, onClose }: MediaModalProps) {
+  const { user } = useAuthStore();
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(article.likes || 0);
   const [comments, setComments] = useState<Comment[]>(article.comments || []);
@@ -76,11 +79,10 @@ export function MediaModal({ article, onClose }: MediaModalProps) {
   const handlePostComment = () => {
     if (!newComment.trim() || typeof window === 'undefined') return;
     
-    const profileSaved = localStorage.getItem('brewplans_user_profile');
-    let author = 'You';
-    let avatar = 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100';
-    if (profileSaved) {
-      const parsed = JSON.parse(profileSaved);
+    const parsed = readUserProfile(user?.id);
+    let author = user?.name || 'You';
+    let avatar = user?.picture || 'https://commons.wikimedia.org/wiki/Special:FilePath/Profile_avatar_placeholder_large.png?width=100';
+    if (parsed) {
       if (parsed.displayName) author = parsed.displayName;
       if (parsed.pfp) avatar = parsed.pfp;
     }

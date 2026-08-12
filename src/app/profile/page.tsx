@@ -12,6 +12,7 @@ import { useBudgetStore } from '@/store/budgetStore';
 import { FeedbackModal } from '@/components/FeedbackModal';
 import ModernDateRangePicker from '@/components/ModernDateRangePicker';
 import { ARTICLES, FEATURED_ARTICLE, Article } from '@/data/blogData';
+import { readUserProfile, writeUserProfile } from '@/lib/profileStorage';
 import Link from 'next/link';
 
 let cachedTrips: any[] | null = null;
@@ -136,12 +137,8 @@ export default function ProfilePage() {
           if (res.ok) fetchedBlogs = await res.json();
         } catch(e) {}
       try {
-        const saved = localStorage.getItem('brewplans_user_profile');
         const myUsername = user?.username || '';
-        let myProfileData: UserCustomProfile | null = null;
-        if (saved) {
-          myProfileData = JSON.parse(saved);
-        }
+        const myProfileData: UserCustomProfile | null = readUserProfile(user?.id);
 
         const isOwn = !targetUserParam || (!!myUsername && targetUserParam === myUsername);
 
@@ -387,8 +384,8 @@ export default function ProfilePage() {
     const updatedProfile = { ...editForm, username: customProfile.username };
     setCustomProfile(updatedProfile);
     setEditForm(updatedProfile);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('brewplans_user_profile', JSON.stringify(updatedProfile));
+    if (user?.id) {
+      writeUserProfile(user.id, updatedProfile);
     }
 
     // Persist to DB using updateProfile
