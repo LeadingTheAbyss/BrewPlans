@@ -387,38 +387,29 @@ async def _search_live_flights_impl(origin_city: str, dest_city: str, date: str,
 
     origin_iata_direct = CITY_TO_IATA.get(clean_origin)
     dest_iata_direct = CITY_TO_IATA.get(clean_dest)
-    
-    origin_candidates = []
-    if origin_iata_direct:
-        ac = _get_all_airport_coords().get(origin_iata_direct, {})
-        origin_candidates.append({
-            "iata": origin_iata_direct,
-            "city": origin_city,
-            "lat": ac.get("lat", 0.0),
-            "lon": ac.get("lon", 0.0),
-            "distance_km": 0.0,
-            "is_direct": True
-        })
-    else:
-        coords = await get_coordinates(origin_city)
-        if coords:
-            origin_candidates = _get_nearest_airports(coords["lat"], coords["lng"], limit=3)
 
-    dest_candidates = []
-    if dest_iata_direct:
-        ac = _get_all_airport_coords().get(dest_iata_direct, {})
-        dest_candidates.append({
-            "iata": dest_iata_direct,
-            "city": dest_city,
-            "lat": ac.get("lat", 0.0),
-            "lon": ac.get("lon", 0.0),
-            "distance_km": 0.0,
-            "is_direct": True
-        })
-    else:
-        coords = await get_coordinates(dest_city)
+    async def resolve_candidates(city: str, iata_direct: Optional[str]) -> List[Dict[str, Any]]:
+        if iata_direct:
+            ac = _get_all_airport_coords().get(iata_direct, {})
+            return [{
+                "iata": iata_direct,
+                "city": city,
+                "lat": ac.get("lat", 0.0),
+                "lon": ac.get("lon", 0.0),
+                "distance_km": 0.0,
+                "is_direct": True
+            }]
+        coords = await get_coordinates(city)
         if coords:
-            dest_candidates = _get_nearest_airports(coords["lat"], coords["lng"], limit=3)
+            return _get_nearest_airports(coords["lat"], coords["lng"], limit=3)
+        return []
+
+    # Resolve both sides concurrently — when neither has a direct airport
+    # mapping, this halves the geocoding latency instead of doing it serially.
+    origin_candidates, dest_candidates = await asyncio.gather(
+        resolve_candidates(origin_city, origin_iata_direct),
+        resolve_candidates(dest_city, dest_iata_direct)
+    )
 
     if not origin_candidates or not dest_candidates:
         print(f"[Warning] Could not resolve airports for '{origin_city}' or '{dest_city}'. No flights available.")
@@ -436,8 +427,24 @@ async def _search_live_flights_impl(origin_city: str, dest_city: str, date: str,
     
     # We will cache the cab fares to avoid re-calling OSRM for the same city->airport pairs multiple times
     cab_fare_cache = {} # (from_lat, from_lon, to_lat, to_lon) -> fare_data
-    dest_city_coords = await get_coordinates(dest_city)
-    origin_city_coords = await get_coordinates(origin_city)
+
+    # Only geocode the origin/destination city center if some option actually
+    # needs a cab leg (i.e. resolved to a nearby, non-direct airport) — for the
+    # common case of a direct-airport-to-direct-airport route, neither coord is
+    # ever used below, so skip these calls entirely instead of geocoding for nothing.
+    needs_dest_coords = any(nearest_dest for _, _, nearest_dest in all_raw_options)
+    needs_origin_coords = any(nearest_origin for _, nearest_origin, _ in all_raw_options)
+
+    dest_city_coords = None
+    origin_city_coords = None
+    if needs_dest_coords and needs_origin_coords:
+        dest_city_coords, origin_city_coords = await asyncio.gather(
+            get_coordinates(dest_city), get_coordinates(origin_city)
+        )
+    elif needs_dest_coords:
+        dest_city_coords = await get_coordinates(dest_city)
+    elif needs_origin_coords:
+        origin_city_coords = await get_coordinates(origin_city)
 
     # Pre-calculate required cab routes to fetch concurrently
     cab_requests = set()

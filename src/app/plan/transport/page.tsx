@@ -271,7 +271,7 @@ export default function TransportPage() {
     }
     
     const destination = trip.destination || 'Unknown';
-    const key = `${pax.id}-${pax.city}-${destination}-${type}-v9`;
+    const key = `${pax.id}-${pax.city}-${destination}-${type}-v10`;
     const isActive = activeTabs[pax.id] === type;
 
     // Toggle tab
@@ -519,7 +519,7 @@ export default function TransportPage() {
                       <div id="tutorial-transport-options" className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto no-scrollbar items-center gap-2.5 pb-2">
                         {['flight', 'train', 'bus', 'cab'].map((type) => {
                           const destination = trip.destination || 'Unknown';
-                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v9`;
+                          const key = `${pax.id}-${pax.city}-${destination}-${type}-v10`;
                           const isFetched = cachedData[key] !== undefined;
                           const task = fetchQueue.tasks.find(t => t.id === key);
                           const isLoading = task?.status === 'loading' || task?.status === 'idle';
@@ -575,7 +575,7 @@ export default function TransportPage() {
                         <AnimatePresence mode="wait">
                           {['flight', 'train', 'bus', 'cab'].map((type) => {
                             const destination = trip.destination || 'Unknown';
-                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v9`;
+                            const key = `${pax.id}-${pax.city}-${destination}-${type}-v10`;
                             const isFetched = cachedData[key] !== undefined;
                             const task = fetchQueue.tasks.find(t => t.id === key);
                             const isLoading = task?.status === 'loading' || task?.status === 'idle';

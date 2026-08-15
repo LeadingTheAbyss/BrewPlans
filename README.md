@@ -310,7 +310,7 @@ The real tiresome work for this project undoubtedly lied in the backend.
 | GPT OSS 120B | 120B | Extremely strong reasoning and complex planning | Overkill for simple recommendations, slower |
 | GPT OSS 20B | 20B | Very fast responses, good for real-time applications | Less capable with complex constraints |
 | Llama 4 Scout | 17B active parameters (MoE) | Fast, efficient, good quality-to-speed ratio | Less deep reasoning than larger models |
-| Llama 3.1 8B | 8B | Extremely fast and lightweight | Generic recommendations, weaker constraint handling |
+
 
 * **Note:** We'll be saving info from here in the database and redis as well.
 

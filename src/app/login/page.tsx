@@ -259,7 +259,7 @@ export default function LoginPage() {
         <button
           onClick={() => router.push('/')}
           className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors z-20 group font-semibold"
-        >
+        >GPT-OSS 20B
           <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
           Back to Home
         </button>
