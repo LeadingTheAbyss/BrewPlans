@@ -1594,3 +1594,5 @@ Total 752 Cities found. Page 5
 10.5593,72.6358
 📍Puducherry, Puducherry, India
 11.9416,79.8083
+📍Jais, Uttar Pradesh, India
+26.264786,81.546364
