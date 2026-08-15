@@ -49,7 +49,7 @@ Content Snippet: ${(content || '').substring(0, 15000)}`;
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "GPT-OSS 20B",
+        model: "openai/gpt-oss-120b"
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" }
       })
