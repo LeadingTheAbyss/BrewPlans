@@ -110,7 +110,7 @@ def call_ollama(prompt: str) -> str:
     
     url = "https://api.groq.com/openai/v1/chat/completions"
     payload = {
-        "model": "llama-3.3-70b-versatile", # Switched back to 70B for strict JSON compliance
+        "model": "openai/gpt-oss-120b",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}

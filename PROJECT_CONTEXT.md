@@ -15,7 +15,7 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
 - **Auth Provider**: Google OAuth with Stateful Database Tokens (Custom UUID session implementation)
 - **Hosting/Deployment**: Vercel (Frontend) and Render (Backend API)
 - **Package Managers/Build Tools**: `npm` for Node packages, `pip` for Python, `next build`
-- **AI/ML Models**: Groq Inference Engine running `llama-3.3-70b-versatile` (referred to as Llama 4 Scout in docs) for trip recommendations
+- **AI/ML Models**: Groq Inference Engine running `openai/gpt-oss-120b` for trip recommendations
 
 ## 3. Architecture
 - **High-Level System Diagram**: 
@@ -72,7 +72,7 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
   - `WS /api/ws/plan/{plan_id}`: WebSocket endpoint for real-time collaborative drag-and-drop itinerary planning (max 15 users).
 - **External Third-Party APIs**:
   - *Google Places API*: Primary POI and photo data (Production, expensive, heavily cached).
-  - *Groq (Llama-3.3-70b-versatile)*: AI Recommendations. Handled with a robust 9-key rotation fallback mechanism.
+  - *Groq (openai/gpt-oss-120b)*: AI Recommendations. Handled with a robust 9-key rotation fallback mechanism.
   - *SerpAPI (Google Hotels)*: Hotel pricing and availability.
   - *RailRadar*: Live train schedules and routes.
   - *Parse.bot*: Scraping redBus for bus schedules (Production, somewhat flaky for long trips).
@@ -98,7 +98,7 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
 - **Design System**: Built on `shadcn/ui` with Tailwind CSS, utilizing a specific color palette defined in `globals.css` with seamless dark mode support (`next-themes`).
 
 ## 7B. AI/ML Implementation Deep Dive
-- **Provider & Model**: Groq inference engine running `llama-3.3-70b-versatile` (via `/api/recommendations`). Chosen for its strict JSON adherence and reasoning capabilities over smaller models.
+- **Provider & Model**: Groq inference engine running `openai/gpt-oss-120b` (via `/api/recommendations`). Chosen for its strict JSON adherence and reasoning capabilities over smaller models.
 - **Prompt Engineering**: The prompt (`ollama_engine.py`) dynamically injects "guidance rules" (e.g., injecting specific cities based on regex matches for keywords like "veg" or "mountains"). It strictly forces the model to return exactly 10 destinations in India (excluding foreign lookalikes) and forces a specific JSON schema.
 - **Error Handling/Resilience**: Because Groq rate limits are aggressive, `ollama_engine.py` implements a 9-key round-robin rotation (`GROQ_API_KEY_1` to `9`). If a 429 error occurs, it instantly falls back to the next key. If all fail, it returns a safe fallback JSON object so the UI doesn't crash.
 - **Evaluation**: The LLM outputs are post-processed; budgets are clamped to the user's hard limit, and city names are deduplicated to ensure 10 distinct results.
