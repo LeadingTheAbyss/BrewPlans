@@ -2,6 +2,8 @@ import prisma from '@/lib/prisma';
 
 const DIACRITICS_PATTERN = /\p{Diacritic}/gu;
 
+// it takes a name with special symbols and converts it to a 
+// normal name.
 function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -15,6 +17,9 @@ function slugify(name: string): string {
 
 // Derives a username from a display name (e.g. a Google account name),
 // appending a numeric suffix until it's unique in the DB.
+// like kartikey1, kartikey2, ... 
+// this is the best idea coz what if as soonas u log in, the name u get
+// from oauth is a taken username.
 export async function generateUniqueUsername(name: string): Promise<string> {
   const base = slugify(name);
   let candidate = base;

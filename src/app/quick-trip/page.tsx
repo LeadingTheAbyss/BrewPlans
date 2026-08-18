@@ -1223,7 +1223,7 @@ export default function QuickTripPage() {
                         <div className={`flex items-center justify-between relative z-10 ml-[84px] pb-6 text-xs ${isLightMode ? 'text-zinc-500' : 'text-zinc-500'}`}>
                           <div className="flex items-center gap-3">
                             <div className={`py-1 ${isLightMode ? 'bg-transparent' : 'bg-[#0a0a0a]'}`}>
-                              {item.commute.type === 'bike'
+                              {item.commute.type === 'scooty/bike'
                                 ? <Bike size={13} className="text-blue-400" />
                                 : item.commute.type === 'walk'
                                 ? <Footprints size={13} className="text-amber-400" />
@@ -1233,8 +1233,8 @@ export default function QuickTripPage() {
                             <div className="flex flex-col">
                               <span>{formatDuration(item.travelMins)} ({item.travelDistanceStr || (item.commute.cost > 0 ? (item.commute.cost / 7).toFixed(1) : '2.0')} km)</span>
                               <span className="text-[10px] text-zinc-600">
-                                {transportMode === 'cab' 
-                                  ? `Recommended: ${item.commute.type === 'bike' ? 'Bike Ride' : 'Cab'}` 
+                                {transportMode === 'cab'
+                                  ? `Recommended: ${item.commute.type === 'scooty/bike' ? 'Bike Ride' : 'Cab'}`
                                   : `Transport: ${item.commute.service}`}
                               </span>
                             </div>
@@ -1320,8 +1320,8 @@ export default function QuickTripPage() {
                            <div className="flex flex-col">
                              <span className="text-zinc-400">Travel to next stop</span>
                              <span className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider font-bold">
-                               {transportMode === 'cab' 
-                                 ? `Recommended: ${item.commute.type === 'bike' ? 'Bike Ride' : 'Cab'}` 
+                               {transportMode === 'cab'
+                                 ? `Recommended: ${item.commute.type === 'scooty/bike' ? 'Bike Ride' : 'Cab'}`
                                  : `Transport: ${item.commute.service}`}
                              </span>
                            </div>

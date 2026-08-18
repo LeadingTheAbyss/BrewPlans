@@ -13,7 +13,7 @@ export function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: 
 }
 
 export interface CommutePricing {
-  type: 'bike' | 'cab' | 'car' | 'walk';
+  type: 'scooty/bike' | 'cab' | 'car' | 'walk';
   service: string;
   cost: number;
 }
@@ -23,7 +23,7 @@ export function calculateCost(distanceKm: number, timeMins: number, paxCount: nu
     return { type: 'walk', service: 'Walking', cost: 0 };
   }
   if (mode === 'personal_bike') {
-    return { type: 'bike', service: 'Bike / Scooty', cost: 0 };
+    return { type: 'scooty/bike', service: 'Bike / Scooty', cost: 0 };
   }
   if (mode === 'personal_car') {
     return { type: 'car', service: 'Personal Car', cost: 0 };
@@ -34,7 +34,7 @@ export function calculateCost(distanceKm: number, timeMins: number, paxCount: nu
     let distanceCost = 0;
     if (distanceKm > 2) distanceCost = (distanceKm - 2) * 15;
     const totalFare = 35 + distanceCost + (timeMins * 0.22);
-    return { type: 'bike', service: 'Rapido Bike', cost: Math.round(totalFare) };
+    return { type: 'scooty/bike', service: 'Rapido Bike', cost: Math.round(totalFare) };
   } else if (paxCount <= 4) {
     let distanceCost = distanceKm <= 20 ? distanceKm * 7 : (20 * 7) + ((distanceKm - 20) * 14);
     const totalFare = 40 + distanceCost + (timeMins * 1.50);
