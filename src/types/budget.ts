@@ -8,8 +8,3 @@ export type BudgetState = {
   remaining: number;
   projectedTotal: number;
 };
-
-export type BudgetWarning = {
-  level: 'info' | 'warning' | 'critical';
-  message: string;
-};
