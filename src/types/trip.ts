@@ -15,14 +15,12 @@ export type Passenger = {
   tripId: string;
   name: string;
   age: number;
-  gender: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female';
   pincode: string;
   city: string;
   transportPreference: 'flight' | 'train' | 'bus' | 'cab' | 'any';
   remember?: boolean;
 };
-
-export type TransportAvailability = 'Confirmed' | string; // e.g. 'WL 12'
 
 export type TransportOption = {
   id: string;
@@ -33,7 +31,6 @@ export type TransportOption = {
   duration: string;
   departure: string;
   arrival: string;
-  availability: TransportAvailability;
   comfortScore: number;
   safetyScore: number;
   recommendationScore: number;

@@ -243,6 +243,13 @@ export default function TripSetupPage() {
                     startDate={trip.startDate}
                     endDate={trip.endDate}
                     onChange={(start, end) => {
+                      const datesChanged = start !== trip.startDate || end !== trip.endDate;
+                      if (datesChanged) {
+                        // Dates only affect transport (flights/trains/cabs are date-dependent);
+                        // places/food/hotels caches and selections stay put.
+                        trip.selectedTransports.forEach(t => budget.refundExpense('transport', t.cost));
+                        useFetchQueue.getState().clearTasksByCategory('transport');
+                      }
                       trip.setTripDetails({ startDate: start, endDate: end });
                       if (start && end) {
                         trip.logTripAttempt('DATES_SET');

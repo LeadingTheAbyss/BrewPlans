@@ -45,19 +45,24 @@ export const useTripStore = create<TripState>()(
       attemptId: null,
 
       setTripDetails: (details) => set((state) => {
-        let clearSelections = false;
+        // Destination/source changes invalidate everything; callers handle the full
+        // cache/queue reset, this store only needs to drop stale selections here.
+        const destinationChanged =
+          (!!details.source && details.source !== state.source) ||
+          (!!details.destination && details.destination !== state.destination);
 
-        // Invalidate previous selections if core trip parameters change
-        if (details.source && details.source !== state.source) clearSelections = true;
-        if (details.destination && details.destination !== state.destination) clearSelections = true;
-        if (details.startDate && details.startDate !== state.startDate) clearSelections = true;
-        if (details.endDate && details.endDate !== state.endDate) clearSelections = true;
+        // Date-only changes only affect transport — hotels aren't date-bound here.
+        const datesChanged =
+          (!!details.startDate && details.startDate !== state.startDate) ||
+          (!!details.endDate && details.endDate !== state.endDate);
 
         const newState = { ...state, ...details };
-        
-        if (clearSelections) {
+
+        if (destinationChanged) {
           if (details.selectedTransports === undefined) newState.selectedTransports = [];
           if (details.selectedHotel === undefined) newState.selectedHotel = null;
+        } else if (datesChanged) {
+          if (details.selectedTransports === undefined) newState.selectedTransports = [];
         }
 
         return newState;

@@ -22,6 +22,7 @@ interface FetchQueueState {
   // Actions
   enqueueTask: (task: Omit<FetchTask, 'status'>) => void;
   bumpPriority: (id: string) => void;
+  clearTasksByCategory: (category: FetchTaskType) => void;
   updateTaskStatus: (id: string, status: FetchTask['status'], data?: any) => void;
   setProcessing: (status: boolean) => void;
   getNextTask: () => FetchTask | undefined;
@@ -53,6 +54,7 @@ export const useFetchQueue = create<FetchQueueState>((set, get) => ({
     return { tasks: newTasks.sort((a, b) => a.priority - b.priority) };
   }),
   
+  // used to maximize the priority of some element (execute this first, then others..)
   bumpPriority: (id) => set((state) => {
     const newTasks = state.tasks.map(t => {
       // Unconditionally set to 'idle' so BackgroundFetcher aborts any running checkOnly task
@@ -79,5 +81,9 @@ export const useFetchQueue = create<FetchQueueState>((set, get) => ({
     // We now enforce strict lazy loading: API calls are only made when a user explicitly clicks a tab or accordion.
   },
   
+  clearTasksByCategory: (category) => set((state) => ({
+    tasks: state.tasks.filter(t => t.category !== category)
+  })),
+
   clearQueue: () => set({ tasks: [] })
 }));
