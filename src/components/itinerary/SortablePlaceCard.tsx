@@ -36,7 +36,6 @@ export function SortablePlaceCard({
   onClickContainer
 }: SortablePlaceCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortableId || place.id });
-  const [showWallet, setShowWallet] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
