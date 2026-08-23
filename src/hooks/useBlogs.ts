@@ -13,7 +13,7 @@ export function useBlogs() {
         setBlogs(data);
       }
     } catch (e) {
-      console.error('Failed to fetch blogs', e);
+      console.error('Unable to load blogs right now. Please try again later.', e);
     } finally {
       setLoading(false);
     }
@@ -21,7 +21,7 @@ export function useBlogs() {
 
   useEffect(() => {
     fetchBlogs();
-  }, []);
+  }, []);                           
 
   const addBlog = async (blogData: Partial<Article>) => {
     try {
@@ -34,7 +34,7 @@ export function useBlogs() {
         await fetchBlogs();
       }
     } catch (e) {
-      console.error('Failed to add blog', e);
+      console.error('Failed to add blog. Please try again later.', e);
     }
   };
 
@@ -49,7 +49,7 @@ export function useBlogs() {
         await fetchBlogs();
       }
     } catch (e) {
-      console.error('Failed to update blog', e);
+      console.error('Failed to update blog. Please try again later.', e);
     }
   };
 
@@ -62,7 +62,7 @@ export function useBlogs() {
         await fetchBlogs();
       }
     } catch (e) {
-      console.error('Failed to delete blog', e);
+      console.error('Failed to delete blog. Please try again later.', e);
     }
   };
 
