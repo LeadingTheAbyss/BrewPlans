@@ -15,9 +15,6 @@ interface StatsData {
     totalViews: number;
     totalUsers: number;
     activeUsersToday: number;
-    newSignupsToday: number;
-    tripsPlannedToday: number;
-    totalTripsLifetime: number;
     totalApiCallsAllTime: number;
     totalApiCallsToday: number;
     apiBreakdown: Record<string, number>;
