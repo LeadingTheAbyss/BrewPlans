@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, Sparkles, Search, Globe, ChevronDown, Train, Map, Menu, X, MessageSquare, Plane, Navigation, Clock, Cloud, Activity } from 'lucide-react';
+import { ArrowRight, Menu, X, MessageSquare } from 'lucide-react';
 import { ContrailCanvas } from '@/components/ContrailCanvas';
 
 const TOURIST_ATTRACTIONS = [
@@ -36,6 +36,7 @@ export default function LandingPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   // Lazy initializer runs synchronously on first render — prevents ContrailCanvas flashing on mobile
   const [isMobileDevice] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  // before the dynamic images appear, these images are shown as a fallback
   const [bgImages, setBgImages] = useState<string[]>([
     '/landing_1.png', 
     '/landing_2.png', 
@@ -69,7 +70,6 @@ export default function LandingPage() {
   useEffect(() => {
     // Register GSAP Plugin
     gsap.registerPlugin(ScrollTrigger);
-
     const isMobile = window.innerWidth < 768;
 
     let mouseMoveScheduled = false;
@@ -93,8 +93,6 @@ export default function LandingPage() {
     if (!isMobile) {
       window.addEventListener('mousemove', handleMouseMove);
     }
-
-
 
     let mounted = true;
     let renderer: THREE.WebGLRenderer;
