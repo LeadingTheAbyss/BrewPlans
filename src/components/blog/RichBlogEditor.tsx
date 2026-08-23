@@ -234,7 +234,6 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
   // ── Parse value into blocks (once or when receiving delayed data) ──────────
   useEffect(() => {
     const isEffectivelyEmpty = blocks.length === 0 || (blocks.length === 1 && blocks[0].content === '' && blocks[0].type === 'paragraph');
-    
     // If we already have real blocks and the user might be typing, do not overwrite from parent!
     if (!isEffectivelyEmpty) return;
     
@@ -458,7 +457,6 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
     });
 
     // Slash menu detection
-    const blockContent = (blocks.find(b => b.id === id)?.content ?? '');
     const syntheticContent = raw; // raw is the latest value
     const lastSlash = syntheticContent.lastIndexOf('/');
     if (lastSlash !== -1) {

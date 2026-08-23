@@ -13,7 +13,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "BrewPlans",
-  description: "Plan your trip with real-time flight, train, and hotel data.",
+  description: "We plan the trip. You pack your bags.",
   icons: {
     icon: '/icon.png',
   },
