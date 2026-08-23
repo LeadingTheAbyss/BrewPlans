@@ -11,7 +11,6 @@ import { CategoryPills } from '@/components/blog/CategoryPills';
 import { EditorialArticleGrid } from '@/components/blog/EditorialArticleGrid';
 import { BlogNewsletter } from '@/components/blog/BlogNewsletter';
 import { BlogFooter } from '@/components/blog/BlogFooter';
-import { ArticleReaderModal } from '@/components/blog/ArticleReaderModal';
 import { CustomDropdown } from '@/components/blog/CustomDropdown';
 import { CinematicLoader } from '@/components/CinematicLoader';
 import { useCacheStore } from '@/store/cacheStore';
@@ -39,7 +38,6 @@ export default function BlogLandingPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All Stories');
   const [searchCity, setSearchCity] = useState<string>('');
   const [selectedQuickCity, setSelectedQuickCity] = useState<string>('All India');
-  const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   // Dynamic user blogs (No hardcoded data - Item 14)
   const [articles, setArticles] = useState<Article[]>([]);
@@ -241,7 +239,7 @@ export default function BlogLandingPage() {
                 <span>Smart Indian Expedition Discovery</span>
               </div>
               <h3 className={`text-2xl sm:text-4xl font-black tracking-tight ${isDark ? 'text-zinc-100' : 'text-[#1F2937]'}`}>
-                Filter by Destination, Budget & Season
+                Filter by Destination, Budget or Season
               </h3>
               <p className={`text-xs sm:text-sm font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-[#4B5563]'}`}>
                 Customize your feed to match your exact budget and trip vibe.
@@ -355,12 +353,6 @@ export default function BlogLandingPage() {
 
       {/* Travel Journal Footer */}
       <BlogFooter showQuote={true} />
-
-      {/* Fallback Reader Modal */}
-      <ArticleReaderModal 
-        article={readingArticle} 
-        onClose={() => setReadingArticle(null)} 
-      />
 
     </div>
     </BlogThemeContext.Provider>
