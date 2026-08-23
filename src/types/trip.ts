@@ -15,7 +15,7 @@ export type Passenger = {
   tripId: string;
   name: string;
   age: number;
-  gender?: 'male' | 'female';
+  gender?: 'male' | 'female' | 'other';
   pincode: string;
   city: string;
   transportPreference: 'flight' | 'train' | 'bus' | 'cab' | 'any';

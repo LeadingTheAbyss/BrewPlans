@@ -149,7 +149,7 @@ const SLASH_CMDS = [
 export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
   value,
   onChange,
-  placeholder = "Write your story… '/' for blocks · Tab for sub-bullets · paste images",
+  placeholder = "Write Your Story… '/' For More Features · Tab for Sub-Bullets · Paste Images",
   mode = 'rich',
 }) => {
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
