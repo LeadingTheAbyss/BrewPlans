@@ -26,6 +26,15 @@ export function useDestinationTheme(cityOverride?: string) {
     }
 
     const img = new Image();
+    /*
+    img.crossOrigin = 'Anonymous' tells the browser to fetch that image 
+    via a CORS request (no cookies/credentials sent) instead of a normal 
+    opaque cross-origin load. That's needed here because if you later draw 
+    the image onto a <canvas> (e.g. to sample its colors/pixels), the canvas 
+    gets "tainted" and throws a security error on getImageData/toDataURL 
+    unless the image was loaded with CORS and the server responded with the 
+    right Access-Control-Allow-Origin header.
+    */
     img.crossOrigin = 'Anonymous';
     img.src = activeTheme.imageUrl;
     img.onload = () => {
@@ -61,7 +70,7 @@ export function useDestinationTheme(cityOverride?: string) {
           setDynamicBg(`rgba(${pastelR}, ${pastelG}, ${pastelB}, 1)`);
         }
       } catch (e) {
-        console.warn("Could not extract image color", e);
+        console.warn("Could not extract image color. Please try again later.", e);
       }
     };
   }, [activeTheme.imageUrl]);
