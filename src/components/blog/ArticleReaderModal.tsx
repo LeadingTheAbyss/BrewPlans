@@ -38,7 +38,6 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
         const parsedProfile = readUserProfile(user?.id) || {};
 
@@ -48,12 +47,7 @@ export function ArticleReaderModal({ article, onClose }: ArticleReaderModalProps
         // Email from authStore = server-verified source of truth
         const myEmail = user?.email || parsedProfile.email || '';
 
-        const currentIsAdmin = Boolean(
-          isAdminEmail(myEmail) ||
-          user?.isAdmin ||
-          parsedProfile.isAdmin ||
-          (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase()))
-        );
+        const currentIsAdmin = isAdminEmail(myEmail);
 
         setCurrentUser(myUsername);
         setIsCurrentUserAdmin(currentIsAdmin);

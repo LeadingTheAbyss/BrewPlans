@@ -47,21 +47,15 @@ export default function DedicatedArticlePage() {
     const checkAdminOwnerStatus = (displayArticle: Article | null) => {
       if (typeof window !== 'undefined') {
         try {
-          const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
           const parsedProfile = readUserProfile(user?.id) || {};
 
           // Get username from profile OR authStore
           const myUsername = parsedProfile.username || user?.username || '';
-          
+
           // Use email from authStore (server-verified) as source of truth
           const myEmail = user?.email || parsedProfile.email || '';
 
-          const adminCheck = Boolean(
-            isAdminEmail(myEmail) ||
-            user?.isAdmin ||
-            parsedProfile.isAdmin ||
-            (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase()))
-          );
+          const adminCheck = isAdminEmail(myEmail);
           setIsAdmin(adminCheck);
 
           const isOwnAuthor = Boolean(myUsername && (myUsername.toLowerCase() === username.toLowerCase()));

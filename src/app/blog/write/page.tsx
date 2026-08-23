@@ -122,7 +122,6 @@ export default function WriteBlogPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
       try {
         const savedProfile = readUserProfile(user?.id);
         const savedUser = localStorage.getItem('brewplans_user');
@@ -144,7 +143,7 @@ export default function WriteBlogPage() {
           if (parsed.isAdmin) currentIsAdmin = true;
         }
 
-        if (ADMIN_HANDLES.includes(currentUsername.toLowerCase()) || isAdminEmail(user?.email)) {
+        if (isAdminEmail(user?.email)) {
           currentIsAdmin = true;
         }
 

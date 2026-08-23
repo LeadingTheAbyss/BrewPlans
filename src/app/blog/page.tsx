@@ -106,15 +106,12 @@ export default function BlogLandingPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const ADMIN_HANDLES = ['admin', 'kamlesh', 'brewplans_admin', 'superadmin'];
     const parsedProfile: any = readUserProfile(user?.id) || {};
-    const myUsername = parsedProfile.username || user?.username || '';
     const myEmail = parsedProfile.email || user?.email || '';
 
     const currentIsAdmin = Boolean(
       parsedProfile.isAdmin ||
-      isAdminEmail(myEmail) ||
-      (myUsername && ADMIN_HANDLES.includes(myUsername.toLowerCase()))
+      isAdminEmail(myEmail)
     );
     setIsAdmin(currentIsAdmin);
   }, [user]);
