@@ -20,7 +20,6 @@ interface StatsData {
     totalTripsLifetime: number;
     totalApiCallsAllTime: number;
     totalApiCallsToday: number;
-    apiCallsYesterday: number;
     apiBreakdown: Record<string, number>;
     costEstimateToday: string;
     cacheHitRate: string;
