@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { buildArticleUpdateData } from '@/lib/blogArticleData';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,42 +68,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const updatedBlog = await prisma.article.update({
       where: { id },
-      data: {
-        slug: data.slug,
-        title: data.title,
-        excerpt: data.excerpt,
-        category: data.category,
-        city: data.city,
-        categoryIcon: data.categoryIcon || '🌍',
-        categoryBadgeBg: data.categoryBadgeBg || 'bg-gray-100',
-        categoryBadgeText: data.categoryBadgeText || 'text-gray-800',
-        readingTime: data.readingTime,
-        
-        author: data.author,
-        collaborators: data.collaborators || null,
-        
-        date: data.date,
-        imageUrl: data.imageUrl,
-        featured: data.featured,
-        featuredOrder: newOrder,
-        likes: data.likes,
-        views: data.views,
-        commentsCount: data.commentsCount,
-        controversialScore: data.controversialScore,
-        timesPlanned: data.timesPlanned,
-        
-        budget: data.budget,
-        bestSeason: data.bestSeason,
-        accommodation: data.accommodation,
-        transportMode: data.transportMode,
-        
-        itineraryStops: data.itineraryStops,
-        content: data.content,
-        mediaType: data.mediaType,
-        videoUrl: data.videoUrl,
-        
-        comments: data.comments,
-      }
+      data: buildArticleUpdateData(data, newOrder)
     });
 
     return NextResponse.json(updatedBlog);
