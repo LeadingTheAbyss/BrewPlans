@@ -44,14 +44,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [trip.selectedTransports]);
   
   // Theme state
-  const [isDark, setIsDark] = useState(true);
-  
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(localStorage.getItem('theme') === 'dark');
+  }, []);
+
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   const navLinks = [
@@ -161,7 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => setIsFeedbackOpen(true)}
               className={`h-7 px-2 sm:px-3 rounded-full border transition-colors flex items-center justify-center gap-1.5 shrink-0 ${forceLightHeader ? 'border-neutral-300 hover:border-neutral-500 bg-neutral-100 text-neutral-600' : 'border-neutral-300 dark:border-white/20 hover:border-neutral-500 dark:hover:border-white/50 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300'}`}
-              title="Send us Feedback"
+              title="Send Us Feedback!"
             >
               <MessageSquare size={13} />
               <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest">Send Us Feedback</span>
