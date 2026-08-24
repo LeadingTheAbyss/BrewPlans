@@ -192,13 +192,9 @@ export default function ProfilePage() {
               displayName: foundWriter.author.username === targetUserParam ? foundWriter.author.name : targetUserParam,
               username: targetUserParam,
               pfp: foundWriter.author.username === targetUserParam ? foundWriter.author.avatar : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-              about: `Verified Indian Explorer & Co-Author. Passionate storyteller exploring hidden trails across India.`,
+              about: '',
               city: foundWriter.city || 'India',
-              socials: {
-                instagram: 'brewplansdotcom',
-                twitter: 'BrewPlans',
-                website: 'brewplans.com'
-              }
+              socials: {}
             };
             setCustomProfile(writerProfile);
             setEditForm(writerProfile);
@@ -206,25 +202,9 @@ export default function ProfilePage() {
           }
         }
 
-        // Load or initialize incoming collaboration requests (#3)
+        // Load incoming collaboration requests
         const storedReqs = JSON.parse(localStorage.getItem('brewplans_collab_requests') || '[]');
-        if (storedReqs.length === 0 && (!targetUserParam || targetUserParam === myUsername)) {
-          const defaultInvite = [
-            {
-              id: 'req-spiti-101',
-              articleSlug: 'beyond-spiti-valley-silence-tea-monasteries',
-              articleTitle: 'Beyond Spiti Valley: Finding Silence, Butter Tea, and Monasteries in High Himachal',
-              fromUser: 'rohan_dsouza',
-              toUser: myUsername,
-              status: 'pending',
-              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-            }
-          ];
-          localStorage.setItem('brewplans_collab_requests', JSON.stringify(defaultInvite));
-          setCollabRequests(defaultInvite);
-        } else {
-          setCollabRequests(storedReqs);
-        }
+        setCollabRequests(storedReqs);
 
         const mine = fetchedBlogs.filter((b: any) =>
           b.author?.username?.toLowerCase() === (targetUserParam || '').toLowerCase() ||
