@@ -434,14 +434,14 @@
 
 /* Stage 1: TAKEOFF */
 .atmosphere-takeoff {
-  background: url('/api/assets/bg_clouds.png?v=2') no-repeat center bottom;
+  background: url('/bg_clouds.png') no-repeat center bottom;
   background-size: cover;
   opacity: 1; /* Initial state */
 }
 
 /* Stage 2: HIGH ALTITUDE */
 .atmosphere-altitude {
-  background: url('/api/assets/bg_clouds.png?v=2') no-repeat center center;
+  background: url('/bg_clouds.png') no-repeat center center;
   background-size: cover;
 }
 
@@ -492,7 +492,7 @@
 
 /* Stage 3: GLOBAL NAVIGATION */
 .atmosphere-nav {
-  background: url('/api/assets/bg_earth_night.png?v=2') no-repeat center center;
+  background: url('/bg_earth_night.png') no-repeat center center;
   background-size: cover;
 }
 .atmosphere-nav::after {
@@ -507,7 +507,7 @@
 
 /* Stage 4: GOLDEN HOUR DESCENT */
 .atmosphere-descent {
-  background: url('/api/assets/bg_mountains_sunset.png?v=2') no-repeat center center;
+  background: url('/bg_mountains_sunset.png') no-repeat center center;
   background-size: cover;
 }
 .atmosphere-descent::before {
@@ -534,7 +534,7 @@
 
 /* Stage 5: ARRIVAL */
 .atmosphere-arrival {
-  background: url('/api/assets/bg_city_night.png?v=2') no-repeat center center;
+  background: url('/bg_city_night.png') no-repeat center center;
   background-size: cover;
 }
 .atmosphere-arrival::after {

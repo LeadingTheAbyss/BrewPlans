@@ -70,37 +70,35 @@ export async function GET(request: NextRequest) {
       const cookieStore = await cookies();
       const token = cookieStore.get('brewplans_session')?.value;
       
-      if (!token) {
-        return NextResponse.json({ error: 'Unauthorized: You must be logged in to view images' }, { status: 401 });
-      }
-
-      const session = await prisma.session.findUnique({
-        where: { token },
-        include: { user: true }
-      });
-
-      if (!session || session.expiresAt < new Date()) {
-        return NextResponse.json({ error: 'Unauthorized: Session expired' }, { status: 401 });
-      }
-
-      const user = session.user;
-      userToTrack = user;
-      
-      const now = new Date();
-      const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-      todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
-      
-      let dailyStat = null;
-      if (prisma.dailyUserStat) {
-        dailyStat = await prisma.dailyUserStat.findUnique({
-          where: { userId_date: { userId: user.id, date: todayString } }
+      if (token) {
+        const session = await prisma.session.findUnique({
+          where: { token },
+          include: { user: true }
         });
-      }
 
-      const isAdmin = isAdminEmail(user.email);
-      if (!isAdmin) {
-        if ((dailyStat?.apiCallsImages || 0) >= 5000) {
-          return NextResponse.redirect('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80'); // Valid fallback
+        if (session && session.expiresAt > new Date()) {
+          const user = session.user;
+          userToTrack = user;
+        }
+      }
+      
+      if (userToTrack) {
+        const now = new Date();
+        const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+        todayString = `${nowIST.getFullYear()}-${String(nowIST.getMonth()+1).padStart(2,'0')}-${String(nowIST.getDate()).padStart(2,'0')}`;
+        
+        let dailyStat = null;
+        if (prisma.dailyUserStat) {
+          dailyStat = await prisma.dailyUserStat.findUnique({
+            where: { userId_date: { userId: userToTrack.id, date: todayString } }
+          });
+        }
+
+        const isAdmin = isAdminEmail(userToTrack.email);
+        if (!isAdmin) {
+          if ((dailyStat?.apiCallsImages || 0) >= 5000) {
+            return NextResponse.redirect('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80'); // Valid fallback
+          }
         }
       }
     }

@@ -36,6 +36,7 @@ export default function LandingPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   // Lazy initializer runs synchronously on first render — prevents ContrailCanvas flashing on mobile
   const [isMobileDevice] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
+
   // before the dynamic images appear, these images are shown as a fallback
   const [bgImages, setBgImages] = useState<string[]>([
     '/landing_1.png', 
@@ -52,9 +53,6 @@ export default function LandingPage() {
     const selected = shuffled.slice(0, 5);
     setBgImages(selected.map(place => `/api/destination-photo?name=${encodeURIComponent(place)}&type=place&redirect=true&width=${imgWidth}`));
   }, []);
-
-
-
   const handleNavigation = (path: string) => {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(path)}`);
@@ -355,38 +353,7 @@ export default function LandingPage() {
           onUpdate: (self) => {
             const p = self.progress;
             
-            // Altitude: curve up, stay, curve down
-            let alt = 0;
-            if (p < 0.2) alt = (p / 0.2) * 36000;
-            else if (p > 0.8) alt = ((1 - p) / 0.2) * 36000;
-            else alt = 36000 + Math.sin(p * 10) * 200;
-            
-            // Speed
-            let speed = 0;
-            if (p < 0.1) speed = (p / 0.1) * 520;
-            else if (p > 0.9) speed = ((1 - p) / 0.1) * 520;
-            else speed = 520 + Math.sin(p * 20) * 5;
 
-            const elAlt = document.querySelector('.flight-stat-alt');
-            if(elAlt) elAlt.textContent = `${Math.floor(Math.max(0, alt)).toLocaleString()} ft`;
-            
-            const elSpeed = document.querySelector('.flight-stat-speed');
-            if(elSpeed) elSpeed.textContent = `${Math.floor(Math.max(0, speed))} mph`;
-
-            const elEta = document.querySelector('.flight-stat-eta');
-            if(elEta) {
-               const totalMins = Math.floor((1 - p) * 120);
-               const hrs = Math.floor(totalMins / 60).toString().padStart(2, '0');
-               const mins = (totalMins % 60).toString().padStart(2, '0');
-               elEta.textContent = `${hrs}:${mins}`;
-            }
-
-            const elWeather = document.querySelector('.flight-stat-weather');
-            if(elWeather) {
-               if(p < 0.2) elWeather.textContent = "Stormy";
-               else if(p > 0.8) elWeather.textContent = "Foggy";
-               else elWeather.textContent = "Clear Skies";
-            }
           }
         },
         defaults: { duration: sectionDuration, ease: 'power2.inOut' }
