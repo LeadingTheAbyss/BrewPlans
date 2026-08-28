@@ -179,6 +179,7 @@ export default function ProfilePage() {
             foundProfile = mockUsers.find((u: any) => u.username === targetUserParam);
           } catch (e) {}
 
+          // finding profile
           if (foundProfile) {
             setCustomProfile(foundProfile);
             setEditForm(foundProfile);
