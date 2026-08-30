@@ -1,7 +1,7 @@
 # PROJECT_CONTEXT.md
 
 ## 1. Project Overview
-BrewPlans is a comprehensive, unified travel planning platform designed to simplify the chaotic process of organizing trips with friends or family. It eliminates the need to cross-reference multiple tabs for flights, trains, cabs, hotels, and tourist attractions by aggregating these into a single, cohesive interface. The core problem it solves is the fragmentation and miscommunication in group travel planning by providing real-time data, AI-driven recommendations based on "vibes" or preferences, and a mathematically optimized daily itinerary planner. Currently, it appears to be in a polished production-ready MVP stage, featuring robust engineering optimizations and a highly visual user experience.
+BrewPlans is a comprehensive, unified travel planning platform designed to simplify the chaotic process of organizing trips with friends or family. It eliminates the need to cross-reference multiple tabs for flights, trains, cabs, hotels, and tourist attractions by aggregating these into a single, cohesive interface. The core problem it solves is the fragmentation and miscommunication in group travel planning by providing real-time data, AI-driven recommendations based on "vibes" or preferences, and a mathematically optimized daily itinerary planner. Currently, it appears to be in a polished production-ready MVP stage, featuring robust engineering optimizations and a highly visual user experience. Alongside trip planning, it also runs a travel blog/content platform ("Travel Journal") where users publish long-form trip write-ups with embedded itineraries.
 
 ## 2. Tech Stack
 - **Frontend Framework**: Next.js 16.2.9 (App Router) with React 19.2.4
@@ -24,7 +24,7 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
   - `api.py`: The core FastAPI application that routes requests for optimization, AI recommendations, live transport APIs, and manages WebSocket connections for collaborative planning.
   - `routing_engine.py`: Runs an ALNS PC-VRPTW optimization solver to schedule daily itineraries based on distances and fatigue constraints.
   - `ranking_engine.py`: Scores and sorts transport, places, and hotels based on dynamic trip criteria (safety, cost, duration).
-  - `ollama_engine.py`: Constructs LLM prompts for Groq and parses JSON responses to generate AI trip recommendations.
+  - `ollama_engine.py`: Constructs LLM prompts for Groq and parses JSON responses to generate AI trip recommendations. Despite the filename, it does not use a local Ollama instance — it calls Groq's cloud API directly.
 - **Service Communication**: Primarily REST HTTP requests between the Next.js client and FastAPI server, with direct DB queries via Prisma on the Node side. Real-time collaborative planning uses WebSockets (`/api/ws/plan/{plan_id}`).
 - **Repository Structure**: Monorepo structure containing both the Next.js application (`src/app`) and the FastAPI application (root Python files and `services/`, `engines/`, `models/` directories).
 - **Request Lifecycle (Recommend a Trip)**:
@@ -35,10 +35,12 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
   5. LLM responds with JSON containing exactly 10 matched destinations.
   6. Backend parses, calculates estimated fallback budgets, clamps to user maximums, and returns to Frontend.
   7. Frontend receives data and updates Zustand `tripStore`, rendering the recommendations grid.
+- **Third Planning Mode (Quick Trip / "Plan a Hangout in Your City")**: Alongside "Recommend a Trip" (AI-driven, cross-city) and "Plan a Trip" (direct, multi-day, cross-city), `/quick-trip` handles a narrower case: coordinating a same-city, single-day hangout among a group starting from different locations. It lives almost entirely in `src/app/quick-trip/page.tsx` (a single large client component) plus `src/lib/quickTripSorter.ts` (stop auto-ordering) and `src/lib/travelCost.ts` (shared distance/cost/time estimation, also reused by `VisualJourneyMap`). Unlike the ALNS solver used for multi-day itineraries, stop ordering here is a lightweight greedy algorithm that runs entirely client-side (`smartSortStops`/`comfortSortStops` in `quickTripSorter.ts`) — no FastAPI optimization endpoint is involved. It does call Next.js API routes for place autocomplete/geocoding (Ola Maps proxy) and to save/share a trip snapshot (`/api/trips`), but there is no WebSocket/live collaboration here — sharing works by generating a `/quick-trip?id=...` link to a saved snapshot, not real-time multi-user sync (that's exclusive to the itinerary drag-and-drop planner in the main `/plan` flow).
 
 ## 4. Folder & File Structure
 - `src/`: Next.js frontend code.
-  - `src/app/`: Next.js App Router pages (`/plan`, `/recommend`, `/quick-trip`, `/profile`, `/pnr`).
+  - `src/app/`: Next.js App Router pages (`/plan`, `/recommend`, `/quick-trip`, `/profile`, `/blog`).
+    - `src/app/blog/`: Travel Journal blog pages — `page.tsx` (landing/index with filters), `write/page.tsx` (create/edit studio), `u/[username]/[...slug]/page.tsx` (article reader), `media/page.tsx` (video/image feed), `guidelines/page.tsx` (static community guidelines).
   - `src/components/`: Reusable React components (`VisualJourneyMap.tsx`, `AnimatedGlobe.tsx`, `CinematicLoader.tsx`).
   - `src/store/`: Zustand state stores (`authStore.ts`, `itineraryStore.ts`, `tripStore.ts`, `budgetStore.ts`).
   - `src/lib/`: Frontend utilities and helpers.
@@ -57,7 +59,7 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
 - `PlaceCache`: Stores raw JSON from Google Places API (using `cacheKey`) to save on expensive API calls.
 - `TripHistory`: Stores JSON snapshots of generated itineraries for users.
 - `DailyUserStat`, `DailySystemStat`, `TelemetryLog`, `SystemAnomaly`: Robust logging tables for analytics, API cost estimation, latency spikes, and funnel tracking.
-- `Article`: Schema for blog posts containing rich media and itinerary metadata.
+- `Article`: Schema for blog posts. Key fields: `slug` (unique), `title`/`excerpt`/`category`/`city`, `author` (JSON — allows posting under any custom author name/avatar, see §7D), `collaborators` (JSON, co-authors), `content` (rich-text body), `comments` (JSON — comments are stored inline, not a relational table) with denormalized `commentsCount`, `likes`/`views` (Int counters, see §7D on progressive fake growth), `featured`/`featuredOrder` (admin pinning with explicit ordering), `budget`/`bestSeason`/`accommodation`/`transportMode` (trip metadata), `itineraryStops` (JSON), `mediaType`/`videoUrl` (for the video/image feed at `/blog/media`).
 - **Relationships**: Mostly 1:Many (User -> Sessions/Histories). Transit tables (`TransitRoute`, `TransitStop`, `TransitTrip`, `TransitStopTime`) follow standard GTFS relational structures.
 - **Indexes**: Strategic indexes on `userId`, `cacheKey`, `createdAt`, `endpoint`, and composite unique constraints on transport modes to ensure upsert integrity.
 - **Design Tradeoffs**: Storing `stateJson` in `AppState` and `snapshot` in `TripHistory` as raw JSON strings/JSONB. This denormalization trades queryability of individual itinerary items for speed and ease of saving/loading complex Zustand store states.
@@ -70,6 +72,11 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
   - `POST /api/recommendations`: Triggers LLM generation for trip ideas based on a "vibe" and constraints.
   - `GET /api/search-city`: Autocomplete city search blending Ola Maps API and Open-Meteo as fallback.
   - `WS /api/ws/plan/{plan_id}`: WebSocket endpoint for real-time collaborative drag-and-drop itinerary planning (max 15 users).
+- **Next.js API Routes (Blog, `src/app/api/blogs/`)** — these hit Prisma/NeonDB directly, not FastAPI:
+  - `GET /api/blogs`: Lists all articles (newest first). `POST /api/blogs`: Creates an article, re-indexing `featuredOrder` if set (shared field mapping via `src/lib/blogArticleData.ts`).
+  - `GET /api/blogs/[id]`: Fetches one article. `PUT /api/blogs/[id]`: Updates it, re-indexing `featuredOrder` on change. `DELETE /api/blogs/[id]`: Deletes it and shifts down `featuredOrder` values above it.
+  - `POST /api/blogs/[id]/metrics`: Action-based (`view`, `like`, `unlike`) counters.
+  - `POST /api/upload`: Handles media (image/video) uploads to Cloudflare R2 for blog posts.
 - **External Third-Party APIs**:
   - *Google Places API*: Primary POI and photo data (Production, expensive, heavily cached).
   - *Groq (openai/gpt-oss-120b)*: AI Recommendations. Handled with a robust 9-key rotation fallback mechanism.
@@ -89,6 +96,8 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
    Translates user preferences into explicit prompt constraints. It calculates realistic cost floors using hardcoded category baselines (e.g. mountains=2500/day) to prevent the LLM from hallucinating impossibly cheap budgets.
 4. **Ranking Engine (`ranking_engine.py`)**:
    Scores transport options mathematically: `Score = (20 - duration) * 2 + (10000 - price)/1000 + safety_score * 2`. It actively penalizes bus travel by -20 points if elderly passengers are detected.
+5. **Quick Trip Stop Sorter (`src/lib/quickTripSorter.ts`, client-side TS)**:
+   A lightweight greedy scheduler for single-day, same-city hangouts (separate from the ALNS solver above, which handles multi-day itineraries). `detectCategory` buckets a place into one of six categories (ACTIVE, FOOD, INDOOR_ENT, CULTURAL, SHOPPING, OTHER) via regex. `smartSortStops` greedily orders stops using nearest-neighbor distance plus a time-of-day penalty against each category's ideal hour (e.g. FOOD ≈ noon), honoring any stop with a fixed morning/afternoon/evening timeslot. `comfortSortStops` adds a "fatigue" penalty discouraging two high-energy (ACTIVE/SHOPPING) stops back-to-back. `buildTimeline` walks the sorted stops plus per-leg travel time to compute display arrival/departure times.
 
 ## 7A. UI/UX Implementation Detail
 - **Cinematic Interactions**: The app employs GSAP and Framer motion heavily. `HeroPlane.tsx` and `AnimatedGlobe.tsx` (using `react-globe.gl` and `three.js`) provide immediate visual "wow" factor on load. 
@@ -109,6 +118,14 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
 - **[Product/UX] Real-Time Multiplayer Itinerary Planning**: Implementing WebSocket-driven synchronization with `@dnd-kit` so multiple users can concurrently drag and drop places across an itinerary timeline is extremely difficult to get right without race conditions.
 - **[AI/Engineering] Groq API Key Round-Robin**: A highly pragmatic, hacker-style solution to circumvent free-tier rate limits on Groq by catching 429 errors and silently rolling over through 9 different API keys, ensuring high uptime for the AI features.
 - **[UX Polish] 3D and Canvas Data Visualization**: Utilizing WebGL via `three.js` and custom Canvas/SVG implementations for contrails and globes makes the app feel premium and cinematic rather than a standard form-based booking site.
+
+## 7E. Blog / Travel Journal
+- **What it is**: A separate content platform alongside trip planning — users write long-form trip stories via a rich-text editor (`RichBlogEditor.tsx`), attach trip metadata (budget, best season, transport mode, embedded itinerary stops), and can add other users as `collaborators` on one post.
+- **Custom-author posting (admin-only)**: An admin can publish a post under any custom author name, username, and avatar (`write/page.tsx`) rather than their own logged-in identity — used e.g. to seed content under a persona. The resulting `/blog/u/{username}/{slug}` page renders whatever `author` data is stored on that specific post; there is no separate "real" user account created behind it.
+- **Progressive fake engagement metrics**: `src/lib/blogMetrics.ts` (`calculateProgressiveMetrics`) adds a deterministic, seeded-per-article number on top of real `likes`/`views`, growing on a square-root curve that maxes out ~72 hours after the post's creation timestamp (parsed from its id). This is intentional — it's meant to make posts look organically popular rather than empty — not a bug, but worth knowing before trusting these numbers as real engagement data.
+- **Admin identity check**: All admin gating (custom author drawer, featured-post pinning, etc.) is based solely on `isAdminEmail(email)` against `NEXT_PUBLIC_ADMIN_EMAILS` in `.env` — a prior username-based admin backdoor (`ADMIN_HANDLES` array, matching literal strings like `"admin"`) was found and removed from all four places it existed.
+- **No moderation/reporting system**: `/blog/guidelines` is a static rules page, not backed by any report/flag/moderation queue.
+- **No rate limiting on posting**: `src/lib/rateLimit.ts` exists as a general Redis-backed utility but is not wired into any `/api/blogs/*` route — posting is currently unlimited per user.
 
 ## 8. Auth & Security
 - **Auth Flow**: Google OAuth is used. Instead of issuing a Stateless JWT, the backend issues an Opaque Token (a secure random UUID) stored in the `Session` table on NeonDB and sent to the client as an HTTP-only secure cookie (`brewplans_session`).
@@ -141,6 +158,7 @@ BrewPlans is a comprehensive, unified travel planning platform designed to simpl
 - **Inaccurate Flights**: Flight data relies on hardcoded DGCA schedules rather than live pricing, meaning flight prices are estimates, not bookable fares.
 - **Bus Scraper Flakiness**: Parse.bot fails on longer bus routes.
 - **Hotel Limitations**: Unable to fetch accurate check-in/out times or room occupancy limits from SerpAPI, forcing a hardcoded assumption of 3 people per room max.
+- **Unrated Blog Posting**: `/api/blogs` (create/update) has no rate limiting despite a general-purpose `checkRateLimit` utility existing in `src/lib/rateLimit.ts` — it's just not called from these routes.
 
 ## 12. Testing & Quality
 - **Testing**: Extremely limited automated testing. The codebase contains root-level Python test scripts (`test_api.py`, `test_hotels.py`, `test_recommend.py`) which appear to be manual, one-off sanity checks rather than an automated `pytest` or `jest` suite. No CI/CD testing pipeline is evident.
