@@ -31,7 +31,7 @@ def _get_redis_client() -> httpx.AsyncClient:
     return _shared_redis_client
 
 
-async def _cache_get(key: str) -> Optional[str]:
+async def _cache_get(key: str, prefix: str = "imgcache") -> Optional[str]:
     """Return the cached string value for `key`, or None on miss/error."""
     if not UPSTASH_URL or not UPSTASH_TOKEN:
         return None
@@ -39,7 +39,7 @@ async def _cache_get(key: str) -> Optional[str]:
         headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         client = _get_redis_client()
         res = await client.get(
-            f"{UPSTASH_URL}/get/imgcache:{key}", headers=headers
+            f"{UPSTASH_URL}/get/{prefix}:{key}", headers=headers
         )
         if res.status_code == 200:
             return res.json().get("result")
@@ -48,7 +48,7 @@ async def _cache_get(key: str) -> Optional[str]:
     return None
 
 
-async def _cache_set(key: str, value: str, ttl_seconds: int = 86400) -> None:
+async def _cache_set(key: str, value: str, ttl_seconds: int = 86400, prefix: str = "imgcache") -> None:
     """Store `value` under `key` with a TTL. Non-fatal on error."""
     if not UPSTASH_URL or not UPSTASH_TOKEN:
         return
@@ -58,7 +58,7 @@ async def _cache_set(key: str, value: str, ttl_seconds: int = 86400) -> None:
         await client.post(
             f"{UPSTASH_URL}/pipeline",
             headers=headers,
-            json=[["SET", f"imgcache:{key}", value, "EX", ttl_seconds]],
+            json=[["SET", f"{prefix}:{key}", value, "EX", ttl_seconds]],
         )
     except Exception as e:
         print(f"[Cache] set error: {e}")

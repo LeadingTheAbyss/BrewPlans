@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from models.entities import TransportOption
 from models.enums import TransportType
 from services.db import get_db_connection
+from services.image_service import _cache_get, _cache_set
 
 try:
     import networkx as nx
@@ -21,24 +22,30 @@ TRANSFER_PENALTY_HOURS = 2.5
 MAX_HOPS = 3
 MAX_DETOUR_MULTIPLIER = 1.6
 
+PATH_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30   # 30 days
+GEOCODE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90  # 90 days
+CACHE_PREFIX = "crossroute"
+
 _graph = None
 _city_nodes = {}
+_graph_version = "0"
 
 def load_graph():
-    global _graph, _city_nodes
+    global _graph, _city_nodes, _graph_version
     if _graph is not None:
         return
-        
+
     if not nx:
         return
-        
+
     _graph = nx.MultiDiGraph()
     graph_file = os.path.join("data", "india_transport_graph.json")
-    
+
     if not os.path.exists(graph_file):
         log.warning(f"[CrossRouter] Graph file not found: {graph_file}")
         return
-        
+
+    _graph_version = str(int(os.path.getmtime(graph_file)))
     with open(graph_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
         
@@ -99,11 +106,44 @@ async def _geocode_city_async(city: str) -> Optional[Tuple[float, float]]:
         log.warning(f"Geocoding failed for {city}: {e}")
     return None
 
+async def _geocode_city_cached(city: str) -> Optional[Tuple[float, float]]:
+    """Geocode a city not in the static graph, caching the result so repeat
+    queries for the same unlisted city skip the Nominatim round-trip."""
+    cache_key = f"geo:{city.strip().lower()}"
+    cached = await _cache_get(cache_key, prefix=CACHE_PREFIX)
+    if cached:
+        try:
+            lat_str, lon_str = cached.split(",")
+            return float(lat_str), float(lon_str)
+        except ValueError:
+            pass
+
+    coords = await _geocode_city_async(city)
+    if coords:
+        await _cache_set(cache_key, f"{coords[0]},{coords[1]}", GEOCODE_CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+    return coords
+
 async def get_k_shortest_logical_paths(origin: str, dest: str, k: int = 5) -> List[Dict]:
+    """Cached wrapper: identical (origin, dest, k) queries reuse the previously
+    computed path set instead of re-running graph search every request."""
     load_graph()
     if not nx or not _graph:
         return []
-        
+
+    cache_key = f"path:{origin.strip().lower()}:{dest.strip().lower()}:{k}:{_graph_version}"
+    cached = await _cache_get(cache_key, prefix=CACHE_PREFIX)
+    if cached is not None:
+        try:
+            return json.loads(cached)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    result = await _compute_k_shortest_logical_paths(origin, dest, k)
+    if result:
+        await _cache_set(cache_key, json.dumps(result), PATH_CACHE_TTL_SECONDS, prefix=CACHE_PREFIX)
+    return result
+
+async def _compute_k_shortest_logical_paths(origin: str, dest: str, k: int = 5) -> List[Dict]:
     orig_canonical = get_canonical_city(origin)
     dest_canonical = get_canonical_city(dest)
     
@@ -111,7 +151,7 @@ async def get_k_shortest_logical_paths(origin: str, dest: str, k: int = 5) -> Li
     added_edges = []
     
     async def inject_virtual_node(city_name: str) -> str:
-        coords = await _geocode_city_async(city_name)
+        coords = await _geocode_city_cached(city_name)
         if not coords:
             return None
         lat, lon = coords
